@@ -12,5 +12,5 @@ name = "bridge_schema"
 crate-type = ["cdylib"]
 
 [dependencies]
-bridge-schema = { path = "../../../crates/schema" }
+bridge_schema_rs = { package = "bridge-schema", path = "../../../crates/schema" }
 pyo3 = { version = "0.27.2", features = ["extension-module"] }

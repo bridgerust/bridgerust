@@ -1,7 +1,7 @@
 //! Zero-copy buffer utilities
 
 pub struct Buffer {
-   // TODO: Implement zero-copy buffer 
+    // TODO: Implement zero-copy buffer
 }
 
 impl Buffer {

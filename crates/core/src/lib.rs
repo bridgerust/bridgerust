@@ -1,5 +1,5 @@
 //! BridgeRust Core
-//! 
+//!
 //! Shared utilities for the BridgeRust engines
 
 pub mod buffer;

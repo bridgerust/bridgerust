@@ -1,4 +1,4 @@
-use bridge_schema::Validator as RustValidator;
+use bridge_schema_rs::Validator as RustValidator;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
@@ -27,7 +27,8 @@ impl Validator {
 }
 
 #[pymodule]
-fn bridge_schema(_py: Python, m: &PyModule) -> PyResult<()> {
+#[pyo3(name = "bridge_schema")]
+fn bridge_schema(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Validator>()?;
     Ok(())
 }

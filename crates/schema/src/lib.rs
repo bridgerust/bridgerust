@@ -3,6 +3,7 @@ use bridge_core::Result;
 use serde_json::Value;
 
 pub struct Validator {
+    #[allow(dead_code)]
     schema: Value,
 }
 
