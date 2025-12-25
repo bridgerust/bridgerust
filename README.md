@@ -1,3 +1,7 @@
+<div style="text-align: center;">
+    <img src="images/logo.png" alt="BridgeRust Logo" width="200" height="200">
+<div>
+
 # BridgeRust
 
 **One Rust core. Every ecosystem.**
