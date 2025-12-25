@@ -1,0 +1,16 @@
+[package]
+name = "bridge-schema"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "High performance JSON Schema validator"
+
+[dependencies]
+bridge-core = { path = "../core" }
+anyhow = "1.0.100"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.147"
+thiserror = "2.0.17"
