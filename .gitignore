@@ -1,0 +1,493 @@
+# BridgeRust .gitignore
+# Comprehensive ignore file for Rust + Python + Node.js + WASM monorepo
+
+#############
+# Rust
+#############
+
+# Cargo build artifacts
+**/target/
+**/*.rs.bk
+**/*.pdb
+
+# Cargo.lock (keep for binaries, ignore for libraries)
+# Uncomment if this is a library-only project
+# Cargo.lock
+
+# Rust procedural macro debugging
+**/*.expanded.rs
+
+# Profiling data
+*.profraw
+*.profdata
+
+# Flamegraph output
+flamegraph.svg
+perf.data
+perf.data.old
+
+# Criterion benchmark results
+**/criterion/
+
+# Cargo fuzz artifacts
+**/fuzz/target/
+**/fuzz/corpus/
+**/fuzz/artifacts/
+
+#############
+# Python
+#############
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+*.dylib
+*.pyd
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Maturin build artifacts
+**/.cargo/
+**/maturin.toml.bak
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# PyCharm
+.idea/
+
+# Pytest
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# IPython
+profile_default/
+ipython_config.py
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+#############
+# Node.js
+#############
+
+# Dependencies
+node_modules/
+jspm_packages/
+
+# Build output
+**/dist/
+**/lib/
+**/out/
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output/
+
+# Compiled binary addons
+build/Release/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# Yarn Integrity file
+.yarn-integrity
+
+# parcel-bundler cache
+.cache/
+.parcel-cache/
+
+# Next.js
+.next/
+out/
+
+# Nuxt.js
+.nuxt/
+dist/
+
+# Gatsby files
+.cache/
+public/
+
+# Serverless directories
+.serverless/
+
+# FuseBox cache
+.fusebox/
+
+# DynamoDB Local files
+.dynamodb/
+
+# TernJS port file
+.tern-port
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+
+# Turborepo cache
+.turbo/
+
+#############
+# WASM
+#############
+
+# wasm-pack build artifacts
+**/pkg/
+**/*.wasm
+**/*.wasm.map
+**/wasm-pack.log
+
+# wasm-bindgen artifacts
+**/wbindgen-output/
+
+#############
+# IDEs & Editors
+#############
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+.history/
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+.idea_modules/
+cmake-build-*/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+Session.vim
+Sessionx.vim
+.netrwhist
+*~
+tags
+[._]*.un~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+#############
+# OS-specific
+#############
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+.directory
+.Trash-*
+.nfs*
+
+#############
+# Project-specific
+#############
+
+# Benchmark results
+**/benchmarks/results/
+**/benchmarks/output/
+*.benchmark
+
+# Documentation builds
+**/docs/_build/
+**/docs/.doctrees/
+site/
+
+# Test artifacts
+**/test-results/
+**/test-output/
+**/.hypothesis/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+**/.envrc
+
+# Local configuration
+config.local.*
+*.local.toml
+*.local.json
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+
+# Lock files (keep package-lock.json and yarn.lock for reproducibility)
+# Uncomment if you want to ignore them
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# CI/CD artifacts
+.github/workflows/*.log
+
+# Generated protobuf files (if using protobuf)
+**/*.pb.rs
+**/*_pb2.py
+**/*_pb2.pyi
+
+# Generated OpenAPI/Swagger files
+**/openapi-generated/
+
+# Local scripts and notes
+scratch/
+notes/
+TODO.local.md
+
+# Performance profiling
+*.perf
+*.svg
+*.folded
+
+# Secrets and credentials (CRITICAL - never commit!)
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+secrets/
+credentials/
+.secrets/
+
+# Docker
+*.dockerignore
+docker-compose.override.yml
+
+# Terraform (if used for infrastructure)
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+
+# Cloud provider configs
+.aws/
+.gcloud/
+.azure/
+
+#############
+# Build Artifacts
+#############
+
+# Compiled executables
+**/bridge
+**/bridge.exe
+**/bridge-cli
+**/bridge-cli.exe
+
+# Shared libraries
+*.so.*
+*.dylib.*
+*.dll
+
+# Archive files
+*.tar.gz
+*.zip
+*.7z
+*.rar
+
+# Core dumps
+core.*
+vgcore.*
+
+#############
+# Documentation
+#############
+
+# Sphinx
+docs/_build/
+docs/.doctrees/
+
+# mdBook
+book/
+
+# Doxygen
+html/
+latex/
+
+#############
+# Misc
+#############
+
+# Compiled source
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# Logs and databases
+*.log
+*.sql
+*.sqlite
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor backup files
+*~
+*.swp
+*.swo
+
+# Package files
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
