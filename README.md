@@ -1,7 +1,8 @@
 <div style="text-align: center;">
     <img src="images/logo.png" alt="BridgeRust Logo" width="200" height="200">
 <div>
-**One Rust core. Every ecosystem.**
+
+# One Rust core. Every ecosystem.**
 
 High-performance infrastructure libraries for Python, Node.js, and WASM.
 
