@@ -124,6 +124,37 @@ impl KabodClient {
         }
     }
 
+    /// Create a new Kabod client asynchronously.
+    ///
+    /// Required for providers that need async initialization (milvus, pgvector, lancedb).
+    ///
+    /// Args:
+    ///     provider: The database provider.
+    ///     url: The connection URL.
+    ///     api_key: Optional API key.
+    #[staticmethod]
+    #[pyo3(signature = (provider, url, api_key=None))]
+    fn new_async<'p>(
+        py: Python<'p>,
+        provider: String,
+        url: String,
+        api_key: Option<String>,
+    ) -> PyResult<Bound<'p, PyAny>> {
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            let config = KabodConfig {
+                provider,
+                url,
+                api_key,
+                timeout_ms: None,
+                options: Default::default(),
+            };
+
+            let client = RustClient::new_async(config).await.map_err(to_py_err)?;
+
+            Ok(KabodClient { inner: client })
+        })
+    }
+
     /// Run database migrations.
     ///
     /// Args:
