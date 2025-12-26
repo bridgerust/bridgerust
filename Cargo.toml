@@ -14,7 +14,7 @@ members = [
     "bindings/python/kabod",
     "bindings/node/@bridgerust/kabod",
     "benchmarks/kabod"
-]
+, "crates/kabod/adapters/weaviate", "crates/kabod/adapters/milvus"]
 
 [workspace.package]
 version = "0.1.0"

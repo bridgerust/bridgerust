@@ -46,3 +46,6 @@ mod tests {
         assert_eq!(config.url, "http://localhost:6333");
     }
 }
+
+
+pub use config::ConfigError;

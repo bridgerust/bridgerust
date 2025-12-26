@@ -1,4 +1,8 @@
 use crate::adapters::*;
+#[cfg(feature = "weaviate")]
+use bridge_kabod_weaviate::WeaviateAdapter;
+#[cfg(feature = "milvus")]
+use bridge_kabod_milvus::MilvusAdapter;
 use bridge_kabod_core::config::KabodConfig;
 use bridge_kabod_core::db::VectorDatabase;
 use bridge_kabod_core::error::Result;
@@ -110,6 +114,26 @@ impl KabodClient {
             ));
         }
 
+        #[cfg(feature = "milvus")]
+        if config.provider == "milvus" {
+            return Err(bridge_kabod_core::error::KabodError::Config(
+                config::ConfigError::Message(
+                    "Milvus requires async initialization. Use KabodClient::new_async()"
+                        .to_string(),
+                ),
+            ));
+        }
+
+        #[cfg(feature = "weaviate")]
+        if config.provider == "weaviate" {
+            return Ok(Self {
+                db: Arc::new(WeaviateAdapter::new(
+                    &config.url,
+                    config.api_key.as_deref(),
+                )?),
+            });
+        }
+
         Err(bridge_kabod_core::error::KabodError::Config(
             config::ConfigError::Message(format!(
                 "Provider '{}' not available. Enable it via Cargo features or check spelling.",
@@ -135,6 +159,19 @@ impl KabodClient {
             return Ok(Self {
                 db: Arc::new(PgVectorAdapter::new(&config.url, pool_size).await?),
             });
+        }
+
+        #[cfg(feature = "milvus")]
+        if config.provider == "milvus" {
+            return Ok(Self {
+                db: Arc::new(MilvusAdapter::new(&config.url).await?),
+            });
+        }
+
+        // fallback to sync init for Weaviate
+        #[cfg(feature = "weaviate")]
+        if config.provider == "weaviate" {
+             return Self::new(config);
         }
 
         Self::new(config)

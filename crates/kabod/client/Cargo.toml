@@ -10,7 +10,7 @@ description = "Vector DB ORM engine for BridgeRust (Facade)"
 
 [features]
 default = ["all"]
-all = ["qdrant", "pinecone", "chroma", "lancedb", "pgvector"]
+all = ["qdrant", "pinecone", "chroma", "lancedb", "pgvector", "weaviate", "milvus"]
 
 # Individual adapters
 qdrant = ["dep:bridge-kabod-qdrant"]
@@ -18,6 +18,8 @@ pinecone = ["dep:bridge-kabod-pinecone"]
 chroma = ["dep:bridge-kabod-chroma"]
 lancedb = ["dep:bridge-kabod-lancedb"]
 pgvector = ["dep:bridge-kabod-pgvector"]
+weaviate = ["dep:bridge-kabod-weaviate"]
+milvus = ["dep:bridge-kabod-milvus"]
 
 [dependencies]
 bridge-kabod-core = { path = "../core" }
@@ -28,6 +30,8 @@ bridge-kabod-pinecone = { path = "../adapters/pinecone", optional = true }
 bridge-kabod-chroma = { path = "../adapters/chroma", optional = true }
 bridge-kabod-lancedb = { path = "../adapters/lancedb", optional = true }
 bridge-kabod-pgvector = { path = "../adapters/pgvector", optional = true }
+bridge-kabod-weaviate = { path = "../adapters/weaviate", optional = true }
+bridge-kabod-milvus = { path = "../adapters/milvus", optional = true }
 
 # Shared dependencies for the orchestrator
 anyhow = "1.0.100"

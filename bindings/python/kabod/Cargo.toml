@@ -13,12 +13,14 @@ crate-type = ["cdylib"]
 
 [features]
 default = ["all"]
-all = ["qdrant", "pinecone", "chroma", "lancedb", "pgvector"]
+all = ["qdrant", "pinecone", "chroma", "lancedb", "pgvector", "weaviate", "milvus"]
 qdrant = ["bridge-kabod/qdrant"]
 pinecone = ["bridge-kabod/pinecone"]
 chroma = ["bridge-kabod/chroma"]
 lancedb = ["bridge-kabod/lancedb"]
 pgvector = ["bridge-kabod/pgvector"]
+weaviate = ["bridge-kabod/weaviate"]
+milvus = ["bridge-kabod/milvus"]
 
 [dependencies]
 bridge-kabod = { path = "../../../crates/kabod/client", default-features = false, features = ["all"] }

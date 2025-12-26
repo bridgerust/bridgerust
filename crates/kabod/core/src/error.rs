@@ -10,6 +10,9 @@ pub enum KabodError {
     #[error("Database error: {0}")]
     Database(String),
 
+    #[error("Connection error: {0}")]
+    Connection(String),
+
     #[error("Serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
 

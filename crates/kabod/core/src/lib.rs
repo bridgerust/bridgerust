@@ -6,6 +6,7 @@ pub mod query;
 pub mod types;
 
 pub use config::KabodConfig;
+pub use config::ConfigError;
 pub use db::VectorDatabase;
 pub use error::{KabodError, Result};
 pub use migration::Migration;

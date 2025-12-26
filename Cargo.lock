@@ -1081,9 +1081,11 @@ dependencies = [
  "bridge-kabod-chroma",
  "bridge-kabod-core",
  "bridge-kabod-lancedb",
+ "bridge-kabod-milvus",
  "bridge-kabod-pgvector",
  "bridge-kabod-pinecone",
  "bridge-kabod-qdrant",
+ "bridge-kabod-weaviate",
  "chrono",
  "config",
  "futures",
@@ -1133,6 +1135,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "bridge-kabod-milvus"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bridge-kabod-core",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tracing",
+]
+
+[[package]]
 name = "bridge-kabod-pgvector"
 version = "0.1.0"
 dependencies = [
@@ -1164,6 +1179,20 @@ dependencies = [
  "bridge-kabod-core",
  "qdrant-client",
  "serde_json",
+]
+
+[[package]]
+name = "bridge-kabod-weaviate"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bridge-kabod-core",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tracing",
+ "uuid",
 ]
 
 [[package]]
