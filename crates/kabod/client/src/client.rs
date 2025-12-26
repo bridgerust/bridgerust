@@ -96,8 +96,9 @@ impl KabodClient {
 
         #[cfg(feature = "pgvector")]
         if config.provider == "pgvector" {
+            let pool_size = config.options.get("pool_size").and_then(|s| s.parse().ok());
             return Ok(Self {
-                db: Arc::new(PgVectorAdapter::new(&config.url).await?),
+                db: Arc::new(PgVectorAdapter::new(&config.url, pool_size).await?),
             });
         }
 
@@ -123,14 +124,17 @@ impl Collection {
         &self.name
     }
 
+    #[tracing::instrument(skip(self, schema), fields(collection = %self.name, dimension = schema.dimension))]
     pub async fn create(&self, schema: CollectionSchema) -> Result<()> {
         self.db.create_collection(&schema).await
     }
 
+    #[tracing::instrument(skip(self), fields(collection = %self.name))]
     pub async fn delete_collection(&self) -> Result<()> {
         self.db.delete_collection(&self.name).await
     }
 
+    #[tracing::instrument(skip(self, points), fields(collection = %self.name, count = points.len()))]
     pub async fn insert(&self, points: Vec<Point>) -> Result<()> {
         self.db.insert(&self.name, points).await
     }
@@ -139,15 +143,17 @@ impl Collection {
         SearchBuilder::new(self.name.clone(), vector, self.db.clone())
     }
 
+    #[tracing::instrument(skip(self, builder), fields(collection = %self.name))]
     pub async fn query(&self, builder: QueryBuilder) -> Result<SearchResponse> {
         self.db.search(&builder.build()).await
     }
 
+    #[tracing::instrument(skip(self), fields(collection = %self.name, count = ids.len()))]
     pub async fn delete(&self, ids: Vec<String>) -> Result<()> {
         self.db.delete(&self.name, ids).await
     }
 
-    /// Insert points in batches of specified size with parallel execution
+    #[tracing::instrument(skip(self, points), fields(collection = %self.name, count = points.len(), batch_size, parallel))]
     pub async fn insert_batch(
         &self,
         points: Vec<Point>,
@@ -164,6 +170,37 @@ impl Collection {
                 let db = self.db.clone();
                 let name = self.name.clone();
                 async move { db.insert(&name, chunk).await }
+            })
+            .buffer_unordered(concurrency)
+            .collect::<Vec<_>>()
+            .await
+            .into_iter()
+            .collect::<Result<Vec<()>>>()?;
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self, stream), fields(collection = %self.name, batch_size, parallel))]
+    pub async fn insert_stream(
+        &self,
+        stream: impl futures::Stream<Item = Result<Point>> + Unpin,
+        batch_size: usize,
+        parallel: Option<usize>,
+    ) -> Result<()> {
+        use futures::StreamExt;
+
+        let concurrency = parallel.unwrap_or(1);
+
+        stream
+            .chunks(batch_size)
+            .map(|chunk| {
+                let points: Result<Vec<Point>> = chunk.into_iter().collect();
+                let db = self.db.clone();
+                let name = self.name.clone();
+                async move {
+                    let points = points?;
+                    db.insert(&name, points).await
+                }
             })
             .buffer_unordered(concurrency)
             .collect::<Vec<_>>()

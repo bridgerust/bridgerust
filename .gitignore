@@ -1,6 +1,9 @@
 # BridgeRust .gitignore
 # Comprehensive ignore file for Rust + Python + Node.js + WASM monorepo
 
+# Agent tools (local only)
+.agents/
+
 #############
 # Rust
 #############

@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use pgvector::Vector;
+use sqlx::postgres::PgPoolOptions;
 use sqlx::{PgPool, Row};
 use std::collections::HashMap;
 
@@ -15,8 +16,10 @@ pub struct PgVectorAdapter {
 }
 
 impl PgVectorAdapter {
-    pub async fn new(database_url: &str) -> Result<Self> {
-        let pool = PgPool::connect(database_url)
+    pub async fn new(database_url: &str, pool_size: Option<u32>) -> Result<Self> {
+        let pool = PgPoolOptions::new()
+            .max_connections(pool_size.unwrap_or(10))
+            .connect(database_url)
             .await
             .map_err(|e| KabodError::Database(format!("Failed to connect to PostgreSQL: {}", e)))?;
 
@@ -41,6 +44,7 @@ impl PgVectorAdapter {
 
 #[async_trait]
 impl VectorDatabase for PgVectorAdapter {
+    #[tracing::instrument(skip(self, schema), fields(collection = %schema.name))]
     async fn create_collection(&self, schema: &CollectionSchema) -> Result<()> {
         let table_name = &schema.name;
         let dimension = schema.dimension;
@@ -83,6 +87,7 @@ impl VectorDatabase for PgVectorAdapter {
         Ok(())
     }
 
+    #[tracing::instrument(skip(self), fields(collection = %name))]
     async fn delete_collection(&self, name: &str) -> Result<()> {
         let drop_sql = format!(r#"DROP TABLE IF EXISTS "{}" CASCADE"#, name);
 
@@ -94,6 +99,7 @@ impl VectorDatabase for PgVectorAdapter {
         Ok(())
     }
 
+    #[tracing::instrument(skip(self, points), fields(collection = %collection, count = points.len()))]
     async fn insert(&self, collection: &str, points: Vec<Point>) -> Result<()> {
         if points.is_empty() {
             return Ok(());
@@ -127,6 +133,7 @@ impl VectorDatabase for PgVectorAdapter {
         Ok(())
     }
 
+    #[tracing::instrument(skip(self, query), fields(collection = %query.collection))]
     async fn search(&self, query: &VectorQuery) -> Result<SearchResponse> {
         let distance_op = Self::distance_operator(&DistanceMetric::Cosine); // Default to cosine
 
@@ -233,6 +240,7 @@ impl VectorDatabase for PgVectorAdapter {
         })
     }
 
+    #[tracing::instrument(skip(self), fields(collection = %collection, count = ids.len()))]
     async fn delete(&self, collection: &str, ids: Vec<String>) -> Result<()> {
         if ids.is_empty() {
             return Ok(());
@@ -258,6 +266,7 @@ impl VectorDatabase for PgVectorAdapter {
         Ok(())
     }
 
+    #[tracing::instrument(skip(self, updates), fields(collection = %collection, count = updates.len()))]
     async fn update_metadata(&self, collection: &str, updates: Vec<MetadataUpdate>) -> Result<()> {
         for update in updates {
             let metadata_json = serde_json::to_value(&update.updates)
