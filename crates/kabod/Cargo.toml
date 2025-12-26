@@ -20,3 +20,9 @@ async-trait = "0.1.89"
 qdrant-client = "1.16"
 reqwest = { version = "0.12", features = ["json"] }
 chroma = "0.10"
+lancedb = "0.23"
+arrow-array = "56"
+arrow-schema = "56"
+futures = "0.3"
+sqlx = { version = "0.8.6", features = ["runtime-tokio", "postgres"] }
+pgvector = { version = "0.4.1", features = ["sqlx"] }

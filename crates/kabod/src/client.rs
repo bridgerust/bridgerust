@@ -6,6 +6,8 @@ use crate::query::QueryBuilder;
 use crate::adapters::qdrant::QdrantAdapter;
 use crate::adapters::pinecone::PineconeAdapter;
 use crate::adapters::chroma::ChromaAdapter;
+use crate::adapters::lancedb::LanceDBAdapter;
+use crate::adapters::pgvector::PgVectorAdapter;
 use crate::config::KabodConfig;
 
 #[derive(Clone)]
@@ -37,7 +39,27 @@ impl KabodClient {
                     Arc::new(ChromaAdapter::from_env()?)
                 }
             },
+            "lancedb" => {
+                return Err(crate::error::KabodError::Config(
+                    config::ConfigError::Message("LanceDB requires async initialization. Use KabodClient::new_async()".to_string())
+                ));
+            },
+            "pgvector" => {
+                return Err(crate::error::KabodError::Config(
+                    config::ConfigError::Message("PgVector requires async initialization. Use KabodClient::new_async()".to_string())
+                ));
+            },
             _ => return Err(crate::error::KabodError::Config(config::ConfigError::Message(format!("Unknown provider: {}", config.provider)))),
+        };
+
+        Ok(Self { db })
+    }
+
+    pub async fn new_async(config: KabodConfig) -> Result<Self> {
+        let db: Arc<dyn VectorDatabase> = match config.provider.as_str() {
+            "lancedb" => Arc::new(LanceDBAdapter::new(&config.url).await?),
+            "pgvector" => Arc::new(PgVectorAdapter::new(&config.url).await?),
+            _ => return Self::new(config).map(|c| c),
         };
 
         Ok(Self { db })
