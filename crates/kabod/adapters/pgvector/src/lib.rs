@@ -19,7 +19,7 @@ impl PgVectorAdapter {
         let pool = PgPool::connect(database_url)
             .await
             .map_err(|e| KabodError::Database(format!("Failed to connect to PostgreSQL: {}", e)))?;
-        
+
         sqlx::query("CREATE EXTENSION IF NOT EXISTS vector")
             .execute(&pool)
             .await
@@ -32,7 +32,7 @@ impl PgVectorAdapter {
 
     fn distance_operator(metric: &DistanceMetric) -> &'static str {
         match metric {
-            DistanceMetric::Cosine => "<=>", 
+            DistanceMetric::Cosine => "<=>",
             DistanceMetric::Euclidean => "<->",
             DistanceMetric::Dot => "<#>",
         }
@@ -195,10 +195,8 @@ impl VectorDatabase for PgVectorAdapter {
                         .fetch_one(&self.pool)
                         .await
                         .map_err(|e| KabodError::Database(e.to_string()))?;
-                    aggregations.insert(
-                        "count".to_string(),
-                        serde_json::Value::Number(count.into()),
-                    );
+                    aggregations
+                        .insert("count".to_string(), serde_json::Value::Number(count.into()));
                 }
             }
         }

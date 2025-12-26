@@ -10,8 +10,8 @@ use bridge_kabod_core::types::{
     VectorQuery,
 };
 use chroma::types::{
-    BooleanOperator, CompositeExpression, MetadataComparison, MetadataExpression, MetadataValue,
-    MetadataSetValue, PrimitiveOperator, SetOperator, UpdateMetadataValue, Where,
+    BooleanOperator, CompositeExpression, MetadataComparison, MetadataExpression, MetadataSetValue,
+    MetadataValue, PrimitiveOperator, SetOperator, UpdateMetadataValue, Where,
 };
 
 pub struct ChromaAdapter {
@@ -166,11 +166,7 @@ impl VectorDatabase for ChromaAdapter {
         Ok(())
     }
 
-    async fn update_metadata(
-        &self,
-        collection: &str,
-        updates: Vec<MetadataUpdate>,
-    ) -> Result<()> {
+    async fn update_metadata(&self, collection: &str, updates: Vec<MetadataUpdate>) -> Result<()> {
         let coll = self
             .client
             .get_collection(collection.to_string())
@@ -181,14 +177,18 @@ impl VectorDatabase for ChromaAdapter {
             let metadata: HashMap<String, chroma::types::UpdateMetadataValue> = update
                 .updates
                 .into_iter()
-                .filter_map(|(k, v)| {
-                    convert_to_update_metadata_value(v).map(|mv| (k, mv))
-                })
+                .filter_map(|(k, v)| convert_to_update_metadata_value(v).map(|mv| (k, mv)))
                 .collect();
 
-            coll.update(vec![update.id], None, None, None, Some(vec![Some(metadata)]))
-                .await
-                .map_err(|e| KabodError::Database(format!("Failed to update: {}", e)))?;
+            coll.update(
+                vec![update.id],
+                None,
+                None,
+                None,
+                Some(vec![Some(metadata)]),
+            )
+            .await
+            .map_err(|e| KabodError::Database(format!("Failed to update: {}", e)))?;
         }
 
         Ok(())

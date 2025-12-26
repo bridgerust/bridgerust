@@ -220,9 +220,14 @@ impl SearchBuilder {
     #[napi]
     pub async fn execute(&self) -> Result<SearchResponse> {
         let mut inner = self.inner.lock().await;
-        let builder = inner.take().ok_or_else(|| Error::from_reason("Search already executed"))?;
+        let builder = inner
+            .take()
+            .ok_or_else(|| Error::from_reason("Search already executed"))?;
 
-        let res = builder.execute().await.map_err(|e| Error::from_reason(e.to_string()))?;
+        let res = builder
+            .execute()
+            .await
+            .map_err(|e| Error::from_reason(e.to_string()))?;
 
         Ok(SearchResponse {
             results: res

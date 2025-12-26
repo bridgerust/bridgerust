@@ -167,8 +167,8 @@ impl VectorDatabase for LanceDBAdapter {
         let mut search_results = Vec::new();
 
         while let Some(batch_result) = stream.next().await {
-            let batch =
-                batch_result.map_err(|e| KabodError::Database(format!("Failed to read batch: {}", e)))?;
+            let batch = batch_result
+                .map_err(|e| KabodError::Database(format!("Failed to read batch: {}", e)))?;
 
             let id_col = batch
                 .column_by_name("id")
@@ -238,11 +238,7 @@ impl VectorDatabase for LanceDBAdapter {
         Ok(())
     }
 
-    async fn update_metadata(
-        &self,
-        collection: &str,
-        updates: Vec<MetadataUpdate>,
-    ) -> Result<()> {
+    async fn update_metadata(&self, collection: &str, updates: Vec<MetadataUpdate>) -> Result<()> {
         let table = self
             .connection
             .open_table(collection)

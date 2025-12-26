@@ -1,5 +1,5 @@
-use bridge_kabod::VectorDatabase;
 use bridge_kabod::adapters::LanceDBAdapter;
+use bridge_kabod::VectorDatabase;
 use bridge_kabod::{CollectionSchema, DistanceMetric, Point};
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use rand::Rng;

@@ -3,9 +3,7 @@ use bridge_kabod_core::config::KabodConfig;
 use bridge_kabod_core::db::VectorDatabase;
 use bridge_kabod_core::error::Result;
 use bridge_kabod_core::query::QueryBuilder;
-use bridge_kabod_core::types::{
-    Aggregation, CollectionSchema, Filter, Point, SearchResponse,
-};
+use bridge_kabod_core::types::{Aggregation, CollectionSchema, Filter, Point, SearchResponse};
 use std::sync::Arc;
 
 #[derive(Clone)]

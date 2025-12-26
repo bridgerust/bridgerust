@@ -374,11 +374,7 @@ impl VectorDatabase for PineconeAdapter {
         Ok(())
     }
 
-    async fn update_metadata(
-        &self,
-        collection: &str,
-        updates: Vec<MetadataUpdate>,
-    ) -> Result<()> {
+    async fn update_metadata(&self, collection: &str, updates: Vec<MetadataUpdate>) -> Result<()> {
         let host = self.get_index_host(collection).await?;
         let url = format!("https://{}/vectors/update", host);
 

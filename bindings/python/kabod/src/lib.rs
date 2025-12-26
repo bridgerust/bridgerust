@@ -200,10 +200,9 @@ impl SearchBuilder {
     }
 
     fn execute<'p>(&mut self, py: Python<'p>) -> PyResult<Bound<'p, PyAny>> {
-        let inner = self
-            .inner
-            .take()
-            .ok_or_else(|| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Search already executed"))?;
+        let inner = self.inner.take().ok_or_else(|| {
+            PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Search already executed")
+        })?;
 
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
             let res = inner

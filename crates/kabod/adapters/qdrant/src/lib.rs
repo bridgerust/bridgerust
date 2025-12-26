@@ -122,13 +122,9 @@ impl VectorDatabase for QdrantAdapter {
                     if let Some(filter) = &query.filter {
                         count_builder = count_builder.filter(convert_filter(filter));
                     }
-                    let count_res = self
-                        .client
-                        .count(count_builder)
-                        .await
-                        .map_err(|e: qdrant_client::QdrantError| {
-                            KabodError::Database(e.to_string())
-                        })?;
+                    let count_res = self.client.count(count_builder).await.map_err(
+                        |e: qdrant_client::QdrantError| KabodError::Database(e.to_string()),
+                    )?;
                     aggregations.insert(
                         "count".to_string(),
                         serde_json::Value::Number(count_res.result.unwrap().count.into()),
@@ -160,18 +156,15 @@ impl VectorDatabase for QdrantAdapter {
         Ok(())
     }
 
-    async fn update_metadata(
-        &self,
-        collection: &str,
-        updates: Vec<MetadataUpdate>,
-    ) -> Result<()> {
+    async fn update_metadata(&self, collection: &str, updates: Vec<MetadataUpdate>) -> Result<()> {
         for update in updates {
             let payload: Payload = update.updates.into();
             let points = qdrant_client::qdrant::PointsIdsList {
                 ids: vec![update.id.into()],
             };
 
-            let selector = qdrant_client::qdrant::points_selector::PointsSelectorOneOf::Points(points);
+            let selector =
+                qdrant_client::qdrant::points_selector::PointsSelectorOneOf::Points(points);
 
             self.client
                 .set_payload(
@@ -217,10 +210,13 @@ fn convert_condition_to_qdrant(filter: &types::Filter) -> qdrant_client::qdrant:
     }
 }
 
-fn convert_key_condition(key: &str, condition: &types::Condition) -> qdrant_client::qdrant::Condition {
-    use qdrant_client::qdrant::{Condition, FieldCondition, Match, Range};
+fn convert_key_condition(
+    key: &str,
+    condition: &types::Condition,
+) -> qdrant_client::qdrant::Condition {
     use qdrant_client::qdrant::condition::ConditionOneOf;
     use qdrant_client::qdrant::r#match::MatchValue;
+    use qdrant_client::qdrant::{Condition, FieldCondition, Match, Range};
     use types::Condition as KabodCondition;
 
     match condition {
@@ -242,7 +238,9 @@ fn convert_key_condition(key: &str, condition: &types::Condition) -> qdrant_clie
                 Condition {
                     condition_one_of: Some(ConditionOneOf::Field(FieldCondition {
                         key: key.to_string(),
-                        r#match: Some(Match { match_value: Some(mv) }),
+                        r#match: Some(Match {
+                            match_value: Some(mv),
+                        }),
                         ..Default::default()
                     })),
                 }
@@ -250,15 +248,19 @@ fn convert_key_condition(key: &str, condition: &types::Condition) -> qdrant_clie
                 Condition::default()
             }
         }
-        KabodCondition::Ne(value) => {
-            Condition {
-                condition_one_of: Some(ConditionOneOf::Filter(qdrant_client::qdrant::Filter {
-                    must_not: vec![convert_key_condition(key, &KabodCondition::Eq(value.clone()))],
-                    ..Default::default()
-                })),
-            }
-        }
-        KabodCondition::Gt(value) | KabodCondition::Gte(value) | KabodCondition::Lt(value) | KabodCondition::Lte(value) => {
+        KabodCondition::Ne(value) => Condition {
+            condition_one_of: Some(ConditionOneOf::Filter(qdrant_client::qdrant::Filter {
+                must_not: vec![convert_key_condition(
+                    key,
+                    &KabodCondition::Eq(value.clone()),
+                )],
+                ..Default::default()
+            })),
+        },
+        KabodCondition::Gt(value)
+        | KabodCondition::Gte(value)
+        | KabodCondition::Lt(value)
+        | KabodCondition::Lte(value) => {
             let mut range = Range::default();
             let val = value.as_f64().unwrap_or(0.0);
             match condition {
@@ -280,13 +282,20 @@ fn convert_key_condition(key: &str, condition: &types::Condition) -> qdrant_clie
             let match_value = if values.is_empty() {
                 None
             } else if let Some(_s) = values[0].as_str() {
-                Some(MatchValue::Keywords(qdrant_client::qdrant::RepeatedStrings {
-                    strings: values.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect(),
-                }))
+                Some(MatchValue::Keywords(
+                    qdrant_client::qdrant::RepeatedStrings {
+                        strings: values
+                            .iter()
+                            .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                            .collect(),
+                    },
+                ))
             } else if let Some(_i) = values[0].as_i64() {
-                Some(MatchValue::Integers(qdrant_client::qdrant::RepeatedIntegers {
-                    integers: values.iter().filter_map(|v| v.as_i64()).collect(),
-                }))
+                Some(MatchValue::Integers(
+                    qdrant_client::qdrant::RepeatedIntegers {
+                        integers: values.iter().filter_map(|v| v.as_i64()).collect(),
+                    },
+                ))
             } else {
                 None
             };
@@ -295,7 +304,9 @@ fn convert_key_condition(key: &str, condition: &types::Condition) -> qdrant_clie
                 Condition {
                     condition_one_of: Some(ConditionOneOf::Field(FieldCondition {
                         key: key.to_string(),
-                        r#match: Some(Match { match_value: Some(mv) }),
+                        r#match: Some(Match {
+                            match_value: Some(mv),
+                        }),
                         ..Default::default()
                     })),
                 }
@@ -303,14 +314,15 @@ fn convert_key_condition(key: &str, condition: &types::Condition) -> qdrant_clie
                 Condition::default()
             }
         }
-        KabodCondition::NotIn(values) => {
-            Condition {
-                condition_one_of: Some(ConditionOneOf::Filter(qdrant_client::qdrant::Filter {
-                    must_not: vec![convert_key_condition(key, &KabodCondition::In(values.clone()))],
-                    ..Default::default()
-                })),
-            }
-        }
+        KabodCondition::NotIn(values) => Condition {
+            condition_one_of: Some(ConditionOneOf::Filter(qdrant_client::qdrant::Filter {
+                must_not: vec![convert_key_condition(
+                    key,
+                    &KabodCondition::In(values.clone()),
+                )],
+                ..Default::default()
+            })),
+        },
     }
 }
 
