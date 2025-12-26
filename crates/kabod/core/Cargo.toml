@@ -18,3 +18,7 @@ config = "0.15.19"
 tokio = { version = "1.48", features = ["full", "rt-multi-thread"] }
 async-trait = "0.1.89"
 tracing = "0.1.44"
+
+[dev-dependencies]
+proptest = "1.9"
+tokio-test = "0.4.4"

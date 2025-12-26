@@ -421,3 +421,135 @@ fn convert_scored_point(point: ScoredPoint) -> SearchResult {
         ),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bridge_kabod_core::types::{Filter, Condition};
+    use serde_json::json;
+
+    #[test]
+    fn test_qdrant_adapter_new() {
+        let adapter = QdrantAdapter::new("http://localhost:6333", None);
+        assert!(adapter.is_ok());
+    }
+
+    #[test]
+    fn test_qdrant_adapter_new_with_api_key() {
+        let adapter = QdrantAdapter::new("http://localhost:6333", Some("test-key"));
+        assert!(adapter.is_ok());
+    }
+
+    #[test]
+    fn test_convert_filter_eq_string() {
+        let filter = Filter::eq("key", "value");
+        let qdrant_filter = convert_filter(&filter);
+        assert!(!qdrant_filter.must.is_empty());
+    }
+
+    #[test]
+    fn test_convert_filter_eq_number() {
+        let filter = Filter::eq("age", 25);
+        let qdrant_filter = convert_filter(&filter);
+        assert!(!qdrant_filter.must.is_empty());
+    }
+
+    #[test]
+    fn test_convert_filter_eq_bool() {
+        let filter = Filter::eq("active", true);
+        let qdrant_filter = convert_filter(&filter);
+        assert!(!qdrant_filter.must.is_empty());
+    }
+
+    #[test]
+    fn test_convert_filter_comparison_ops() {
+        let filters = vec![
+            Filter::gt("age", 18),
+            Filter::gte("score", 100),
+            Filter::lt("price", 50.0),
+            Filter::lte("count", 10),
+        ];
+
+        for filter in filters {
+            let qdrant_filter = convert_filter(&filter);
+            assert!(!qdrant_filter.must.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_convert_filter_in() {
+        let filter = Filter::r#in("tags", vec!["a", "b", "c"]);
+        let qdrant_filter = convert_filter(&filter);
+        assert!(!qdrant_filter.must.is_empty());
+    }
+
+    #[test]
+    fn test_convert_filter_not_in() {
+        let filter = Filter::not_in("tags", vec!["x", "y"]);
+        let qdrant_filter = convert_filter(&filter);
+        assert!(!qdrant_filter.must_not.is_empty());
+    }
+
+    #[test]
+    fn test_convert_filter_must() {
+        let filter = Filter::must(vec![
+            Filter::eq("a", 1),
+            Filter::eq("b", 2),
+        ]);
+        let qdrant_filter = convert_filter(&filter);
+        assert!(!qdrant_filter.must.is_empty());
+    }
+
+    #[test]
+    fn test_convert_filter_must_not() {
+        let filter = Filter::must_not(vec![
+            Filter::eq("a", 1),
+        ]);
+        let qdrant_filter = convert_filter(&filter);
+        assert!(!qdrant_filter.must_not.is_empty());
+    }
+
+    #[test]
+    fn test_convert_filter_should() {
+        let filter = Filter::should(vec![
+            Filter::eq("a", 1),
+            Filter::eq("b", 2),
+        ]);
+        let qdrant_filter = convert_filter(&filter);
+        assert!(!qdrant_filter.should.is_empty());
+    }
+
+    #[test]
+    fn test_convert_filter_complex_nested() {
+        let filter = Filter::must(vec![
+            Filter::eq("status", "active"),
+            Filter::should(vec![
+                Filter::gt("age", 18),
+                Filter::lt("age", 65),
+            ]),
+        ]);
+        let qdrant_filter = convert_filter(&filter);
+        assert!(!qdrant_filter.must.is_empty());
+    }
+
+    #[test]
+    fn test_convert_filter_ne() {
+        let filter = Filter::ne("key", "value");
+        let qdrant_filter = convert_filter(&filter);
+        assert!(!qdrant_filter.must_not.is_empty());
+    }
+
+    #[test]
+    fn test_convert_filter_empty_in() {
+        let filter = Filter::r#in("tags", Vec::<String>::new());
+        let qdrant_filter = convert_filter(&filter);
+        assert!(!qdrant_filter.must.is_empty());
+    }
+
+    #[test]
+    fn test_convert_key_condition_integers() {
+        let filter = Filter::r#in("ids", vec![1, 2, 3]);
+        let qdrant_filter = convert_filter(&filter);
+        assert!(!qdrant_filter.must.is_empty());
+    }
+}

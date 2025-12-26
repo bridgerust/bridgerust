@@ -13,3 +13,7 @@ bridge-kabod-core = { path = "../../core" }
 qdrant-client = "1.16"
 async-trait = "0.1.89"
 serde_json = "1.0.147"
+
+[dev-dependencies]
+tokio-test = "0.4"
+mockall = "0.13"

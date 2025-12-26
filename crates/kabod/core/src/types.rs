@@ -196,3 +196,189 @@ pub struct MetadataUpdate {
     pub id: String,
     pub updates: HashMap<String, Value>,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use proptest::prelude::*;
+    use serde_json::json;
+
+    #[test]
+    fn test_point_creation() {
+        let point = Point::new("test_id", vec![1.0, 2.0, 3.0]);
+        assert_eq!(point.id, "test_id");
+        assert_eq!(point.vector, vec![1.0, 2.0, 3.0]);
+        assert!(point.metadata.is_none());
+    }
+
+    #[test]
+    fn test_point_with_metadata() {
+        let mut metadata = HashMap::new();
+        metadata.insert("key".to_string(), json!("value"));
+        
+        let point = Point::new("test_id", vec![1.0, 2.0])
+            .with_metadata(metadata.clone());
+        
+        assert_eq!(point.metadata, Some(metadata));
+    }
+
+    #[test]
+    fn test_filter_eq() {
+        let filter = Filter::eq("key", "value");
+        match filter {
+            Filter::Key(k, Condition::Eq(v)) => {
+                assert_eq!(k, "key");
+                assert_eq!(v, json!("value"));
+            }
+            _ => panic!("Expected Key with Eq condition"),
+        }
+    }
+
+    #[test]
+    fn test_filter_comparison_ops() {
+        let filters = vec![
+            Filter::gt("age", 18),
+            Filter::gte("score", 100),
+            Filter::lt("price", 50.0),
+            Filter::lte("count", 10),
+        ];
+
+        for filter in filters {
+            match filter {
+                Filter::Key(_, _) => {}
+                _ => panic!("Expected Key condition"),
+            }
+        }
+    }
+
+    #[test]
+    fn test_filter_in() {
+        let filter = Filter::r#in("tags", vec!["a", "b", "c"]);
+        match filter {
+            Filter::Key(k, Condition::In(values)) => {
+                assert_eq!(k, "tags");
+                assert_eq!(values.len(), 3);
+            }
+            _ => panic!("Expected Key with In condition"),
+        }
+    }
+
+    #[test]
+    fn test_filter_composition_and() {
+        let f1 = Filter::eq("a", 1);
+        let f2 = Filter::eq("b", 2);
+        let combined = f1.and(f2);
+
+        match combined {
+            Filter::Must(filters) => assert_eq!(filters.len(), 2),
+            _ => panic!("Expected Must filter"),
+        }
+    }
+
+    #[test]
+    fn test_filter_composition_or() {
+        let f1 = Filter::eq("a", 1);
+        let f2 = Filter::eq("b", 2);
+        let combined = f1.or(f2);
+
+        match combined {
+            Filter::Should(filters) => assert_eq!(filters.len(), 2),
+            _ => panic!("Expected Should filter"),
+        }
+    }
+
+    #[test]
+    fn test_filter_not() {
+        let f = Filter::eq("key", "value");
+        let not_f = f.not();
+
+        match not_f {
+            Filter::MustNot(filters) => assert_eq!(filters.len(), 1),
+            _ => panic!("Expected MustNot filter"),
+        }
+    }
+
+    #[test]
+    fn test_filter_must() {
+        let filters = vec![
+            Filter::eq("a", 1),
+            Filter::eq("b", 2),
+        ];
+        let must = Filter::must(filters.clone());
+
+        match must {
+            Filter::Must(fs) => assert_eq!(fs.len(), 2),
+            _ => panic!("Expected Must filter"),
+        }
+    }
+
+    #[test]
+    fn test_filter_serialization() {
+        let filter = Filter::eq("key", "value");
+        let json = serde_json::to_string(&filter).expect("Should serialize");
+        let deserialized: Filter = serde_json::from_str(&json).expect("Should deserialize");
+        
+        match (filter, deserialized) {
+            (Filter::Key(k1, Condition::Eq(v1)), Filter::Key(k2, Condition::Eq(v2))) => {
+                assert_eq!(k1, k2);
+                assert_eq!(v1, v2);
+            }
+            _ => panic!("Serialization roundtrip failed"),
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn test_point_roundtrip_serialization(
+            id in "[a-zA-Z0-9_]{1,100}",
+            vector in prop::collection::vec(-1000.0f32..1000.0, 1..1000)
+        ) {
+            let point = Point::new(id.clone(), vector.clone());
+            let json = serde_json::to_string(&point).expect("Should serialize");
+            let deserialized: Point = serde_json::from_str(&json).expect("Should deserialize");
+            
+            assert_eq!(point.id, deserialized.id);
+            assert_eq!(point.vector, deserialized.vector);
+        }
+
+        #[test]
+        fn test_filter_roundtrip_serialization(
+            key in "[a-zA-Z][a-zA-Z0-9_]{0,50}",
+            value in prop::oneof![
+                prop::num::f64::ANY.prop_map(|v| json!(v)),
+                prop::collection::vec(prop::num::f64::ANY, 1..10).prop_map(|v| json!(v)),
+            ]
+        ) {
+            let filter = Filter::eq(key.clone(), value.clone());
+            let json = serde_json::to_string(&filter).expect("Should serialize");
+            let deserialized: Filter = serde_json::from_str(&json).expect("Should deserialize");
+            
+            match (filter, deserialized) {
+                (Filter::Key(k1, Condition::Eq(v1)), Filter::Key(k2, Condition::Eq(v2))) => {
+                    prop_assert_eq!(k1, k2);
+                    prop_assert_eq!(v1, v2);
+                }
+                _ => prop_assert!(false, "Filter types don't match"),
+            }
+        }
+
+        #[test]
+        fn test_collection_schema_validation(
+            name in "[a-zA-Z][a-zA-Z0-9_]{0,100}",
+            dimension in 1usize..65536,
+        ) {
+            let schema = CollectionSchema {
+                name: name.clone(),
+                dimension,
+                metric: DistanceMetric::Cosine,
+            };
+            
+            let json = serde_json::to_string(&schema).expect("Should serialize");
+            let deserialized: CollectionSchema = serde_json::from_str(&json).expect("Should deserialize");
+            
+            prop_assert_eq!(schema.name, deserialized.name);
+            prop_assert_eq!(schema.dimension, deserialized.dimension);
+            prop_assert_eq!(schema.metric, deserialized.metric);
+        }
+    }
+}
