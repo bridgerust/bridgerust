@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use serde_json::Value;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Point {
@@ -92,11 +92,17 @@ impl Filter {
     }
 
     pub fn r#in(key: impl Into<String>, values: Vec<impl Into<Value>>) -> Self {
-        Filter::Key(key.into(), Condition::In(values.into_iter().map(|v| v.into()).collect()))
+        Filter::Key(
+            key.into(),
+            Condition::In(values.into_iter().map(|v| v.into()).collect()),
+        )
     }
 
     pub fn not_in(key: impl Into<String>, values: Vec<impl Into<Value>>) -> Self {
-        Filter::Key(key.into(), Condition::NotIn(values.into_iter().map(|v| v.into()).collect()))
+        Filter::Key(
+            key.into(),
+            Condition::NotIn(values.into_iter().map(|v| v.into()).collect()),
+        )
     }
 
     pub fn must(filters: Vec<Filter>) -> Self {

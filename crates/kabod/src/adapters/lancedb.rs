@@ -1,15 +1,19 @@
-use async_trait::async_trait;
-use lancedb::{connect, Connection, DistanceType};
-use lancedb::query::{QueryBase, ExecutableQuery};
-use arrow_array::{RecordBatch, RecordBatchIterator, StringArray, Float32Array, FixedSizeListArray, ArrayRef};
 use arrow_array::types::Float32Type;
+use arrow_array::{
+    ArrayRef, FixedSizeListArray, Float32Array, RecordBatch, RecordBatchIterator, StringArray,
+};
 use arrow_schema::{DataType, Field, Schema};
-use std::sync::Arc;
+use async_trait::async_trait;
 use futures::StreamExt;
+use lancedb::query::{ExecutableQuery, QueryBase};
+use lancedb::{Connection, DistanceType, connect};
+use std::sync::Arc;
 
 use crate::db::VectorDatabase;
 use crate::error::{KabodError, Result};
-use crate::types::{CollectionSchema, DistanceMetric, MetadataUpdate, Point, SearchResult, VectorQuery};
+use crate::types::{
+    CollectionSchema, DistanceMetric, MetadataUpdate, Point, SearchResult, VectorQuery,
+};
 
 pub struct LanceDBAdapter {
     connection: Connection,
@@ -24,7 +28,7 @@ impl LanceDBAdapter {
 
         Ok(Self { connection })
     }
-    
+
     fn _to_lance_distance(metric: &DistanceMetric) -> DistanceType {
         match metric {
             DistanceMetric::Cosine => DistanceType::Cosine,
@@ -52,7 +56,7 @@ impl LanceDBAdapter {
 impl VectorDatabase for LanceDBAdapter {
     async fn create_collection(&self, schema: &CollectionSchema) -> Result<()> {
         let arrow_schema = Self::create_schema(schema.dimension);
-        
+
         let empty_batch = RecordBatch::new_empty(arrow_schema.clone());
         let batches = RecordBatchIterator::new(vec![Ok(empty_batch)], arrow_schema);
 
@@ -75,7 +79,8 @@ impl VectorDatabase for LanceDBAdapter {
     }
 
     async fn insert(&self, collection: &str, points: Vec<Point>) -> Result<()> {
-        let table = self.connection
+        let table = self
+            .connection
             .open_table(collection)
             .execute()
             .await
@@ -95,10 +100,8 @@ impl VectorDatabase for LanceDBAdapter {
             .iter()
             .map(|p| Some(p.vector.iter().map(|f| Some(*f)).collect()))
             .collect();
-        let vector_array = FixedSizeListArray::from_iter_primitive::<Float32Type, _, _>(
-            vectors,
-            dimension as i32,
-        );
+        let vector_array =
+            FixedSizeListArray::from_iter_primitive::<Float32Type, _, _>(vectors, dimension as i32);
 
         let batch = RecordBatch::try_new(
             schema.clone(),
@@ -121,7 +124,8 @@ impl VectorDatabase for LanceDBAdapter {
     }
 
     async fn search(&self, query: &VectorQuery) -> Result<Vec<SearchResult>> {
-        let table = self.connection
+        let table = self
+            .connection
             .open_table(&query.collection)
             .execute()
             .await
@@ -136,15 +140,15 @@ impl VectorDatabase for LanceDBAdapter {
             .map_err(|e| KabodError::Database(format!("Failed to execute search: {}", e)))?;
 
         let mut search_results = Vec::new();
-        
+
         while let Some(batch_result) = results.next().await {
             let batch = batch_result
                 .map_err(|e| KabodError::Database(format!("Failed to read batch: {}", e)))?;
-            
+
             let id_col = batch
                 .column_by_name("id")
                 .and_then(|c| c.as_any().downcast_ref::<StringArray>());
-            
+
             let distance_col = batch
                 .column_by_name("_distance")
                 .and_then(|c| c.as_any().downcast_ref::<Float32Array>());
@@ -165,7 +169,8 @@ impl VectorDatabase for LanceDBAdapter {
     }
 
     async fn delete(&self, collection: &str, ids: Vec<String>) -> Result<()> {
-        let table = self.connection
+        let table = self
+            .connection
             .open_table(collection)
             .execute()
             .await
@@ -185,7 +190,11 @@ impl VectorDatabase for LanceDBAdapter {
         Ok(())
     }
 
-    async fn update_metadata(&self, _collection: &str, _updates: Vec<MetadataUpdate>) -> Result<()> {
+    async fn update_metadata(
+        &self,
+        _collection: &str,
+        _updates: Vec<MetadataUpdate>,
+    ) -> Result<()> {
         Err(KabodError::NotImplemented("update_metadata".to_string()))
     }
 }

@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
-use config::{Config, File, Environment};
 use crate::error::Result;
+use config::{Config, Environment, File};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KabodConfig {
@@ -8,7 +8,7 @@ pub struct KabodConfig {
     pub url: String,
     pub api_key: Option<String>,
     pub timeout_ms: Option<u64>,
-    
+
     // Provider specific settings can be opaque map
     #[serde(default)]
     pub options: std::collections::HashMap<String, String>,
@@ -23,7 +23,7 @@ impl KabodConfig {
 
         s.try_deserialize().map_err(|e| e.into())
     }
-    
+
     pub fn from_env() -> Result<Self> {
         Self::new()
     }
@@ -40,7 +40,7 @@ mod tests {
             env::set_var("KABOD_PROVIDER", "qdrant");
             env::set_var("KABOD_URL", "http://localhost:6333");
         }
-        
+
         let config = KabodConfig::new().expect("Failed to load config");
         assert_eq!(config.provider, "qdrant");
         assert_eq!(config.url, "http://localhost:6333");

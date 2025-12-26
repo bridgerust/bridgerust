@@ -1,12 +1,12 @@
+use pyo3::IntoPyObjectExt;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
-use pyo3::IntoPyObjectExt;
 
 use bridge_kabod::KabodClient as RustClient;
 use bridge_kabod::config::KabodConfig;
 use bridge_kabod::types::Point;
-use std::collections::HashMap;
 use serde_json::Value;
+use std::collections::HashMap;
 
 #[pyclass]
 struct KabodClient {
@@ -58,7 +58,11 @@ struct KabodPoint {
 impl KabodPoint {
     #[new]
     fn new(id: String, vector: Vec<f32>, metadata: Option<HashMap<String, Py<PyAny>>>) -> Self {
-        Self { id, vector, metadata }
+        Self {
+            id,
+            vector,
+            metadata,
+        }
     }
 }
 
@@ -80,26 +84,26 @@ fn py_to_json<'py>(py: Python<'py>, obj: &Py<PyAny>) -> PyResult<Value> {
     if bound.is_none() {
         return Ok(Value::Null);
     }
-    
+
     // Using extract which is fallible but appropriate here
     if let Ok(s) = bound.extract::<String>() {
         return Ok(Value::String(s));
     }
-    
+
     if let Ok(b) = bound.extract::<bool>() {
         return Ok(Value::Bool(b));
     }
-    
+
     if let Ok(i) = bound.extract::<i64>() {
         return Ok(Value::Number(serde_json::Number::from(i)));
     }
-    
+
     if let Ok(f) = bound.extract::<f64>() {
         if let Some(n) = serde_json::Number::from_f64(f) {
             return Ok(Value::Number(n));
         }
     }
-    
+
     Ok(Value::String(bound.to_string()))
 }
 
@@ -116,12 +120,12 @@ fn json_to_py(py: Python, v: Value) -> Py<PyAny> {
             } else {
                 n.to_string().into_py_any(py).unwrap()
             }
-        },
+        }
         Value::String(s) => s.into_py_any(py).unwrap(),
         Value::Array(a) => {
             let list = PyList::new(py, a.into_iter().map(|i| json_to_py(py, i))).unwrap();
             list.into()
-        },
+        }
         Value::Object(o) => {
             let dict = PyDict::new(py);
             for (k, v) in o {
@@ -134,9 +138,13 @@ fn json_to_py(py: Python, v: Value) -> Py<PyAny> {
 
 #[pymethods]
 impl Collection {
-    fn insert<'p>(&self, py: Python<'p>, points: Vec<PyRef<'p, KabodPoint>>) -> PyResult<Bound<'p, PyAny>> {
+    fn insert<'p>(
+        &self,
+        py: Python<'p>,
+        points: Vec<PyRef<'p, KabodPoint>>,
+    ) -> PyResult<Bound<'p, PyAny>> {
         let inner = self.inner.clone();
-        
+
         let mut rust_points = Vec::with_capacity(points.len());
         for p in points {
             let mut metadata = None;
@@ -147,7 +155,7 @@ impl Collection {
                 }
                 metadata = Some(meta_map);
             }
-            
+
             let point = Point {
                 id: p.id.clone(),
                 vector: p.vector.clone(),
@@ -157,19 +165,21 @@ impl Collection {
         }
 
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            inner.insert(rust_points).await
+            inner
+                .insert(rust_points)
+                .await
                 .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))
         })
     }
 
     #[pyo3(signature = (vector, top_k=None, include_metadata=None, include_vector=None))]
     fn search<'p>(
-        &self, 
-        py: Python<'p>, 
-        vector: Vec<f32>, 
+        &self,
+        py: Python<'p>,
+        vector: Vec<f32>,
         top_k: Option<usize>,
         include_metadata: Option<bool>,
-        include_vector: Option<bool>
+        include_vector: Option<bool>,
     ) -> PyResult<Bound<'p, PyAny>> {
         let inner = self.inner.clone();
         let limit = top_k.unwrap_or(10);
@@ -177,18 +187,22 @@ impl Collection {
         let inc_vec = include_vector.unwrap_or(false);
 
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            let builder = inner.search(vector).await
+            let builder = inner
+                .search(vector)
+                .await
                 .limit(limit)
                 .include_metadata(inc_meta)
                 .include_vector(inc_vec);
-                
-            let results = inner.query(builder).await
+
+            let results = inner
+                .query(builder)
+                .await
                 .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
 
             // Since we can't easily return PyObjects from the future without GIL,
-            // we'll use Python::with_gil inside the future_into_py which is allowed 
+            // we'll use Python::with_gil inside the future_into_py which is allowed
             // but we must not block the runtime.
-            // pyo3_async_runtimes handles the GIL acquisition for the result conversion 
+            // pyo3_async_runtimes handles the GIL acquisition for the result conversion
             // IF the result implements IntoPyObject.
             // Our result is `Vec<SearchResult>`. `SearchResult` implements `IntoPyObject` via `#[pyclass]`.
             // So we just need to return the Rust objects?
@@ -215,7 +229,7 @@ impl Collection {
                     });
                 }
             });
-            
+
             Ok(py_results)
         })
     }
@@ -223,28 +237,32 @@ impl Collection {
     fn delete<'p>(&self, py: Python<'p>, ids: Vec<String>) -> PyResult<Bound<'p, PyAny>> {
         let inner = self.inner.clone();
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            inner.delete(ids).await
+            inner
+                .delete(ids)
+                .await
                 .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))
         })
     }
-    
+
     fn delete_collection<'p>(&self, py: Python<'p>) -> PyResult<Bound<'p, PyAny>> {
         let inner = self.inner.clone();
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            inner.delete_collection().await
+            inner
+                .delete_collection()
+                .await
                 .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))
         })
     }
 
     fn create<'p>(
-        &self, 
-        py: Python<'p>, 
+        &self,
+        py: Python<'p>,
         dimension: usize,
-        distance: String
+        distance: String,
     ) -> PyResult<Bound<'p, PyAny>> {
         let inner = self.inner.clone();
         let name_str = inner.name().to_string(); // Use accessor
-        
+
         // Construct schema from args
         let schema = bridge_kabod::types::CollectionSchema {
             name: name_str,
@@ -253,19 +271,30 @@ impl Collection {
                 "cosine" => bridge_kabod::types::DistanceMetric::Cosine,
                 "euclidean" => bridge_kabod::types::DistanceMetric::Euclidean,
                 "dot" => bridge_kabod::types::DistanceMetric::Dot,
-                _ => return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>("Invalid distance metric")),
+                _ => {
+                    return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                        "Invalid distance metric",
+                    ));
+                }
             },
         };
 
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            inner.create(schema).await
+            inner
+                .create(schema)
+                .await
                 .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))
         })
     }
 
-    fn insert_batch<'p>(&self, py: Python<'p>, points: Vec<PyRef<'p, KabodPoint>>, batch_size: usize) -> PyResult<Bound<'p, PyAny>> {
+    fn insert_batch<'p>(
+        &self,
+        py: Python<'p>,
+        points: Vec<PyRef<'p, KabodPoint>>,
+        batch_size: usize,
+    ) -> PyResult<Bound<'p, PyAny>> {
         let inner = self.inner.clone();
-        
+
         // Similar to insert, but we pass points to Rust first, then batch them using the new Rust method
         let mut rust_points = Vec::with_capacity(points.len());
         for p in points {
@@ -277,7 +306,7 @@ impl Collection {
                 }
                 metadata = Some(meta_map);
             }
-            
+
             let point = Point {
                 id: p.id.clone(),
                 vector: p.vector.clone(),
@@ -287,20 +316,27 @@ impl Collection {
         }
 
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            inner.insert_batch(rust_points, batch_size).await
+            inner
+                .insert_batch(rust_points, batch_size)
+                .await
                 .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))
         })
     }
 
-    fn insert_stream<'p>(&self, py: Python<'p>, points: Bound<'p, PyAny>, batch_size: usize) -> PyResult<Bound<'p, PyAny>> {
+    fn insert_stream<'p>(
+        &self,
+        py: Python<'p>,
+        points: Bound<'p, PyAny>,
+        batch_size: usize,
+    ) -> PyResult<Bound<'p, PyAny>> {
         let inner = self.inner.clone();
-        
+
         // We can't easily stream FROM python iterator asyncly because calling `next` requires GIL.
         // So we have two options:
         // 1. Consume the iterator entirely into a Vec (not streaming).
         // 2. Consume in chunks (requires holding GIL intermittently).
         // 3. Use an async Python generator (requires `anext` and await).
-        
+
         // For simplicity and effectiveness in this "advanced" phase, let's implement the chunked consumption approach.
         // We will read `batch_size` items from the iterator under GIL, then release GIL and insert them async, then repeat.
         // However, `future_into_py` expects a single future. We can spawn a task that does this loop?
@@ -316,16 +352,16 @@ impl Collection {
         //     If empty, break
         //     Release GIL
         //     Await insert_batch(N)
-        
+
         // To do this with pyo3-async-runtimes, we can use a loop inside the async block.
         // inside the async block we can `Python::with_gil` to read the next batch.
-        
+
         // We need to keep a reference to the iterator. Since `future_into_py` moves things into the future 'static,
         // we need to be careful with Py objects. We can store `Py<PyIterator>`.
-        
+
         let iterator = points.try_iter()?; // Get iterator from iterable
         let py_iter: Py<pyo3::types::PyIterator> = iterator.unbind();
-        
+
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
             loop {
                 let mut batch: Vec<Point> = Vec::with_capacity(batch_size);
@@ -334,7 +370,7 @@ impl Collection {
                 Python::attach(|py| {
                     let mut iter = py_iter.bind(py).clone(); // Bound<PyIterator> is an Iterator, need owned to be mutable
                     // We need it mutable to call next()
-                    
+
                     for _ in 0..batch_size {
                         let next_item = iter.next();
                         match next_item {
@@ -342,9 +378,9 @@ impl Collection {
                                 // Convert item to Point
                                 // We expect item to be KabodPoint, but it might be just a dict or object we can extract
                                 if let Ok(p) = item.extract::<PyRef<KabodPoint>>() {
-                                     let mut metadata = None;
-                                     // ... conversion logic ...
-                                     if let Some(py_meta) = &p.metadata {
+                                    let mut metadata = None;
+                                    // ... conversion logic ...
+                                    if let Some(py_meta) = &p.metadata {
                                         let mut meta_map = HashMap::new();
                                         for (k, v) in py_meta {
                                             // Handle error in map?
@@ -353,23 +389,23 @@ impl Collection {
                                             }
                                         }
                                         metadata = Some(meta_map);
-                                     }
-                                     batch.push(Point {
-                                         id: p.id.clone(),
-                                         vector: p.vector.clone(),
-                                         metadata,
-                                     });
+                                    }
+                                    batch.push(Point {
+                                        id: p.id.clone(),
+                                        vector: p.vector.clone(),
+                                        metadata,
+                                    });
                                 } else {
-                                    // Handle invalid type? For now just stop or skip? 
+                                    // Handle invalid type? For now just stop or skip?
                                     // Ideally return error, but inside loop difficult.
                                     // Let's assume strict typing for now.
                                 }
-                            },
+                            }
                             Some(Err(_e)) => {
                                 // Iterator error
-                                done = true; 
-                                break; 
-                            },
+                                done = true;
+                                break;
+                            }
                             None => {
                                 done = true;
                                 break;
@@ -379,8 +415,9 @@ impl Collection {
                 });
 
                 if !batch.is_empty() {
-                    inner.insert(batch).await
-                        .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
+                    inner.insert(batch).await.map_err(|e| {
+                        PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string())
+                    })?;
                 }
 
                 if done {

@@ -1,14 +1,14 @@
-use std::sync::Arc;
-use crate::error::Result;
-use crate::db::VectorDatabase;
-use crate::types::{CollectionSchema, Point, SearchResult};
-use crate::query::QueryBuilder;
-use crate::adapters::qdrant::QdrantAdapter;
-use crate::adapters::pinecone::PineconeAdapter;
 use crate::adapters::chroma::ChromaAdapter;
 use crate::adapters::lancedb::LanceDBAdapter;
 use crate::adapters::pgvector::PgVectorAdapter;
+use crate::adapters::pinecone::PineconeAdapter;
+use crate::adapters::qdrant::QdrantAdapter;
 use crate::config::KabodConfig;
+use crate::db::VectorDatabase;
+use crate::error::Result;
+use crate::query::QueryBuilder;
+use crate::types::{CollectionSchema, Point, SearchResult};
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct KabodClient {
@@ -20,36 +20,49 @@ impl KabodClient {
         let db: Arc<dyn VectorDatabase> = match config.provider.as_str() {
             "qdrant" => Arc::new(QdrantAdapter::new(&config.url, config.api_key.as_deref())?),
             "pinecone" => {
-                let api_key = config.api_key.as_ref()
-                    .ok_or_else(|| crate::error::KabodError::Config(
-                        config::ConfigError::Message("Pinecone requires API key".to_string())
-                    ))?;
+                let api_key = config.api_key.as_ref().ok_or_else(|| {
+                    crate::error::KabodError::Config(config::ConfigError::Message(
+                        "Pinecone requires API key".to_string(),
+                    ))
+                })?;
                 let cloud = config.options.get("cloud").map(|s| s.as_str());
                 let region = config.options.get("region").map(|s| s.as_str());
                 let namespace = config.options.get("namespace").map(|s| s.as_str());
                 Arc::new(PineconeAdapter::new(api_key, cloud, region, namespace)?)
-            },
+            }
             "chroma" => {
                 if let Some(api_key) = config.api_key.as_ref() {
-                    let database = config.options.get("database")
+                    let database = config
+                        .options
+                        .get("database")
                         .map(|s| s.as_str())
                         .unwrap_or("default_database");
                     Arc::new(ChromaAdapter::cloud(api_key, database)?)
                 } else {
                     Arc::new(ChromaAdapter::from_env()?)
                 }
-            },
+            }
             "lancedb" => {
                 return Err(crate::error::KabodError::Config(
-                    config::ConfigError::Message("LanceDB requires async initialization. Use KabodClient::new_async()".to_string())
+                    config::ConfigError::Message(
+                        "LanceDB requires async initialization. Use KabodClient::new_async()"
+                            .to_string(),
+                    ),
                 ));
-            },
+            }
             "pgvector" => {
                 return Err(crate::error::KabodError::Config(
-                    config::ConfigError::Message("PgVector requires async initialization. Use KabodClient::new_async()".to_string())
+                    config::ConfigError::Message(
+                        "PgVector requires async initialization. Use KabodClient::new_async()"
+                            .to_string(),
+                    ),
                 ));
-            },
-            _ => return Err(crate::error::KabodError::Config(config::ConfigError::Message(format!("Unknown provider: {}", config.provider)))),
+            }
+            _ => {
+                return Err(crate::error::KabodError::Config(
+                    config::ConfigError::Message(format!("Unknown provider: {}", config.provider)),
+                ));
+            }
         };
 
         Ok(Self { db })
@@ -83,11 +96,11 @@ impl Collection {
     pub fn name(&self) -> &str {
         &self.name
     }
-    
+
     pub async fn create(&self, schema: CollectionSchema) -> Result<()> {
         self.db.create_collection(&schema).await
     }
-    
+
     pub async fn delete_collection(&self) -> Result<()> {
         self.db.delete_collection(&self.name).await
     }
@@ -99,7 +112,7 @@ impl Collection {
     pub async fn search(&self, vector: Vec<f32>) -> QueryBuilder {
         QueryBuilder::new(self.name.clone(), vector)
     }
-    
+
     pub async fn query(&self, builder: QueryBuilder) -> Result<Vec<SearchResult>> {
         self.db.search(&builder.build()).await
     }

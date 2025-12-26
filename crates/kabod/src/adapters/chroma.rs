@@ -5,7 +5,9 @@ use std::collections::HashMap;
 
 use crate::db::VectorDatabase;
 use crate::error::{KabodError, Result};
-use crate::types::{CollectionSchema, DistanceMetric, MetadataUpdate, Point, SearchResult, VectorQuery};
+use crate::types::{
+    CollectionSchema, DistanceMetric, MetadataUpdate, Point, SearchResult, VectorQuery,
+};
 
 pub struct ChromaAdapter {
     client: ChromaHttpClient,
@@ -19,7 +21,7 @@ impl ChromaAdapter {
 
         Ok(Self { client })
     }
-    
+
     pub fn cloud(api_key: &str, database: &str) -> Result<Self> {
         let options = ChromaHttpClientOptions::cloud(api_key, database)
             .map_err(|e| KabodError::Database(format!("Failed to create Chroma options: {}", e)))?;
@@ -56,7 +58,8 @@ impl VectorDatabase for ChromaAdapter {
     }
 
     async fn insert(&self, collection: &str, points: Vec<Point>) -> Result<()> {
-        let coll = self.client
+        let coll = self
+            .client
             .get_collection(collection.to_string())
             .await
             .map_err(|e| KabodError::Database(format!("Failed to get collection: {}", e)))?;
@@ -72,13 +75,20 @@ impl VectorDatabase for ChromaAdapter {
     }
 
     async fn search(&self, query: &VectorQuery) -> Result<Vec<SearchResult>> {
-        let coll = self.client
+        let coll = self
+            .client
             .get_collection(query.collection.clone())
             .await
             .map_err(|e| KabodError::Database(format!("Failed to get collection: {}", e)))?;
 
         let results = coll
-            .query(vec![query.vector.clone()], Some(query.top_k as u32), None, None, None)
+            .query(
+                vec![query.vector.clone()],
+                Some(query.top_k as u32),
+                None,
+                None,
+                None,
+            )
             .await
             .map_err(|e| KabodError::Database(format!("Failed to query: {}", e)))?;
 
@@ -121,7 +131,8 @@ impl VectorDatabase for ChromaAdapter {
     }
 
     async fn delete(&self, collection: &str, ids: Vec<String>) -> Result<()> {
-        let coll = self.client
+        let coll = self
+            .client
             .get_collection(collection.to_string())
             .await
             .map_err(|e| KabodError::Database(format!("Failed to get collection: {}", e)))?;
@@ -133,7 +144,11 @@ impl VectorDatabase for ChromaAdapter {
         Ok(())
     }
 
-    async fn update_metadata(&self, _collection: &str, _updates: Vec<MetadataUpdate>) -> Result<()> {
+    async fn update_metadata(
+        &self,
+        _collection: &str,
+        _updates: Vec<MetadataUpdate>,
+    ) -> Result<()> {
         Err(KabodError::NotImplemented("update_metadata".to_string()))
     }
 }

@@ -5,7 +5,9 @@ use std::collections::HashMap;
 
 use crate::db::VectorDatabase;
 use crate::error::{KabodError, Result};
-use crate::types::{CollectionSchema, DistanceMetric, MetadataUpdate, Point, SearchResult, VectorQuery};
+use crate::types::{
+    CollectionSchema, DistanceMetric, MetadataUpdate, Point, SearchResult, VectorQuery,
+};
 
 const PINECONE_CONTROL_URL: &str = "https://api.pinecone.io";
 const PINECONE_API_VERSION: &str = "2024-10";
@@ -39,7 +41,10 @@ impl PineconeAdapter {
     fn control_headers(&self) -> reqwest::header::HeaderMap {
         let mut headers = reqwest::header::HeaderMap::new();
         headers.insert("Api-Key", self.api_key.parse().unwrap());
-        headers.insert("X-Pinecone-API-Version", PINECONE_API_VERSION.parse().unwrap());
+        headers.insert(
+            "X-Pinecone-API-Version",
+            PINECONE_API_VERSION.parse().unwrap(),
+        );
         headers.insert("Content-Type", "application/json".parse().unwrap());
         headers
     }
@@ -221,7 +226,9 @@ impl VectorDatabase for PineconeAdapter {
             .map(|p| PineconeVector {
                 id: p.id,
                 values: p.vector,
-                metadata: p.metadata.map(|m| serde_json::to_value(m).unwrap_or_default()),
+                metadata: p
+                    .metadata
+                    .map(|m| serde_json::to_value(m).unwrap_or_default()),
             })
             .collect();
 
@@ -334,7 +341,11 @@ impl VectorDatabase for PineconeAdapter {
         Ok(())
     }
 
-    async fn update_metadata(&self, _collection: &str, _updates: Vec<MetadataUpdate>) -> Result<()> {
+    async fn update_metadata(
+        &self,
+        _collection: &str,
+        _updates: Vec<MetadataUpdate>,
+    ) -> Result<()> {
         Err(KabodError::NotImplemented("update_metadata".to_string()))
     }
 }

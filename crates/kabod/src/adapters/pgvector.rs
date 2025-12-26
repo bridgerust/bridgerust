@@ -1,11 +1,13 @@
 use async_trait::async_trait;
-use sqlx::{PgPool, Row};
 use pgvector::Vector;
+use sqlx::{PgPool, Row};
 use std::collections::HashMap;
 
 use crate::db::VectorDatabase;
 use crate::error::{KabodError, Result};
-use crate::types::{CollectionSchema, DistanceMetric, MetadataUpdate, Point, SearchResult, VectorQuery};
+use crate::types::{
+    CollectionSchema, DistanceMetric, MetadataUpdate, Point, SearchResult, VectorQuery,
+};
 
 pub struct PgVectorAdapter {
     pool: PgPool,
@@ -21,16 +23,18 @@ impl PgVectorAdapter {
         sqlx::query("CREATE EXTENSION IF NOT EXISTS vector")
             .execute(&pool)
             .await
-            .map_err(|e| KabodError::Database(format!("Failed to enable vector extension: {}", e)))?;
+            .map_err(|e| {
+                KabodError::Database(format!("Failed to enable vector extension: {}", e))
+            })?;
 
         Ok(Self { pool })
     }
 
     fn distance_operator(metric: &DistanceMetric) -> &'static str {
         match metric {
-            DistanceMetric::Cosine => "<=>",      // cosine distance
-            DistanceMetric::Euclidean => "<->",   // L2 distance
-            DistanceMetric::Dot => "<#>",         // negative inner product
+            DistanceMetric::Cosine => "<=>",    // cosine distance
+            DistanceMetric::Euclidean => "<->", // L2 distance
+            DistanceMetric::Dot => "<#>",       // negative inner product
         }
     }
 }
@@ -57,7 +61,7 @@ impl VectorDatabase for PgVectorAdapter {
             .await
             .map_err(|e| KabodError::Database(format!("Failed to create table: {}", e)))?;
 
-        // Create index for vector search 
+        // Create index for vector search
         let index_name = format!("{}_vector_idx", table_name);
         let index_type = match schema.metric {
             DistanceMetric::Cosine => "vector_cosine_ops",
@@ -74,9 +78,7 @@ impl VectorDatabase for PgVectorAdapter {
         );
 
         // Index creation may fail if table is empty, which is fine
-        let _ = sqlx::query(&create_index_sql)
-            .execute(&self.pool)
-            .await;
+        let _ = sqlx::query(&create_index_sql).execute(&self.pool).await;
 
         Ok(())
     }
@@ -99,7 +101,8 @@ impl VectorDatabase for PgVectorAdapter {
 
         for point in points {
             let vector = Vector::from(point.vector);
-            let metadata = point.metadata
+            let metadata = point
+                .metadata
                 .map(|m| serde_json::to_value(m).unwrap_or_default())
                 .unwrap_or(serde_json::Value::Null);
 
@@ -147,15 +150,16 @@ impl VectorDatabase for PgVectorAdapter {
 
         let mut results = Vec::new();
         for row in rows {
-            let id: String = row.try_get("id")
+            let id: String = row
+                .try_get("id")
                 .map_err(|e| KabodError::Database(e.to_string()))?;
-            let distance: f64 = row.try_get("distance")
+            let distance: f64 = row
+                .try_get("distance")
                 .map_err(|e| KabodError::Database(e.to_string()))?;
-            let metadata: Option<serde_json::Value> = row.try_get("metadata")
-                .ok();
+            let metadata: Option<serde_json::Value> = row.try_get("metadata").ok();
 
-            let metadata_map: Option<HashMap<String, serde_json::Value>> = metadata
-                .and_then(|v| serde_json::from_value(v).ok());
+            let metadata_map: Option<HashMap<String, serde_json::Value>> =
+                metadata.and_then(|v| serde_json::from_value(v).ok());
 
             results.push(SearchResult {
                 id,
@@ -198,10 +202,7 @@ impl VectorDatabase for PgVectorAdapter {
             let metadata_json = serde_json::to_value(&update.updates)
                 .map_err(|e| KabodError::Database(e.to_string()))?;
 
-            let update_sql = format!(
-                r#"UPDATE "{}" SET metadata = $1 WHERE id = $2"#,
-                collection
-            );
+            let update_sql = format!(r#"UPDATE "{}" SET metadata = $1 WHERE id = $2"#, collection);
 
             sqlx::query(&update_sql)
                 .bind(metadata_json)

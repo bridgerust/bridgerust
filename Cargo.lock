@@ -69,6 +69,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "alloca"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e5a7d05ea6aea7e9e64d25b9156ba2fee3fdd659e34e41063cd2fc7cd020d7f4"
+dependencies = [
+ "cc",
+]
+
+[[package]]
 name = "allocator-api2"
 version = "0.2.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1286,7 +1295,7 @@ dependencies = [
  "base64",
  "chroma-error",
  "chrono",
- "criterion",
+ "criterion 0.7.0",
  "itertools 0.13.0",
  "prost 0.13.5",
  "prost-types 0.13.5",
@@ -1567,10 +1576,36 @@ dependencies = [
  "cast",
  "ciborium",
  "clap",
- "criterion-plot",
+ "criterion-plot 0.6.0",
  "itertools 0.13.0",
  "num-traits",
  "oorandom",
+ "plotters",
+ "rayon",
+ "regex",
+ "serde",
+ "serde_json",
+ "tinytemplate",
+ "tokio",
+ "walkdir",
+]
+
+[[package]]
+name = "criterion"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4d883447757bb0ee46f233e9dc22eb84d93a9508c9b868687b274fc431d886bf"
+dependencies = [
+ "alloca",
+ "anes",
+ "cast",
+ "ciborium",
+ "clap",
+ "criterion-plot 0.8.1",
+ "itertools 0.13.0",
+ "num-traits",
+ "oorandom",
+ "page_size",
  "plotters",
  "rayon",
  "regex",
@@ -1586,6 +1621,16 @@ name = "criterion-plot"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b1bcc0dc7dfae599d84ad0b1a55f80cde8af3725da8313b528da95ef783e338"
+dependencies = [
+ "cast",
+ "itertools 0.13.0",
+]
+
+[[package]]
+name = "criterion-plot"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed943f81ea2faa8dcecbbfa50164acf95d555afec96a27871663b300e387b2e4"
 dependencies = [
  "cast",
  "itertools 0.13.0",
@@ -3882,6 +3927,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "kabod-bench"
+version = "0.1.0"
+dependencies = [
+ "bridge-kabod",
+ "criterion 0.8.1",
+ "futures",
+ "rand 0.9.2",
+ "serde_json",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
 name = "kabod-node"
 version = "0.1.0"
 dependencies = [
@@ -5336,6 +5394,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2fbd56f7631767e61784dc43f8580f403f4475bd4aaa4da003e6295e1bab4a7e"
 dependencies = [
  "stable_deref_trait",
+]
+
+[[package]]
+name = "page_size"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "30d5b2194ed13191c1999ae0704b7839fb18384fa22e49b57eeaa97d79ce40da"
+dependencies = [
+ "libc",
+ "winapi",
 ]
 
 [[package]]
