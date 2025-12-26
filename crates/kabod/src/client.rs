@@ -4,6 +4,7 @@ use crate::db::VectorDatabase;
 use crate::types::{CollectionSchema, Point, SearchResult};
 use crate::query::QueryBuilder;
 use crate::adapters::qdrant::QdrantAdapter;
+use crate::adapters::pinecone::PineconeAdapter;
 use crate::config::KabodConfig;
 
 #[derive(Clone)]
@@ -15,6 +16,16 @@ impl KabodClient {
     pub fn new(config: KabodConfig) -> Result<Self> {
         let db: Arc<dyn VectorDatabase> = match config.provider.as_str() {
             "qdrant" => Arc::new(QdrantAdapter::new(&config.url, config.api_key.as_deref())?),
+            "pinecone" => {
+                let api_key = config.api_key.as_ref()
+                    .ok_or_else(|| crate::error::KabodError::Config(
+                        config::ConfigError::Message("Pinecone requires API key".to_string())
+                    ))?;
+                let cloud = config.options.get("cloud").map(|s| s.as_str());
+                let region = config.options.get("region").map(|s| s.as_str());
+                let namespace = config.options.get("namespace").map(|s| s.as_str());
+                Arc::new(PineconeAdapter::new(api_key, cloud, region, namespace)?)
+            },
             _ => return Err(crate::error::KabodError::Config(config::ConfigError::Message(format!("Unknown provider: {}", config.provider)))),
         };
 
