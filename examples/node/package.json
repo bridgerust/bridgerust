@@ -1,0 +1,13 @@
+{
+  "name": "kabod-node-example",
+  "version": "1.0.0",
+  "main": "rag_system.ts",
+  "scripts": {
+    "start": "ts-node rag_system.ts"
+  },
+  "dependencies": {
+    "@bridgerust/kabod": "file:../../bindings/node/@bridgerust/kabod",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.0"
+  }
+}

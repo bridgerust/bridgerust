@@ -18,6 +18,7 @@ fn to_napi_err(err: bridge_kabod::error::KabodError) -> Error {
     }
 }
 
+/// Main client for the Kabod vector database.
 #[napi]
 pub struct KabodClient {
     inner: RustClient,
@@ -25,6 +26,11 @@ pub struct KabodClient {
 
 #[napi]
 impl KabodClient {
+    /// Create a new Kabod client.
+    /// 
+    /// @param provider - The database provider (e.g., 'qdrant', 'pinecone').
+    /// @param url - The connection URL.
+    /// @param apiKey - Optional API key.
     #[napi(constructor)]
     pub fn new(provider: String, url: String, api_key: Option<String>) -> Result<Self> {
         let config = KabodConfig {
@@ -53,6 +59,7 @@ pub struct Collection {
     inner: bridge_kabod::client::Collection,
 }
 
+/// A point in the vector database.
 #[napi(object)]
 pub struct Point {
     pub id: String,
@@ -76,15 +83,21 @@ pub struct SearchResponse {
 
 #[napi(object)]
 pub struct SearchOptions {
+    /// Number of results to return.
     pub limit: Option<u32>,
+    /// Metadata filter.
     pub filter: Option<serde_json::Value>,
+    /// Whether to include metadata in results.
     pub include_metadata: Option<bool>,
+    /// Whether to include vector in results.
     pub include_vector: Option<bool>,
+    /// Pagination offset.
     pub offset: Option<u32>,
 }
 
 #[napi]
 impl Collection {
+    /// Insert points into the collection.
     #[napi]
     pub async fn insert(&self, points: Vec<Point>) -> Result<()> {
         let inner = self.inner.clone();
@@ -100,6 +113,7 @@ impl Collection {
         inner.insert(rust_points).await.map_err(to_napi_err)
     }
 
+    /// Search for similar vectors.
     #[napi]
     pub async fn query(
         &self,
@@ -146,6 +160,7 @@ impl Collection {
         })
     }
 
+    /// Search using a builder pattern.
     #[napi]
     pub fn search(&self, vector: Vec<f64>) -> SearchBuilder {
         let vec_f32: Vec<f32> = vector.into_iter().map(|v| v as f32).collect();

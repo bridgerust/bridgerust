@@ -6,20 +6,52 @@ use bridge_kabod_core::query::QueryBuilder;
 use bridge_kabod_core::types::{Aggregation, CollectionSchema, Filter, Point, SearchResponse};
 use std::sync::Arc;
 
+/// Main client for interacting with the Kabod vector database.
+///
+/// This client provides access to collections, database management, and configuration.
+/// It wraps a thread-safe `Arc<dyn VectorDatabase>` to support multiple backend providers.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use bridge_kabod::client::KabodClient;
+/// use bridge_kabod_core::config::KabodConfig;
+///
+/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+/// let config = KabodConfig {
+///     provider: "qdrant".to_string(),
+///     url: "http://localhost:6333".to_string(),
+///     ..Default::default()
+/// };
+///
+/// let client = KabodClient::new(config)?;
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Clone)]
 pub struct KabodClient {
     db: Arc<dyn VectorDatabase>,
 }
 
 impl KabodClient {
+    /// Returns a reference to the underlying database adapter.
     pub fn db(&self) -> Arc<dyn VectorDatabase> {
         self.db.clone()
     }
 
+    /// Creates a new `KabodClient` from an existing database adapter.
     pub fn from_db(db: Arc<dyn VectorDatabase>) -> Self {
         Self { db }
     }
 
+    /// Creates a new `KabodClient` from the provided configuration.
+    ///
+    /// This method initializes the appropriate database adapter based on the `provider` field
+    /// in the configuration.
+    ///
+    /// # Synchonous Initialization
+    /// This method is intended for providers that can be initialized synchronously.
+    /// For providers requiring async initialization (like LanceDB or PgVector), use `new_async`.
     pub fn new(config: KabodConfig) -> Result<Self> {
         #[cfg(feature = "qdrant")]
         if config.provider == "qdrant" {
@@ -86,6 +118,9 @@ impl KabodClient {
         ))
     }
 
+    /// Creates a new `KabodClient` asynchronously.
+    ///
+    /// Required for providers that need asynchronous initialization, such as LanceDB or PgVector.
     pub async fn new_async(config: KabodConfig) -> Result<Self> {
         #[cfg(feature = "lancedb")]
         if config.provider == "lancedb" {
@@ -105,6 +140,7 @@ impl KabodClient {
         Self::new(config)
     }
 
+    /// Returns a handle to a specific collection.
     pub fn collection(&self, name: &str) -> Collection {
         Collection {
             name: name.to_string(),
@@ -124,35 +160,45 @@ impl Collection {
         &self.name
     }
 
+    /// Creates a new collection with the given schema.
     #[tracing::instrument(skip(self, schema), fields(collection = %self.name, dimension = schema.dimension))]
     pub async fn create(&self, schema: CollectionSchema) -> Result<()> {
         self.db.create_collection(&schema).await
     }
 
+    /// Deletes the collection.
     #[tracing::instrument(skip(self), fields(collection = %self.name))]
     pub async fn delete_collection(&self) -> Result<()> {
         self.db.delete_collection(&self.name).await
     }
 
+    /// Inserts a list of points into the collection.
     #[tracing::instrument(skip(self, points), fields(collection = %self.name, count = points.len()))]
     pub async fn insert(&self, points: Vec<Point>) -> Result<()> {
         self.db.insert(&self.name, points).await
     }
 
+    /// Creates a search builder for querying the collection.
     pub fn search(&self, vector: Vec<f32>) -> SearchBuilder {
         SearchBuilder::new(self.name.clone(), vector, self.db.clone())
     }
 
+    /// Executes a search query using a `QueryBuilder`.
     #[tracing::instrument(skip(self, builder), fields(collection = %self.name))]
     pub async fn query(&self, builder: QueryBuilder) -> Result<SearchResponse> {
         self.db.search(&builder.build()).await
     }
 
+    /// Deletes points from the collection by their IDs.
     #[tracing::instrument(skip(self), fields(collection = %self.name, count = ids.len()))]
     pub async fn delete(&self, ids: Vec<String>) -> Result<()> {
         self.db.delete(&self.name, ids).await
     }
 
+    /// Inserts points in parallel batches.
+    ///
+    /// This method splits the `points` into chunks of size `batch_size` and executes
+    /// insertions in parallel, with a maximum concurrency defined by `parallel`.
     #[tracing::instrument(skip(self, points), fields(collection = %self.name, count = points.len(), batch_size, parallel))]
     pub async fn insert_batch(
         &self,
@@ -180,6 +226,10 @@ impl Collection {
         Ok(())
     }
 
+    /// Inserts points from a stream in parallel batches.
+    ///
+    /// Consumes a stream of `Result<Point>`, buffering into chunks of `batch_size`,
+    /// and inserting them with the specified parallelism.
     #[tracing::instrument(skip(self, stream), fields(collection = %self.name, batch_size, parallel))]
     pub async fn insert_stream(
         &self,

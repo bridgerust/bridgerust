@@ -1,41 +1,63 @@
-<div style="text-align: center;">
-    <img src="images/logo.png" alt="BridgeRust Logo" width="200" height="200">
-<div>
+# One Rust core. Every ecosystem.
 
-# One Rust core. Every ecosystem.**
+**BridgeRust** builds high-performance infrastructure libraries for Python, Node.js, and other ecosystems, powered by a shared Rust core.
 
-High-performance infrastructure libraries for Python, Node.js, and WASM.
+## 🚀 Active Projects
 
-## Status
+### [Kabod](crates/kabod) (Vector Database ORM)
 
-- 🚧 JSON Schema Validator (in development)
-- 🔜 CSV Parser (planned)
-- 🔜 Excel Engine (planned)
+Kabod is a high-performance, unified client for vector databases like Qdrant, Pinecone, Chroma, LanceDB, and PgVector.
 
-## Quick Start
+- **Unified API**: Switch providers with one line of config.
+- **Zero-Copy**: High-performance data transfer.
+- **Docs**: [Getting Started](docs/getting_started.md) | [Migration Guides](docs/)
 
-### Python
-```bash
-pip install bridge-schema
-```
-```python
-from bridge_schema import Validator
+### [Bridge Schema](crates/schema) (JSON Validator)
 
-validator = Validator('{"type": "string"}')
-validator.validate('"hello"')
-```
+_Status: Prototype / Paused_
+A high-performance JSON Schema validator.
 
-## Development
-```bash
-cargo build --all
-cargo test --all
-```
+## 🔮 Roadmap
+
+- **Hypertest**: High-performance testing framework (pytest alternative).
+- **Bridge CSV/Excel**: Fast data parsing engines.
+- **Bridge Graph**: Graph algorithms.
 
 ## Documentation
 
-- [Architecture](docs/architecture.md)
-- [Contributing](docs/contributing.md)
+### Kabod
+
+- [**Getting Started**](docs/getting_started.md)
+- [Migration from Qdrant](docs/migration_qdrant.md)
+- [Migration from Pinecone](docs/migration_pinecone.md)
+- [Migration from Chroma](docs/migration_chroma.md)
+- [Migration from PgVector](docs/migration_pgvector.md)
+- [Migration from LanceDB](docs/migration_lancedb.md)
+
+## Installation
+
+### Python
+
+```bash
+pip install kabod-py      # For Kabod
+pip install bridge-schema # For Schema
+```
+
+### Node.js
+
+```bash
+npm install @bridgerust/kabod
+```
+
+### Rust
+
+```toml
+[dependencies]
+bridge-kabod = "0.1"
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) (coming soon).
 
 ## License
 
 MIT OR Apache-2.0
+```

@@ -1,0 +1,10 @@
+[package]
+name = "kabod-basic-usage"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bridge-kabod = { path = "../../crates/kabod/client", features = ["qdrant"] }
+bridge-kabod-core = { path = "../../crates/kabod/core" }
+tokio = { version = "1.48", features = ["full"] }
+anyhow = "1.0.100"

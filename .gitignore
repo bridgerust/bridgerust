@@ -493,4 +493,4 @@ Thumbs.db
 *.zip
 *.tar.gz
 *.rar
-*.old
+*.old.*

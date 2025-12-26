@@ -87,6 +87,7 @@ impl Migration for PyMigrationAdapter {
     }
 }
 
+/// Main client for interacting with the Kabod vector database.
 #[pyclass]
 struct KabodClient {
     inner: RustClient,
@@ -94,6 +95,12 @@ struct KabodClient {
 
 #[pymethods]
 impl KabodClient {
+    /// Create a new Kabod client.
+    ///
+    /// Args:
+    ///     provider: The database provider (e.g., "qdrant", "pinecone").
+    ///     url: The connection URL.
+    ///     api_key: Optional API key.
     #[new]
     #[pyo3(signature = (provider, url, api_key=None))]
     fn new(provider: String, url: String, api_key: Option<String>) -> PyResult<Self> {
@@ -110,12 +117,17 @@ impl KabodClient {
         Ok(Self { inner: client })
     }
 
+    /// Get a collection by name.
     fn collection(&self, name: String) -> Collection {
         Collection {
             inner: self.inner.collection(&name),
         }
     }
 
+    /// Run database migrations.
+    ///
+    /// Args:
+    ///     migrations: A list of migration objects.
     #[pyo3(signature = (migrations))]
     fn run_migrations<'p>(
         &self,
@@ -147,6 +159,7 @@ impl KabodClient {
     }
 }
 
+/// A collection in the vector database.
 #[pyclass]
 struct Collection {
     inner: bridge_kabod::client::Collection,
@@ -337,6 +350,10 @@ impl SearchBuilder {
 
 #[pymethods]
 impl Collection {
+    /// Insert points into the collection.
+    ///
+    /// Args:
+    ///     points: A list of Point objects.
     fn insert<'p>(
         &self,
         py: Python<'p>,
@@ -368,6 +385,12 @@ impl Collection {
         })
     }
 
+    /// Insert points in parallel batches.
+    ///
+    /// Args:
+    ///     points: List of points to insert.
+    ///     batch_size: Number of points per batch (default: 1000).
+    ///     parallel: Max concurrent requests (default: 1).
     #[pyo3(signature = (points, batch_size=None, parallel=None))]
     fn insert_batch<'p>(
         &self,
@@ -406,6 +429,12 @@ impl Collection {
         })
     }
 
+    /// Search for similar vectors.
+    ///
+    ///Args:
+    ///    vector: Query vector.
+    ///    top_k: Number of results to return.
+    ///    filter: Optional metadata filter.
     #[pyo3(signature = (vector, top_k=10, filter=None, include_metadata=true, include_vector=false))]
     fn search<'p>(
         &self,
@@ -458,6 +487,7 @@ impl Collection {
         })
     }
 
+    /// Create the collection in the database.
     fn create<'p>(
         &self,
         py: Python<'p>,
@@ -487,6 +517,7 @@ impl Collection {
         })
     }
 
+    /// Insert points from a streaming iterator.
     fn insert_stream<'p>(
         &self,
         py: Python<'p>,
