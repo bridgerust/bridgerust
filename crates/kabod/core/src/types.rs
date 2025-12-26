@@ -45,8 +45,22 @@ pub struct VectorQuery {
     pub vector: Vec<f32>,
     pub filter: Option<Filter>,
     pub top_k: usize,
+    pub offset: Option<usize>,
     pub include_vector: bool,
     pub include_metadata: bool,
+    pub aggregations: Vec<Aggregation>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum Aggregation {
+    Count,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AggregateResult {
+    pub name: String,
+    pub value: Value,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -55,6 +69,12 @@ pub struct SearchResult {
     pub score: f32,
     pub vector: Option<Vec<f32>>,
     pub metadata: Option<HashMap<String, Value>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SearchResponse {
+    pub results: Vec<SearchResult>,
+    pub aggregations: HashMap<String, Value>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -115,6 +135,46 @@ impl Filter {
 
     pub fn should(filters: Vec<Filter>) -> Self {
         Filter::Should(filters)
+    }
+
+    pub fn and(self, other: Filter) -> Self {
+        match (self, other) {
+            (Filter::Must(mut l), Filter::Must(r)) => {
+                l.extend(r);
+                Filter::Must(l)
+            }
+            (Filter::Must(mut l), r) => {
+                l.push(r);
+                Filter::Must(l)
+            }
+            (l, Filter::Must(mut r)) => {
+                r.insert(0, l);
+                Filter::Must(r)
+            }
+            (l, r) => Filter::Must(vec![l, r]),
+        }
+    }
+
+    pub fn or(self, other: Filter) -> Self {
+        match (self, other) {
+            (Filter::Should(mut l), Filter::Should(r)) => {
+                l.extend(r);
+                Filter::Should(l)
+            }
+            (Filter::Should(mut l), r) => {
+                l.push(r);
+                Filter::Should(l)
+            }
+            (l, Filter::Should(mut r)) => {
+                r.insert(0, l);
+                Filter::Should(r)
+            }
+            (l, r) => Filter::Should(vec![l, r]),
+        }
+    }
+
+    pub fn not(self) -> Self {
+        Filter::MustNot(vec![self])
     }
 }
 

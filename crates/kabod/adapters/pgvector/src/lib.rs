@@ -3,10 +3,11 @@ use pgvector::Vector;
 use sqlx::{PgPool, Row};
 use std::collections::HashMap;
 
-use crate::db::VectorDatabase;
-use crate::error::{KabodError, Result};
-use crate::types::{
-    CollectionSchema, DistanceMetric, MetadataUpdate, Point, SearchResult, VectorQuery,
+use bridge_kabod_core::db::VectorDatabase;
+use bridge_kabod_core::error::{KabodError, Result};
+use bridge_kabod_core::types::{
+    CollectionSchema, DistanceMetric, MetadataUpdate, Point, SearchResponse, SearchResult,
+    VectorQuery,
 };
 
 pub struct PgVectorAdapter {
@@ -18,8 +19,7 @@ impl PgVectorAdapter {
         let pool = PgPool::connect(database_url)
             .await
             .map_err(|e| KabodError::Database(format!("Failed to connect to PostgreSQL: {}", e)))?;
-
-        // Ensure pgvector extension is enabled
+        
         sqlx::query("CREATE EXTENSION IF NOT EXISTS vector")
             .execute(&pool)
             .await
@@ -32,9 +32,9 @@ impl PgVectorAdapter {
 
     fn distance_operator(metric: &DistanceMetric) -> &'static str {
         match metric {
-            DistanceMetric::Cosine => "<=>",    // cosine distance
-            DistanceMetric::Euclidean => "<->", // L2 distance
-            DistanceMetric::Dot => "<#>",       // negative inner product
+            DistanceMetric::Cosine => "<=>", 
+            DistanceMetric::Euclidean => "<->",
+            DistanceMetric::Dot => "<#>",
         }
     }
 }
@@ -127,18 +127,32 @@ impl VectorDatabase for PgVectorAdapter {
         Ok(())
     }
 
-    async fn search(&self, query: &VectorQuery) -> Result<Vec<SearchResult>> {
+    async fn search(&self, query: &VectorQuery) -> Result<SearchResponse> {
         let vector = Vector::from(query.vector.clone());
         let distance_op = Self::distance_operator(&DistanceMetric::Cosine); // Default to cosine
+
+        let filter_clause = if let Some(filter) = &query.filter {
+            format!("AND {}", convert_filter(filter))
+        } else {
+            String::new()
+        };
+
+        let offset_clause = if let Some(offset) = query.offset {
+            format!("OFFSET {}", offset)
+        } else {
+            String::new()
+        };
 
         let search_sql = format!(
             r#"
             SELECT id, vector {} $1 as distance, metadata
             FROM "{}"
+            WHERE 1=1 {}
             ORDER BY vector {} $1
             LIMIT $2
+            {}
             "#,
-            distance_op, query.collection, distance_op
+            distance_op, query.collection, filter_clause, distance_op, offset_clause
         );
 
         let rows = sqlx::query(&search_sql)
@@ -169,7 +183,30 @@ impl VectorDatabase for PgVectorAdapter {
             });
         }
 
-        Ok(results)
+        let mut aggregations = HashMap::new();
+        for agg in &query.aggregations {
+            match agg {
+                bridge_kabod_core::types::Aggregation::Count => {
+                    let count_sql = format!(
+                        r#"SELECT COUNT(*) FROM "{}" WHERE 1=1 {}"#,
+                        query.collection, filter_clause
+                    );
+                    let count: i64 = sqlx::query_scalar(&count_sql)
+                        .fetch_one(&self.pool)
+                        .await
+                        .map_err(|e| KabodError::Database(e.to_string()))?;
+                    aggregations.insert(
+                        "count".to_string(),
+                        serde_json::Value::Number(count.into()),
+                    );
+                }
+            }
+        }
+
+        Ok(SearchResponse {
+            results,
+            aggregations,
+        })
     }
 
     async fn delete(&self, collection: &str, ids: Vec<String>) -> Result<()> {
@@ -213,5 +250,55 @@ impl VectorDatabase for PgVectorAdapter {
         }
 
         Ok(())
+    }
+}
+
+fn convert_filter(filter: &bridge_kabod_core::types::Filter) -> String {
+    use bridge_kabod_core::types::Filter;
+
+    match filter {
+        Filter::Must(filters) => {
+            let parts: Vec<String> = filters.iter().map(convert_filter).collect();
+            format!("({})", parts.join(" AND "))
+        }
+        Filter::MustNot(filters) => {
+            let parts: Vec<String> = filters.iter().map(convert_filter).collect();
+            format!("NOT ({})", parts.join(" AND "))
+        }
+        Filter::Should(filters) => {
+            let parts: Vec<String> = filters.iter().map(convert_filter).collect();
+            format!("({})", parts.join(" OR "))
+        }
+        Filter::Key(key, condition) => convert_condition(key, condition),
+    }
+}
+
+fn convert_condition(key: &str, condition: &bridge_kabod_core::types::Condition) -> String {
+    use bridge_kabod_core::types::Condition;
+
+    match condition {
+        Condition::Eq(v) => format!("metadata->>'{}' = {}", key, format_value(v)),
+        Condition::Ne(v) => format!("metadata->>'{}' != {}", key, format_value(v)),
+        Condition::Gt(v) => format!("metadata->>'{}' > {}", key, format_value(v)),
+        Condition::Gte(v) => format!("metadata->>'{}' >= {}", key, format_value(v)),
+        Condition::Lt(v) => format!("metadata->>'{}' < {}", key, format_value(v)),
+        Condition::Lte(v) => format!("metadata->>'{}' <= {}", key, format_value(v)),
+        Condition::In(v) => {
+            let vals: Vec<String> = v.iter().map(format_value).collect();
+            format!("metadata->>'{}' IN ({})", key, vals.join(", "))
+        }
+        Condition::NotIn(v) => {
+            let vals: Vec<String> = v.iter().map(format_value).collect();
+            format!("metadata->>'{}' NOT IN ({})", key, vals.join(", "))
+        }
+    }
+}
+
+fn format_value(value: &serde_json::Value) -> String {
+    match value {
+        serde_json::Value::String(s) => format!("'{}'", s.replace('\'', "''")),
+        serde_json::Value::Number(n) => n.to_string(),
+        serde_json::Value::Bool(b) => b.to_string(),
+        _ => "NULL".to_string(),
     }
 }

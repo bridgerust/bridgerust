@@ -78,6 +78,31 @@ struct SearchResult {
     metadata: Option<HashMap<String, Py<PyAny>>>,
 }
 
+impl Clone for SearchResult {
+    fn clone(&self) -> Self {
+        Python::attach(|py| Self {
+            id: self.id.clone(),
+            score: self.score,
+            vector: self.vector.clone(),
+            metadata: self.metadata.as_ref().map(|m| {
+                let mut new_map = HashMap::with_capacity(m.len());
+                for (k, v) in m {
+                    new_map.insert(k.clone(), v.clone_ref(py));
+                }
+                new_map
+            }),
+        })
+    }
+}
+
+#[pyclass]
+struct SearchResponse {
+    #[pyo3(get)]
+    results: Vec<SearchResult>,
+    #[pyo3(get)]
+    aggregations: HashMap<String, Py<PyAny>>,
+}
+
 // Convert PyObject to serde_json::Value
 fn py_to_json<'py>(py: Python<'py>, obj: &Py<PyAny>) -> PyResult<Value> {
     let bound = obj.bind(py);
@@ -85,7 +110,6 @@ fn py_to_json<'py>(py: Python<'py>, obj: &Py<PyAny>) -> PyResult<Value> {
         return Ok(Value::Null);
     }
 
-    // Using extract which is fallible but appropriate here
     if let Ok(s) = bound.extract::<String>() {
         return Ok(Value::String(s));
     }
@@ -136,6 +160,90 @@ fn json_to_py(py: Python, v: Value) -> Py<PyAny> {
     }
 }
 
+#[pyclass]
+struct SearchBuilder {
+    inner: Option<bridge_kabod::client::SearchBuilder>,
+}
+
+#[pymethods]
+impl SearchBuilder {
+    fn limit(slf: PyRefMut<'_, Self>, limit: usize) -> PyRefMut<'_, Self> {
+        let mut slf = slf;
+        if let Some(inner) = slf.inner.take() {
+            slf.inner = Some(inner.limit(limit));
+        }
+        slf
+    }
+
+    fn offset(slf: PyRefMut<'_, Self>, offset: usize) -> PyRefMut<'_, Self> {
+        let mut slf = slf;
+        if let Some(inner) = slf.inner.take() {
+            slf.inner = Some(inner.offset(offset));
+        }
+        slf
+    }
+
+    fn include_vector(slf: PyRefMut<'_, Self>, include: bool) -> PyRefMut<'_, Self> {
+        let mut slf = slf;
+        if let Some(inner) = slf.inner.take() {
+            slf.inner = Some(inner.include_vector(include));
+        }
+        slf
+    }
+
+    fn include_metadata(slf: PyRefMut<'_, Self>, include: bool) -> PyRefMut<'_, Self> {
+        let mut slf = slf;
+        if let Some(inner) = slf.inner.take() {
+            slf.inner = Some(inner.include_metadata(include));
+        }
+        slf
+    }
+
+    fn execute<'p>(&mut self, py: Python<'p>) -> PyResult<Bound<'p, PyAny>> {
+        let inner = self
+            .inner
+            .take()
+            .ok_or_else(|| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Search already executed"))?;
+
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            let res = inner
+                .execute()
+                .await
+                .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
+
+            Python::attach(|py| {
+                let mut py_results = Vec::with_capacity(res.results.len());
+                for r in res.results {
+                    let py_metadata = r.metadata.map(|m| {
+                        let mut map = HashMap::new();
+                        for (k, v) in m {
+                            map.insert(k, json_to_py(py, v));
+                        }
+                        map
+                    });
+
+                    py_results.push(SearchResult {
+                        id: r.id,
+                        score: r.score,
+                        vector: r.vector,
+                        metadata: py_metadata,
+                    });
+                }
+
+                let mut py_aggregations = HashMap::new();
+                for (k, v) in res.aggregations {
+                    py_aggregations.insert(k, json_to_py(py, v));
+                }
+
+                Ok(SearchResponse {
+                    results: py_results,
+                    aggregations: py_aggregations,
+                })
+            })
+        })
+    }
+}
+
 #[pymethods]
 impl Collection {
     fn insert<'p>(
@@ -172,66 +280,10 @@ impl Collection {
         })
     }
 
-    #[pyo3(signature = (vector, top_k=None, include_metadata=None, include_vector=None))]
-    fn search<'p>(
-        &self,
-        py: Python<'p>,
-        vector: Vec<f32>,
-        top_k: Option<usize>,
-        include_metadata: Option<bool>,
-        include_vector: Option<bool>,
-    ) -> PyResult<Bound<'p, PyAny>> {
-        let inner = self.inner.clone();
-        let limit = top_k.unwrap_or(10);
-        let inc_meta = include_metadata.unwrap_or(true);
-        let inc_vec = include_vector.unwrap_or(false);
-
-        pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            let builder = inner
-                .search(vector)
-                .await
-                .limit(limit)
-                .include_metadata(inc_meta)
-                .include_vector(inc_vec);
-
-            let results = inner
-                .query(builder)
-                .await
-                .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
-
-            // Since we can't easily return PyObjects from the future without GIL,
-            // we'll use Python::with_gil inside the future_into_py which is allowed
-            // but we must not block the runtime.
-            // pyo3_async_runtimes handles the GIL acquisition for the result conversion
-            // IF the result implements IntoPyObject.
-            // Our result is `Vec<SearchResult>`. `SearchResult` implements `IntoPyObject` via `#[pyclass]`.
-            // So we just need to return the Rust objects?
-            // Wait, SearchResult holds `PyObject` (aka `Py<PyAny>`) in metadata.
-            // Those can be cloned around.
-
-            let mut py_results = Vec::with_capacity(results.len());
-            // Need GIL to convert JSON to PyObject for metadata
-            Python::attach(|py| {
-                for r in results {
-                    let py_metadata = r.metadata.map(|m| {
-                        let mut map = HashMap::new();
-                        for (k, v) in m {
-                            map.insert(k, json_to_py(py, v));
-                        }
-                        map
-                    });
-
-                    py_results.push(SearchResult {
-                        id: r.id,
-                        score: r.score,
-                        vector: r.vector,
-                        metadata: py_metadata,
-                    });
-                }
-            });
-
-            Ok(py_results)
-        })
+    fn search(&self, vector: Vec<f32>) -> SearchBuilder {
+        SearchBuilder {
+            inner: Some(self.inner.search(vector)),
+        }
     }
 
     fn delete<'p>(&self, py: Python<'p>, ids: Vec<String>) -> PyResult<Bound<'p, PyAny>> {
@@ -261,9 +313,8 @@ impl Collection {
         distance: String,
     ) -> PyResult<Bound<'p, PyAny>> {
         let inner = self.inner.clone();
-        let name_str = inner.name().to_string(); // Use accessor
+        let name_str = inner.name().to_string();
 
-        // Construct schema from args
         let schema = bridge_kabod::types::CollectionSchema {
             name: name_str,
             dimension,
@@ -295,7 +346,6 @@ impl Collection {
     ) -> PyResult<Bound<'p, PyAny>> {
         let inner = self.inner.clone();
 
-        // Similar to insert, but we pass points to Rust first, then batch them using the new Rust method
         let mut rust_points = Vec::with_capacity(points.len());
         for p in points {
             let mut metadata = None;
@@ -330,36 +380,7 @@ impl Collection {
         batch_size: usize,
     ) -> PyResult<Bound<'p, PyAny>> {
         let inner = self.inner.clone();
-
-        // We can't easily stream FROM python iterator asyncly because calling `next` requires GIL.
-        // So we have two options:
-        // 1. Consume the iterator entirely into a Vec (not streaming).
-        // 2. Consume in chunks (requires holding GIL intermittently).
-        // 3. Use an async Python generator (requires `anext` and await).
-
-        // For simplicity and effectiveness in this "advanced" phase, let's implement the chunked consumption approach.
-        // We will read `batch_size` items from the iterator under GIL, then release GIL and insert them async, then repeat.
-        // However, `future_into_py` expects a single future. We can spawn a task that does this loop?
-        // But the loop needs GIL to get next batch.
-        //
-        // A common pattern is to just accept an iterable, consume it all into a Vec, and batch insert it? No that defeats the purpose.
-        //
-        // Correct Async Stream approach:
-        // We return a future that:
-        //   Loop:
-        //     Acquire GIL
-        //     Read N items from iterator
-        //     If empty, break
-        //     Release GIL
-        //     Await insert_batch(N)
-
-        // To do this with pyo3-async-runtimes, we can use a loop inside the async block.
-        // inside the async block we can `Python::with_gil` to read the next batch.
-
-        // We need to keep a reference to the iterator. Since `future_into_py` moves things into the future 'static,
-        // we need to be careful with Py objects. We can store `Py<PyIterator>`.
-
-        let iterator = points.try_iter()?; // Get iterator from iterable
+        let iterator = points.try_iter()?;
         let py_iter: Py<pyo3::types::PyIterator> = iterator.unbind();
 
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
@@ -368,22 +389,17 @@ impl Collection {
                 let mut done = false;
 
                 Python::attach(|py| {
-                    let mut iter = py_iter.bind(py).clone(); // Bound<PyIterator> is an Iterator, need owned to be mutable
-                    // We need it mutable to call next()
+                    let mut iter = py_iter.bind(py).clone();
 
                     for _ in 0..batch_size {
                         let next_item = iter.next();
                         match next_item {
                             Some(Ok(item)) => {
-                                // Convert item to Point
-                                // We expect item to be KabodPoint, but it might be just a dict or object we can extract
                                 if let Ok(p) = item.extract::<PyRef<KabodPoint>>() {
                                     let mut metadata = None;
-                                    // ... conversion logic ...
                                     if let Some(py_meta) = &p.metadata {
                                         let mut meta_map = HashMap::new();
                                         for (k, v) in py_meta {
-                                            // Handle error in map?
                                             if let Ok(val) = py_to_json(py, v) {
                                                 meta_map.insert(k.clone(), val);
                                             }
@@ -395,14 +411,9 @@ impl Collection {
                                         vector: p.vector.clone(),
                                         metadata,
                                     });
-                                } else {
-                                    // Handle invalid type? For now just stop or skip?
-                                    // Ideally return error, but inside loop difficult.
-                                    // Let's assume strict typing for now.
                                 }
                             }
                             Some(Err(_e)) => {
-                                // Iterator error
                                 done = true;
                                 break;
                             }
@@ -434,6 +445,8 @@ fn kabod(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<KabodClient>()?;
     m.add_class::<Collection>()?;
     m.add_class::<SearchResult>()?;
+    m.add_class::<SearchResponse>()?;
+    m.add_class::<SearchBuilder>()?;
     m.add_class::<KabodPoint>()?;
     Ok(())
 }

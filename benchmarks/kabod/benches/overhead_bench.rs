@@ -1,5 +1,5 @@
-use bridge_kabod::query::QueryBuilder;
-use bridge_kabod::types::{CollectionSchema, DistanceMetric, Point, VectorQuery};
+use bridge_kabod::QueryBuilder;
+use bridge_kabod::{CollectionSchema, DistanceMetric, Point, VectorQuery};
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use rand::Rng;
 use std::collections::HashMap;
@@ -94,8 +94,10 @@ fn bench_vector_query_creation(c: &mut Criterion) {
             vector: black_box(vector.clone()),
             top_k: black_box(10),
             filter: None,
+            offset: None,
             include_metadata: true,
             include_vector: true,
+            aggregations: Vec::new(),
         });
     });
 }

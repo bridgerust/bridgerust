@@ -14,7 +14,7 @@ pub trait VectorDatabase: Send + Sync {
     async fn insert(&self, collection: &str, points: Vec<Point>) -> Result<()>;
 
     /// Search for similar vectors
-    async fn search(&self, query: &VectorQuery) -> Result<Vec<SearchResult>>;
+    async fn search(&self, query: &VectorQuery) -> Result<SearchResponse>;
 
     /// Delete points by ID
     async fn delete(&self, collection: &str, ids: Vec<String>) -> Result<()>;

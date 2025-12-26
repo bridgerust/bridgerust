@@ -1,0 +1,36 @@
+[package]
+name = "bridge-kabod"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Vector DB ORM engine for BridgeRust (Facade)"
+
+[features]
+default = ["all"]
+all = ["qdrant", "pinecone", "chroma", "lancedb", "pgvector"]
+
+# Individual adapters
+qdrant = ["dep:bridge-kabod-qdrant"]
+pinecone = ["dep:bridge-kabod-pinecone"]
+chroma = ["dep:bridge-kabod-chroma"]
+lancedb = ["dep:bridge-kabod-lancedb"]
+pgvector = ["dep:bridge-kabod-pgvector"]
+
+[dependencies]
+bridge-kabod-core = { path = "../core" }
+
+# Optional adapter crates
+bridge-kabod-qdrant = { path = "../adapters/qdrant", optional = true }
+bridge-kabod-pinecone = { path = "../adapters/pinecone", optional = true }
+bridge-kabod-chroma = { path = "../adapters/chroma", optional = true }
+bridge-kabod-lancedb = { path = "../adapters/lancedb", optional = true }
+bridge-kabod-pgvector = { path = "../adapters/pgvector", optional = true }
+
+# Shared dependencies for the orchestrator
+anyhow = "1.0.100"
+tokio = { version = "1.48", features = ["full"] }
+async-trait = "0.1.89"
+config = "0.15.19"

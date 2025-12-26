@@ -11,8 +11,17 @@ repository.workspace = true
 name = "kabod"
 crate-type = ["cdylib"]
 
+[features]
+default = ["all"]
+all = ["qdrant", "pinecone", "chroma", "lancedb", "pgvector"]
+qdrant = ["bridge-kabod/qdrant"]
+pinecone = ["bridge-kabod/pinecone"]
+chroma = ["bridge-kabod/chroma"]
+lancedb = ["bridge-kabod/lancedb"]
+pgvector = ["bridge-kabod/pgvector"]
+
 [dependencies]
-bridge-kabod = { path = "../../../crates/kabod" }
+bridge-kabod = { path = "../../../crates/kabod/client", default-features = false, features = ["all"] }
 pyo3 = { version = "0.27.2", features = ["extension-module", "abi3-py38"] }
 pyo3-async-runtimes = { version = "0.27.0", features = ["tokio-runtime"] }
 tokio = { version = "1.48", features = ["full"] }

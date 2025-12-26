@@ -6,9 +6,8 @@ use bridge_kabod::KabodClient as RustClient;
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
 use std::collections::HashMap;
-
-// Redefine Point to be Napi-compatible if needed, or implement conversion.
-// Napi supports objects, but for classes we might want struct.
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 #[napi]
 struct KabodClient {
@@ -52,8 +51,8 @@ struct Collection {
 #[napi(object)]
 pub struct Point {
     pub id: String,
-    pub vector: Vec<f64>, // JS numbers are f64
-    pub metadata: Option<HashMap<String, serde_json::Value>>, // napi handles serde_json::Value automatically as "any"
+    pub vector: Vec<f64>,
+    pub metadata: Option<HashMap<String, serde_json::Value>>,
 }
 
 #[napi(object)]
@@ -64,22 +63,24 @@ pub struct SearchResult {
     pub metadata: Option<HashMap<String, serde_json::Value>>,
 }
 
+#[napi(object)]
+pub struct SearchResponse {
+    pub results: Vec<SearchResult>,
+    pub aggregations: HashMap<String, serde_json::Value>,
+}
+
 #[napi]
 impl Collection {
     #[napi]
     #[allow(dead_code)]
     pub async fn insert(&self, points: Vec<Point>) -> Result<()> {
         let inner = self.inner.clone();
-        // Convert Napi Point to Rust Point
         let rust_points: Vec<RustPoint> = points
             .into_iter()
-            .map(|p| {
-                RustPoint {
-                    id: p.id,
-                    // Cast f64 to f32
-                    vector: p.vector.into_iter().map(|v| v as f32).collect(),
-                    metadata: p.metadata,
-                }
+            .map(|p| RustPoint {
+                id: p.id,
+                vector: p.vector.into_iter().map(|v| v as f32).collect(),
+                metadata: p.metadata,
             })
             .collect();
 
@@ -91,40 +92,11 @@ impl Collection {
 
     #[napi]
     #[allow(dead_code)]
-    pub async fn search(
-        &self,
-        vector: Vec<f64>,
-        top_k: Option<u32>, // napi doesn't support usize in arguments well? typically u32
-        include_metadata: Option<bool>,
-        include_vector: Option<bool>,
-    ) -> Result<Vec<SearchResult>> {
-        let inner = self.inner.clone();
+    pub fn search(&self, vector: Vec<f64>) -> SearchBuilder {
         let vec_f32: Vec<f32> = vector.into_iter().map(|v| v as f32).collect();
-        let limit = top_k.unwrap_or(10) as usize;
-        let inc_meta = include_metadata.unwrap_or(true);
-        let inc_vec = include_vector.unwrap_or(false);
-
-        let builder = inner
-            .search(vec_f32)
-            .await
-            .limit(limit)
-            .include_metadata(inc_meta)
-            .include_vector(inc_vec);
-
-        let results = inner
-            .query(builder)
-            .await
-            .map_err(|e| Error::from_reason(e.to_string()))?;
-
-        Ok(results
-            .into_iter()
-            .map(|r| SearchResult {
-                id: r.id,
-                score: r.score as f64,
-                vector: r.vector.map(|v| v.into_iter().map(|x| x as f64).collect()),
-                metadata: r.metadata,
-            })
-            .collect())
+        SearchBuilder {
+            inner: Arc::new(Mutex::new(Some(self.inner.search(vec_f32)))),
+        }
     }
 
     #[napi]
@@ -153,7 +125,6 @@ impl Collection {
         let inner = self.inner.clone();
         let name_str = inner.name().to_string();
 
-        // Similar logic to lib.rs in python binding
         let metric = match distance.as_str() {
             "cosine" => bridge_kabod::types::DistanceMetric::Cosine,
             "euclidean" => bridge_kabod::types::DistanceMetric::Euclidean,
@@ -192,5 +163,79 @@ impl Collection {
             .insert_batch(rust_points, size)
             .await
             .map_err(|e| Error::from_reason(e.to_string()))
+    }
+}
+
+#[napi]
+pub struct SearchBuilder {
+    inner: Arc<Mutex<Option<bridge_kabod::client::SearchBuilder>>>,
+}
+
+#[napi]
+impl SearchBuilder {
+    #[napi]
+    pub async fn limit(&self, limit: u32) -> Result<Self> {
+        let mut inner = self.inner.lock().await;
+        if let Some(builder) = inner.take() {
+            *inner = Some(builder.limit(limit as usize));
+        }
+        Ok(Self {
+            inner: self.inner.clone(),
+        })
+    }
+
+    #[napi]
+    pub async fn offset(&self, offset: u32) -> Result<Self> {
+        let mut inner = self.inner.lock().await;
+        if let Some(builder) = inner.take() {
+            *inner = Some(builder.offset(offset as usize));
+        }
+        Ok(Self {
+            inner: self.inner.clone(),
+        })
+    }
+
+    #[napi]
+    pub async fn include_vector(&self, include: bool) -> Result<Self> {
+        let mut inner = self.inner.lock().await;
+        if let Some(builder) = inner.take() {
+            *inner = Some(builder.include_vector(include));
+        }
+        Ok(Self {
+            inner: self.inner.clone(),
+        })
+    }
+
+    #[napi]
+    pub async fn include_metadata(&self, include: bool) -> Result<Self> {
+        let mut inner = self.inner.lock().await;
+        if let Some(builder) = inner.take() {
+            *inner = Some(builder.include_metadata(include));
+        }
+        Ok(Self {
+            inner: self.inner.clone(),
+        })
+    }
+
+    #[napi]
+    pub async fn execute(&self) -> Result<SearchResponse> {
+        let mut inner = self.inner.lock().await;
+        let builder = inner.take().ok_or_else(|| Error::from_reason("Search already executed"))?;
+
+        let res = builder.execute().await.map_err(|e| Error::from_reason(e.to_string()))?;
+
+        Ok(SearchResponse {
+            results: res
+                .results
+                .into_iter()
+                .map(|r| SearchResult {
+                    id: r.id,
+                    score: r.score as f64,
+                    vector: r.vector.map(|v| v.into_iter().map(|x| x as f64).collect()),
+                    metadata: r.metadata,
+                })
+                .collect(),
+            aggregations: res.aggregations,
+        })
     }
 }

@@ -1,6 +1,6 @@
-use bridge_kabod::adapters::lancedb::LanceDBAdapter;
-use bridge_kabod::db::VectorDatabase;
-use bridge_kabod::types::{CollectionSchema, DistanceMetric, Point};
+use bridge_kabod::VectorDatabase;
+use bridge_kabod::adapters::LanceDBAdapter;
+use bridge_kabod::{CollectionSchema, DistanceMetric, Point};
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use rand::Rng;
 use std::hint::black_box;
@@ -92,8 +92,10 @@ fn bench_search(c: &mut Criterion) {
             vector: query_vector.clone(),
             top_k: *k,
             filter: None,
+            offset: None,
             include_metadata: true,
             include_vector: true,
+            aggregations: Vec::new(),
         };
 
         group.bench_with_input(BenchmarkId::new("top_k", k), &query, |b, query| {

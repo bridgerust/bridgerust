@@ -5,7 +5,7 @@ edition = "2021"
 publish = false
 
 [dependencies]
-bridge-kabod = { path = "../../crates/kabod" }
+bridge-kabod = { path = "../../crates/kabod/client" }
 tokio = { version = "1.48", features = ["full", "rt-multi-thread"] }
 criterion = { version = "0.8.1", features = ["async_tokio"] }
 rand = "0.9.2"

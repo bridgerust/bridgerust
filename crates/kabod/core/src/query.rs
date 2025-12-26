@@ -1,12 +1,14 @@
-use crate::types::{Filter, VectorQuery};
+use crate::types::{Aggregation, Filter, VectorQuery};
 
 pub struct QueryBuilder {
     collection: String,
     vector: Vec<f32>,
     filter: Option<Filter>,
     top_k: usize,
+    offset: Option<usize>,
     include_vector: bool,
     include_metadata: bool,
+    aggregations: Vec<Aggregation>,
 }
 
 impl QueryBuilder {
@@ -16,8 +18,10 @@ impl QueryBuilder {
             vector,
             filter: None,
             top_k: 10,
+            offset: None,
             include_vector: false,
             include_metadata: true,
+            aggregations: Vec::new(),
         }
     }
 
@@ -31,6 +35,11 @@ impl QueryBuilder {
         self
     }
 
+    pub fn offset(mut self, offset: usize) -> Self {
+        self.offset = Some(offset);
+        self
+    }
+
     pub fn include_vector(mut self, include: bool) -> Self {
         self.include_vector = include;
         self
@@ -41,14 +50,21 @@ impl QueryBuilder {
         self
     }
 
+    pub fn aggregate(mut self, agg: Aggregation) -> Self {
+        self.aggregations.push(agg);
+        self
+    }
+
     pub fn build(self) -> VectorQuery {
         VectorQuery {
             collection: self.collection,
             vector: self.vector,
             filter: self.filter,
             top_k: self.top_k,
+            offset: self.offset,
             include_vector: self.include_vector,
             include_metadata: self.include_metadata,
+            aggregations: self.aggregations,
         }
     }
 }
