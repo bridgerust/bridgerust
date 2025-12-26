@@ -5,6 +5,7 @@ use crate::types::{CollectionSchema, Point, SearchResult};
 use crate::query::QueryBuilder;
 use crate::adapters::qdrant::QdrantAdapter;
 use crate::adapters::pinecone::PineconeAdapter;
+use crate::adapters::chroma::ChromaAdapter;
 use crate::config::KabodConfig;
 
 #[derive(Clone)]
@@ -25,6 +26,16 @@ impl KabodClient {
                 let region = config.options.get("region").map(|s| s.as_str());
                 let namespace = config.options.get("namespace").map(|s| s.as_str());
                 Arc::new(PineconeAdapter::new(api_key, cloud, region, namespace)?)
+            },
+            "chroma" => {
+                if let Some(api_key) = config.api_key.as_ref() {
+                    let database = config.options.get("database")
+                        .map(|s| s.as_str())
+                        .unwrap_or("default_database");
+                    Arc::new(ChromaAdapter::cloud(api_key, database)?)
+                } else {
+                    Arc::new(ChromaAdapter::from_env()?)
+                }
             },
             _ => return Err(crate::error::KabodError::Config(config::ConfigError::Message(format!("Unknown provider: {}", config.provider)))),
         };
