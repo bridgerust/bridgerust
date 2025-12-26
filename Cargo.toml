@@ -3,7 +3,10 @@ resolver = "3"
 members = [
     "crates/core",
     "crates/schema",
-    "bindings/python/bridge-schema"
+    "crates/kabod",
+    "bindings/python/bridge-schema",
+    "bindings/python/kabod",
+    "bindings/node/@bridgerust/kabod"
 ]
 
 [workspace.package]
