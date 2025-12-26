@@ -111,8 +111,12 @@ impl VectorDatabase for WeaviateAdapter {
             }
         }).collect();
 
+        let payload = json!({
+            "objects": objects
+        });
+
         let res = self.client.post(&url)
-            .json(&objects)
+            .json(&payload)
             .send()
             .await
             .map_err(|e| KabodError::Connection(e.to_string()))?;

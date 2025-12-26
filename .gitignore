@@ -3,6 +3,7 @@
 
 # Agent tools (local only)
 .agent/
+.cursor/
 #############
 # Rust
 #############

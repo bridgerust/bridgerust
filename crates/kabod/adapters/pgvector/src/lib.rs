@@ -73,10 +73,12 @@ impl VectorDatabase for PgVectorAdapter {
             DistanceMetric::Dot => "vector_ip_ops",
         };
 
+        // Use HNSW index which works better for small datasets
+        // IVFFlat with many lists doesn't work well with few rows
         let create_index_sql = format!(
             r#"
             CREATE INDEX IF NOT EXISTS "{}" ON "{}" 
-            USING ivfflat (vector {}) WITH (lists = 100)
+            USING hnsw (vector {})
             "#,
             index_name, table_name, index_type
         );

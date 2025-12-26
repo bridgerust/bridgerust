@@ -42,16 +42,16 @@ impl MilvusAdapter {
 #[async_trait]
 impl VectorDatabase for MilvusAdapter {
     async fn create_collection(&self, schema: &CollectionSchema) -> Result<(), KabodError> {
-        // POST /v2/vectordb/collections/create
         let url = format!("{}/v2/vectordb/collections/create", self.url);
         
-        // Milvus V2 simplified API
         let payload = json!({
             "collectionName": schema.name,
             "dimension": schema.dimension,
-            "metricType": "COSINE", // Defaulting to Cosine
-            "primaryField": "id",
-            "vectorField": "vector"
+            "metricType": "COSINE",
+            "primaryFieldName": "id",
+            "idType": "VarChar",
+            "vectorFieldName": "vector",
+            "params": { "max_length": 256 }
         });
 
         let mut req = self.client.post(&url).json(&payload);
@@ -62,16 +62,31 @@ impl VectorDatabase for MilvusAdapter {
 
         if !res.status().is_success() {
             let text = res.text().await.unwrap_or_default();
-             // Ignore if already exists (error code check usually needed)
             if !text.contains("already exist") {
                  return Err(KabodError::Database(format!("Failed to create collection: {}", text)));
             }
         }
+        
+        let load_url = format!("{}/v2/vectordb/collections/load", self.url);
+        let load_payload = json!({ "collectionName": schema.name });
+        
+        let mut load_req = self.client.post(&load_url).json(&load_payload);
+        if let Some(ref token) = self.token {
+            load_req = load_req.bearer_auth(token);
+        }
+        let load_res = load_req.send().await.map_err(|e| KabodError::Connection(e.to_string()))?;
+        
+        if !load_res.status().is_success() {
+            let text = load_res.text().await.unwrap_or_default();
+            if !text.contains("already loaded") && !text.contains("loaded") {
+                return Err(KabodError::Database(format!("Failed to load collection: {}", text)));
+            }
+        }
+        
         Ok(())
     }
 
     async fn delete_collection(&self, name: &str) -> Result<(), KabodError> {
-        // POST /v2/vectordb/collections/drop
         let url = format!("{}/v2/vectordb/collections/drop", self.url);
         let payload = json!({ "collectionName": name });
         
@@ -89,11 +104,8 @@ impl VectorDatabase for MilvusAdapter {
     }
 
     async fn insert(&self, collection: &str, points: Vec<Point>) -> Result<(), KabodError> {
-        // POST /v2/vectordb/entities/insert
         let url = format!("{}/v2/vectordb/entities/insert", self.url);
         
-        // Mivlus V2 expects:
-        // { collectionName: "...", data: [ {id: "...", vector: [...], ...}, ... ] }
         let mut data = Vec::new();
         for p in points {
             let mut row = serde_json::Map::new();
@@ -122,6 +134,18 @@ impl VectorDatabase for MilvusAdapter {
             let text = res.text().await.unwrap_or_default();
             return Err(KabodError::Database(format!("Insert failed: {}", text)));
         }
+        
+        // Flush collection to make data immediately searchable
+        let flush_url = format!("{}/v2/vectordb/collections/flush", self.url);
+        let flush_payload = json!({ "collectionName": collection });
+        
+        let mut flush_req = self.client.post(&flush_url).json(&flush_payload);
+        if let Some(ref token) = self.token {
+            flush_req = flush_req.bearer_auth(token);
+        }
+        // Ignore flush errors - data will eventually be flushed automatically
+        let _ = flush_req.send().await;
+        
         Ok(())
     }
 

@@ -46,6 +46,27 @@ impl KabodClient {
         Ok(Self { inner: client })
     }
 
+    /// Create a new Kabod client with async initialization.
+    /// Required for providers like 'milvus', 'pgvector', and 'lancedb'.
+    /// 
+    /// @param provider - The database provider.
+    /// @param url - The connection URL.
+    /// @param apiKey - Optional API key.
+    #[napi(factory)]
+    pub async fn new_async(provider: String, url: String, api_key: Option<String>) -> Result<Self> {
+        let config = KabodConfig {
+            provider,
+            url,
+            api_key,
+            timeout_ms: None,
+            options: Default::default(),
+        };
+
+        let client = RustClient::new_async(config).await.map_err(to_napi_err)?;
+
+        Ok(Self { inner: client })
+    }
+
     #[napi]
     pub fn collection(&self, name: String) -> Collection {
         Collection {
