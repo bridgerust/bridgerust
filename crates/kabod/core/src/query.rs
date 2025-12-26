@@ -2,7 +2,7 @@ use crate::types::{Aggregation, Filter, VectorQuery};
 
 pub struct QueryBuilder {
     collection: String,
-    vector: Vec<f32>,
+    vector: Option<Vec<f32>>,
     filter: Option<Filter>,
     top_k: usize,
     offset: Option<usize>,
@@ -15,7 +15,20 @@ impl QueryBuilder {
     pub fn new(collection: impl Into<String>, vector: Vec<f32>) -> Self {
         Self {
             collection: collection.into(),
-            vector,
+            vector: Some(vector),
+            filter: None,
+            top_k: 10,
+            offset: None,
+            include_vector: false,
+            include_metadata: true,
+            aggregations: Vec::new(),
+        }
+    }
+
+    pub fn new_filter_only(collection: impl Into<String>) -> Self {
+        Self {
+            collection: collection.into(),
+            vector: None,
             filter: None,
             top_k: 10,
             offset: None,
@@ -81,7 +94,7 @@ mod tests {
             .build();
 
         assert_eq!(q.collection, "test_collection");
-        assert_eq!(q.vector, vec![1.0, 2.0, 3.0]);
+        assert_eq!(q.vector, Some(vec![1.0, 2.0, 3.0]));
         assert_eq!(q.top_k, 5);
         assert_eq!(q.include_metadata, false);
     }

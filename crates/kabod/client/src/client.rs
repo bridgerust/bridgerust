@@ -12,6 +12,14 @@ pub struct KabodClient {
 }
 
 impl KabodClient {
+    pub fn db(&self) -> Arc<dyn VectorDatabase> {
+        self.db.clone()
+    }
+
+    pub fn from_db(db: Arc<dyn VectorDatabase>) -> Self {
+        Self { db }
+    }
+
     pub fn new(config: KabodConfig) -> Result<Self> {
         #[cfg(feature = "qdrant")]
         if config.provider == "qdrant" {
@@ -139,11 +147,30 @@ impl Collection {
         self.db.delete(&self.name, ids).await
     }
 
-    /// Insert points in batches of specified size
-    pub async fn insert_batch(&self, points: Vec<Point>, batch_size: usize) -> Result<()> {
-        for chunk in points.chunks(batch_size) {
-            self.db.insert(&self.name, chunk.to_vec()).await?;
-        }
+    /// Insert points in batches of specified size with parallel execution
+    pub async fn insert_batch(
+        &self,
+        points: Vec<Point>,
+        batch_size: usize,
+        parallel: Option<usize>,
+    ) -> Result<()> {
+        use futures::StreamExt;
+
+        let concurrency = parallel.unwrap_or(1);
+        let chunks: Vec<Vec<Point>> = points.chunks(batch_size).map(|c| c.to_vec()).collect();
+
+        futures::stream::iter(chunks)
+            .map(|chunk| {
+                let db = self.db.clone();
+                let name = self.name.clone();
+                async move { db.insert(&name, chunk).await }
+            })
+            .buffer_unordered(concurrency)
+            .collect::<Vec<_>>()
+            .await
+            .into_iter()
+            .collect::<Result<Vec<()>>>()?;
+
         Ok(())
     }
 }

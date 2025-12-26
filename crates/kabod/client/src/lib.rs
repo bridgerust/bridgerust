@@ -9,3 +9,7 @@ pub use bridge_kabod_core::query::{self, QueryBuilder};
 pub use bridge_kabod_core::types::{self, *};
 
 pub use client::KabodClient;
+
+pub mod migration;
+pub use bridge_kabod_core::migration::Migration;
+pub use migration::MigrationManager;

@@ -89,7 +89,7 @@ fn bench_search(c: &mut Criterion) {
     for k in [1, 10, 100].iter() {
         let query = bridge_kabod::types::VectorQuery {
             collection: "search_collection".to_string(),
-            vector: query_vector.clone(),
+            vector: Some(query_vector.clone()),
             top_k: *k,
             filter: None,
             offset: None,

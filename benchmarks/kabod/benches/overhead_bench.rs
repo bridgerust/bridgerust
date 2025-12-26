@@ -91,7 +91,7 @@ fn bench_vector_query_creation(c: &mut Criterion) {
     c.bench_function("vector_query_creation", |b| {
         b.iter(|| VectorQuery {
             collection: black_box("test_collection".to_string()),
-            vector: black_box(vector.clone()),
+            vector: black_box(Some(vector.clone())),
             top_k: black_box(10),
             filter: None,
             offset: None,

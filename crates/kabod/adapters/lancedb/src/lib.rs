@@ -145,8 +145,12 @@ impl VectorDatabase for LanceDBAdapter {
             .await
             .map_err(|e| KabodError::Database(format!("Failed to open table: {}", e)))?;
 
+        let vector = query.vector.clone().ok_or_else(|| {
+            KabodError::Unsupported("LanceDB adapter requires a vector for search queries.".into())
+        })?;
+
         let mut search_builder = table
-            .vector_search(query.vector.clone())
+            .vector_search(vector)
             .map_err(|e| KabodError::Database(format!("Failed to search: {}", e)))?
             .distance_type(DistanceType::L2)
             .limit(query.top_k);

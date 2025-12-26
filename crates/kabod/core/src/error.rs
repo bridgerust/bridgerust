@@ -22,6 +22,9 @@ pub enum KabodError {
     #[error("Not implemented: {0}")]
     NotImplemented(String),
 
+    #[error("Operation not supported: {0}")]
+    Unsupported(String),
+
     #[error(transparent)]
     Other(#[from] anyhow::Error),
 }

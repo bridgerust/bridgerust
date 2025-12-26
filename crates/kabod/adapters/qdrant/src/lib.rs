@@ -90,29 +90,13 @@ impl VectorDatabase for QdrantAdapter {
     }
 
     async fn search(&self, query: &VectorQuery) -> Result<SearchResponse> {
-        let mut builder = SearchPointsBuilder::new(
-            query.collection.clone(),
-            query.vector.clone(),
-            query.top_k as u64,
-        )
-        .with_payload(query.include_metadata)
-        .with_vectors(query.include_vector);
-
-        if let Some(offset) = query.offset {
-            builder = builder.offset(offset as u64);
-        }
-
-        if let Some(filter) = &query.filter {
-            builder = builder.filter(convert_filter(filter));
-        }
-
-        let result = self
-            .client
-            .search_points(builder)
-            .await
-            .map_err(|e| KabodError::Database(e.to_string()))?;
+        // If vector is present, use SearchPoints (KNN)
+        // If vector is absent, use ScrollPoints (Filter only)
 
         let mut aggregations = HashMap::new();
+        // Aggregations (like count) are separate from search hits usually in Qdrant concepts for this adapter
+        // But here they were implemented inside the search method.
+        // Let's preserve aggregation logic which uses 'count' API directly.
         for agg in &query.aggregations {
             match agg {
                 bridge_kabod_core::types::Aggregation::Count => {
@@ -133,12 +117,94 @@ impl VectorDatabase for QdrantAdapter {
             }
         }
 
-        Ok(SearchResponse {
-            results: result
+        let search_results = if let Some(vector) = &query.vector {
+            let mut builder = SearchPointsBuilder::new(
+                query.collection.clone(),
+                vector.clone(),
+                query.top_k as u64,
+            )
+            .with_payload(query.include_metadata)
+            .with_vectors(query.include_vector);
+
+            if let Some(offset) = query.offset {
+                builder = builder.offset(offset as u64);
+            }
+
+            if let Some(filter) = &query.filter {
+                builder = builder.filter(convert_filter(filter));
+            }
+
+            let result = self
+                .client
+                .search_points(builder)
+                .await
+                .map_err(|e| KabodError::Database(e.to_string()))?;
+
+            result
                 .result
                 .into_iter()
                 .map(convert_scored_point)
-                .collect(),
+                .collect()
+        } else {
+            use qdrant_client::qdrant::ScrollPointsBuilder;
+
+            let mut builder = ScrollPointsBuilder::new(query.collection.clone())
+                .limit(query.top_k as u32)
+                .with_payload(query.include_metadata)
+                .with_vectors(query.include_vector);
+
+            if let Some(_offset) = query.offset {
+                return Err(KabodError::Unsupported(
+                    "Offset not supported for filter-only queries in Qdrant adapter yet.".into(),
+                ));
+            }
+
+            if let Some(filter) = &query.filter {
+                builder = builder.filter(convert_filter(filter));
+            }
+
+            let result = self
+                .client
+                .scroll(builder)
+                .await
+                .map_err(|e| KabodError::Database(e.to_string()))?;
+
+            result
+                .result
+                .into_iter()
+                .map(|p| {
+                    // Convert RetrievedPoint to SearchResult
+                    // Score is 0.0 or 1.0 since it's exact match/filter
+                    let id =
+                        p.id.and_then(|id| id.point_id_options)
+                            .map(|opt| match opt {
+                                qdrant_client::qdrant::point_id::PointIdOptions::Num(n) => {
+                                    n.to_string()
+                                }
+                                qdrant_client::qdrant::point_id::PointIdOptions::Uuid(u) => u,
+                            })
+                            .unwrap_or_default();
+
+                    #[allow(deprecated)]
+                    let vector = p.vectors.and_then(|v| match v.vectors_options {
+                        Some(qdrant_client::qdrant::vectors_output::VectorsOptions::Vector(v)) => {
+                            Some(v.data)
+                        }
+                        _ => None,
+                    });
+
+                    SearchResult {
+                        id,
+                        score: 1.0,
+                        vector,
+                        metadata: Some(p.payload.into_iter().map(|(k, v)| (k, v.into())).collect()),
+                    }
+                })
+                .collect()
+        };
+
+        Ok(SearchResponse {
+            results: search_results,
             aggregations,
         })
     }

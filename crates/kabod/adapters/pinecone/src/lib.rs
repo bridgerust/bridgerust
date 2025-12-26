@@ -275,10 +275,14 @@ impl VectorDatabase for PineconeAdapter {
     async fn search(&self, query: &VectorQuery) -> Result<SearchResponse> {
         let host = self.get_index_host(&query.collection).await?;
 
+        let vector = query.vector.clone().ok_or_else(|| {
+            KabodError::Unsupported("Pinecone adapter requires a vector for search queries.".into())
+        })?;
+
         // Note: Pinecone does not natively support 'offset' in query
         let request = QueryRequest {
             namespace: self.namespace.clone(),
-            vector: query.vector.clone(),
+            vector,
             top_k: query.top_k,
             include_values: query.include_vector,
             include_metadata: query.include_metadata,

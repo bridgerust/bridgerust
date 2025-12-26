@@ -1,24 +1,31 @@
-#![deny(clippy::all)]
-
-use bridge_kabod::config::KabodConfig;
-use bridge_kabod::types::Point as RustPoint;
-use bridge_kabod::KabodClient as RustClient;
 use napi::bindgen_prelude::*;
+
+use bridge_kabod::{config::KabodConfig, types::Point as RustPoint, KabodClient as RustClient};
+
 use napi_derive::napi;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+fn to_napi_err(err: bridge_kabod::error::KabodError) -> Error {
+    use bridge_kabod::error::KabodError::*;
+    match err {
+        Config(e) => Error::new(Status::InvalidArg, e.to_string()),
+        Database(e) => Error::from_reason(e),
+        Serialization(e) => Error::new(Status::InvalidArg, e.to_string()),
+        Validation(e) => Error::new(Status::InvalidArg, e),
+        other => Error::from_reason(other.to_string()),
+    }
+}
+
 #[napi]
-struct KabodClient {
-    #[allow(dead_code)]
+pub struct KabodClient {
     inner: RustClient,
 }
 
 #[napi]
 impl KabodClient {
     #[napi(constructor)]
-    #[allow(dead_code)]
     pub fn new(provider: String, url: String, api_key: Option<String>) -> Result<Self> {
         let config = KabodConfig {
             provider,
@@ -28,13 +35,12 @@ impl KabodClient {
             options: Default::default(),
         };
 
-        let client = RustClient::new(config).map_err(|e| Error::from_reason(e.to_string()))?;
+        let client = RustClient::new(config).map_err(to_napi_err)?;
 
         Ok(Self { inner: client })
     }
 
     #[napi]
-    #[allow(dead_code)]
     pub fn collection(&self, name: String) -> Collection {
         Collection {
             inner: self.inner.collection(&name),
@@ -43,8 +49,7 @@ impl KabodClient {
 }
 
 #[napi]
-struct Collection {
-    #[allow(dead_code)]
+pub struct Collection {
     inner: bridge_kabod::client::Collection,
 }
 
@@ -69,10 +74,18 @@ pub struct SearchResponse {
     pub aggregations: HashMap<String, serde_json::Value>,
 }
 
+#[napi(object)]
+pub struct SearchOptions {
+    pub limit: Option<u32>,
+    pub filter: Option<serde_json::Value>,
+    pub include_metadata: Option<bool>,
+    pub include_vector: Option<bool>,
+    pub offset: Option<u32>,
+}
+
 #[napi]
 impl Collection {
     #[napi]
-    #[allow(dead_code)]
     pub async fn insert(&self, points: Vec<Point>) -> Result<()> {
         let inner = self.inner.clone();
         let rust_points: Vec<RustPoint> = points
@@ -84,14 +97,56 @@ impl Collection {
             })
             .collect();
 
-        inner
-            .insert(rust_points)
-            .await
-            .map_err(|e| Error::from_reason(e.to_string()))
+        inner.insert(rust_points).await.map_err(to_napi_err)
     }
 
     #[napi]
-    #[allow(dead_code)]
+    pub async fn query(
+        &self,
+        vector: Vec<f64>,
+        options: Option<SearchOptions>,
+    ) -> Result<SearchResponse> {
+        let vec_f32: Vec<f32> = vector.into_iter().map(|v| v as f32).collect();
+        let mut builder = self.inner.search(vec_f32);
+
+        if let Some(opts) = options {
+            if let Some(l) = opts.limit {
+                builder = builder.limit(l as usize);
+            }
+            if let Some(o) = opts.offset {
+                builder = builder.offset(o as usize);
+            }
+            if let Some(im) = opts.include_metadata {
+                builder = builder.include_metadata(im);
+            }
+            if let Some(iv) = opts.include_vector {
+                builder = builder.include_vector(iv);
+            }
+            if let Some(f) = opts.filter {
+                let rust_filter: bridge_kabod::types::Filter = serde_json::from_value(f)
+                    .map_err(|e| Error::from_reason(format!("Invalid filter: {}", e)))?;
+                builder = builder.filter(rust_filter);
+            }
+        }
+
+        let res = builder.execute().await.map_err(to_napi_err)?;
+
+        Ok(SearchResponse {
+            results: res
+                .results
+                .into_iter()
+                .map(|r| SearchResult {
+                    id: r.id,
+                    score: r.score as f64,
+                    vector: r.vector.map(|v| v.into_iter().map(|x| x as f64).collect()),
+                    metadata: r.metadata,
+                })
+                .collect(),
+            aggregations: res.aggregations,
+        })
+    }
+
+    #[napi]
     pub fn search(&self, vector: Vec<f64>) -> SearchBuilder {
         let vec_f32: Vec<f32> = vector.into_iter().map(|v| v as f32).collect();
         SearchBuilder {
@@ -100,27 +155,18 @@ impl Collection {
     }
 
     #[napi]
-    #[allow(dead_code)]
     pub async fn delete(&self, ids: Vec<String>) -> Result<()> {
         let inner = self.inner.clone();
-        inner
-            .delete(ids)
-            .await
-            .map_err(|e| Error::from_reason(e.to_string()))
+        inner.delete(ids).await.map_err(to_napi_err)
     }
 
     #[napi]
-    #[allow(dead_code)]
     pub async fn delete_collection(&self) -> Result<()> {
         let inner = self.inner.clone();
-        inner
-            .delete_collection()
-            .await
-            .map_err(|e| Error::from_reason(e.to_string()))
+        inner.delete_collection().await.map_err(to_napi_err)
     }
 
     #[napi]
-    #[allow(dead_code)]
     pub async fn create(&self, dimension: u32, distance: String) -> Result<()> {
         let inner = self.inner.clone();
         let name_str = inner.name().to_string();
@@ -138,17 +184,19 @@ impl Collection {
             metric,
         };
 
-        inner
-            .create(schema)
-            .await
-            .map_err(|e| Error::from_reason(e.to_string()))
+        inner.create(schema).await.map_err(to_napi_err)
     }
 
     #[napi]
-    #[allow(dead_code)]
-    pub async fn insert_batch(&self, points: Vec<Point>, batch_size: Option<u32>) -> Result<()> {
+    pub async fn insert_batch(
+        &self,
+        points: Vec<Point>,
+        batch_size: Option<u32>,
+        parallel: Option<u32>,
+    ) -> Result<()> {
         let inner = self.inner.clone();
         let size = batch_size.unwrap_or(1000) as usize;
+        let concurrency = parallel.map(|p| p as usize);
 
         let rust_points: Vec<RustPoint> = points
             .into_iter()
@@ -160,9 +208,9 @@ impl Collection {
             .collect();
 
         inner
-            .insert_batch(rust_points, size)
+            .insert_batch(rust_points, size, concurrency)
             .await
-            .map_err(|e| Error::from_reason(e.to_string()))
+            .map_err(to_napi_err)
     }
 }
 
@@ -218,16 +266,27 @@ impl SearchBuilder {
     }
 
     #[napi]
+    pub async fn filter(&self, filter: serde_json::Value) -> Result<Self> {
+        let rust_filter: bridge_kabod::types::Filter = serde_json::from_value(filter)
+            .map_err(|e| Error::from_reason(format!("Invalid filter: {}", e)))?;
+
+        let mut inner = self.inner.lock().await;
+        if let Some(builder) = inner.take() {
+            *inner = Some(builder.filter(rust_filter));
+        }
+        Ok(Self {
+            inner: self.inner.clone(),
+        })
+    }
+
+    #[napi]
     pub async fn execute(&self) -> Result<SearchResponse> {
         let mut inner = self.inner.lock().await;
         let builder = inner
             .take()
             .ok_or_else(|| Error::from_reason("Search already executed"))?;
 
-        let res = builder
-            .execute()
-            .await
-            .map_err(|e| Error::from_reason(e.to_string()))?;
+        let res = builder.execute().await.map_err(to_napi_err)?;
 
         Ok(SearchResponse {
             results: res

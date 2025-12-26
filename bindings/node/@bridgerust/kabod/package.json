@@ -20,9 +20,11 @@
     "build:debug": "napi build --platform",
     "prepublishOnly": "napi prepublish -t npm",
     "artifacts": "napi artifacts",
-    "test": "node test_kabod.js"
+    "test": "vitest run"
   },
   "devDependencies": {
-    "@napi-rs/cli": "^3.5.0"
+    "@napi-rs/cli": "^3.5.0",
+    "vitest": "^1.0.0",
+    "@types/node": "^20.0.0"
   }
 }

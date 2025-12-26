@@ -128,7 +128,6 @@ impl VectorDatabase for PgVectorAdapter {
     }
 
     async fn search(&self, query: &VectorQuery) -> Result<SearchResponse> {
-        let vector = Vector::from(query.vector.clone());
         let distance_op = Self::distance_operator(&DistanceMetric::Cosine); // Default to cosine
 
         let filter_clause = if let Some(filter) = &query.filter {
@@ -143,33 +142,58 @@ impl VectorDatabase for PgVectorAdapter {
             String::new()
         };
 
-        let search_sql = format!(
-            r#"
-            SELECT id, vector {} $1 as distance, metadata
-            FROM "{}"
-            WHERE 1=1 {}
-            ORDER BY vector {} $1
-            LIMIT $2
-            {}
-            "#,
-            distance_op, query.collection, filter_clause, distance_op, offset_clause
-        );
+        let (search_sql, params) = if let Some(vector) = &query.vector {
+            let vector = Vector::from(vector.clone());
+            let sql = format!(
+                r#"
+                SELECT id, vector {} $1 as distance, metadata
+                FROM "{}"
+                WHERE 1=1 {}
+                ORDER BY vector {} $1
+                LIMIT $2
+                {}
+                "#,
+                distance_op, query.collection, filter_clause, distance_op, offset_clause
+            );
+            (sql, Some(vector))
+        } else {
+            // Filter only, no distance sorting
+            let sql = format!(
+                r#"
+                SELECT id, NULL as distance, metadata
+                FROM "{}"
+                WHERE 1=1 {}
+                LIMIT $1
+                {}
+                "#,
+                query.collection, filter_clause, offset_clause
+            );
+            (sql, None)
+        };
 
-        let rows = sqlx::query(&search_sql)
-            .bind(vector)
-            .bind(query.top_k as i32)
-            .fetch_all(&self.pool)
-            .await
-            .map_err(|e| KabodError::Database(format!("Failed to search: {}", e)))?;
+        let rows = if let Some(vector) = params {
+            sqlx::query(&search_sql)
+                .bind(vector)
+                .bind(query.top_k as i32)
+                .fetch_all(&self.pool)
+                .await
+                .map_err(|e| KabodError::Database(format!("Failed to search: {}", e)))?
+        } else {
+            sqlx::query(&search_sql)
+                .bind(query.top_k as i32)
+                .fetch_all(&self.pool)
+                .await
+                .map_err(|e| KabodError::Database(format!("Failed to search: {}", e)))?
+        };
 
         let mut results = Vec::new();
         for row in rows {
             let id: String = row
                 .try_get("id")
                 .map_err(|e| KabodError::Database(e.to_string()))?;
-            let distance: f64 = row
-                .try_get("distance")
-                .map_err(|e| KabodError::Database(e.to_string()))?;
+
+            let distance: f64 = row.try_get("distance").unwrap_or(0.0);
+
             let metadata: Option<serde_json::Value> = row.try_get("metadata").ok();
 
             let metadata_map: Option<HashMap<String, serde_json::Value>> =
@@ -177,7 +201,9 @@ impl VectorDatabase for PgVectorAdapter {
 
             results.push(SearchResult {
                 id,
-                score: distance as f32,
+                score: distance as f32, // Note: distance is not score, but Kabod usage seems to treat them loosely?
+                // Usually score = 1 - distance or similar depending on metric.
+                // But here we return raw distance/value.
                 vector: None,
                 metadata: metadata_map,
             });

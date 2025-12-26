@@ -1,12 +1,91 @@
+use bridge_kabod::KabodClient as RustClient;
+use bridge_kabod::Migration;
+use bridge_kabod::MigrationManager;
+use bridge_kabod::VectorDatabase;
+use bridge_kabod::config::KabodConfig;
+use bridge_kabod::types::{Filter, Point, SearchResponse as RustSearchResponse};
 use pyo3::IntoPyObjectExt;
 use pyo3::prelude::*;
-use pyo3::types::{PyDict, PyList};
-
-use bridge_kabod::KabodClient as RustClient;
-use bridge_kabod::config::KabodConfig;
-use bridge_kabod::types::Point;
+use pyo3::types::{PyDict, PyIterator, PyList};
 use serde_json::Value;
 use std::collections::HashMap;
+use std::sync::Arc;
+
+use pyo3::create_exception;
+
+create_exception!(kabod, KabodError, pyo3::exceptions::PyException);
+create_exception!(kabod, KabodConfigError, KabodError);
+create_exception!(kabod, KabodDatabaseError, KabodError);
+create_exception!(kabod, KabodSerializationError, KabodError);
+create_exception!(kabod, KabodValidationError, KabodError);
+
+fn to_py_err(err: bridge_kabod::error::KabodError) -> PyErr {
+    use bridge_kabod::error::KabodError::*;
+    match err {
+        Config(e) => KabodConfigError::new_err(e.to_string()),
+        Database(e) => KabodDatabaseError::new_err(e),
+        Serialization(e) => KabodSerializationError::new_err(e.to_string()),
+        Validation(e) => KabodValidationError::new_err(e),
+        other => KabodError::new_err(other.to_string()),
+    }
+}
+
+struct PyMigrationAdapter {
+    inner: Py<PyAny>,
+}
+
+#[async_trait::async_trait]
+impl Migration for PyMigrationAdapter {
+    fn version(&self) -> String {
+        Python::attach(|py| {
+            self.inner
+                .getattr(py, "version")
+                .expect("Migration must have version")
+                .extract(py)
+                .expect("Version must be string")
+        })
+    }
+
+    async fn up(&self, db: Arc<dyn VectorDatabase>) -> bridge_kabod::error::Result<()> {
+        let client = KabodClient {
+            inner: RustClient::from_db(db),
+        };
+
+        let fut = Python::attach(|py| {
+            let py_client = Py::new(py, client).expect("Failed to create python client");
+            let awaitable = self
+                .inner
+                .call_method1(py, "up", (py_client,))
+                .expect("Failed to call up");
+            pyo3_async_runtimes::tokio::into_future(awaitable.bind(py).clone())
+                .expect("Failed to convert future")
+        });
+
+        fut.await
+            .map_err(|e| bridge_kabod::error::KabodError::Validation(e.to_string()))?;
+        Ok(())
+    }
+
+    async fn down(&self, db: Arc<dyn VectorDatabase>) -> bridge_kabod::error::Result<()> {
+        let client = KabodClient {
+            inner: RustClient::from_db(db),
+        };
+
+        let fut = Python::attach(|py| {
+            let py_client = Py::new(py, client).expect("Failed to create python client");
+            let awaitable = self
+                .inner
+                .call_method1(py, "down", (py_client,))
+                .expect("Failed to call down");
+            pyo3_async_runtimes::tokio::into_future(awaitable.bind(py).clone())
+                .expect("Failed to convert future")
+        });
+
+        fut.await
+            .map_err(|e| bridge_kabod::error::KabodError::Validation(e.to_string()))?;
+        Ok(())
+    }
+}
 
 #[pyclass]
 struct KabodClient {
@@ -26,8 +105,7 @@ impl KabodClient {
             options: Default::default(),
         };
 
-        let client = RustClient::new(config)
-            .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
+        let client = RustClient::new(config).map_err(to_py_err)?;
 
         Ok(Self { inner: client })
     }
@@ -36,6 +114,36 @@ impl KabodClient {
         Collection {
             inner: self.inner.collection(&name),
         }
+    }
+
+    #[pyo3(signature = (migrations))]
+    fn run_migrations<'p>(
+        &self,
+        py: Python<'p>,
+        migrations: Vec<Py<PyAny>>,
+    ) -> PyResult<Bound<'p, PyAny>> {
+        // MigrationManager takes Arc<dyn VectorDatabase>.
+        // Let's assume I can get db from RustClient via a new method `db()` I should add.
+        // Or I can add `db()` to `KabodClient` in client.rs.
+
+        // Actually, let's look at `KabodClient::collection`. It creates `Collection` which holds `db`.
+        // `KabodClient` has `db` field.
+        // I'll add `pub fn db(&self) -> Arc<dyn VectorDatabase>` to `RustClient`.
+
+        let db = self.inner.db();
+        let manager = MigrationManager::new(db);
+
+        let rust_migrations: Vec<Box<dyn Migration>> = migrations
+            .into_iter()
+            .map(|m| Box::new(PyMigrationAdapter { inner: m }) as Box<dyn Migration>)
+            .collect();
+
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            manager
+                .run_migrations(rust_migrations)
+                .await
+                .map_err(to_py_err)
+        })
     }
 }
 
@@ -64,6 +172,26 @@ impl KabodPoint {
             metadata,
         }
     }
+
+    fn dict(&self, py: Python) -> PyResult<Py<PyAny>> {
+        let dict = PyDict::new(py);
+        dict.set_item("id", &self.id)?;
+        dict.set_item("vector", &self.vector)?;
+        dict.set_item("metadata", &self.metadata)?;
+        Ok(dict.into())
+    }
+
+    fn model_dump(&self, py: Python) -> PyResult<Py<PyAny>> {
+        self.dict(py)
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "Point(id='{}', vector=[...], metadata={})",
+            self.id,
+            if self.metadata.is_some() { "yes" } else { "no" }
+        )
+    }
 }
 
 #[pyclass]
@@ -76,6 +204,31 @@ struct SearchResult {
     vector: Option<Vec<f32>>,
     #[pyo3(get)]
     metadata: Option<HashMap<String, Py<PyAny>>>,
+}
+
+#[pymethods]
+impl SearchResult {
+    fn dict(&self, py: Python) -> PyResult<Py<PyAny>> {
+        let dict = PyDict::new(py);
+        dict.set_item("id", &self.id)?;
+        dict.set_item("score", self.score)?;
+        dict.set_item("vector", &self.vector)?;
+        dict.set_item("metadata", &self.metadata)?;
+        Ok(dict.into())
+    }
+
+    fn model_dump(&self, py: Python) -> PyResult<Py<PyAny>> {
+        self.dict(py)
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "SearchResult(id='{}', score={:.4}, metadata={})",
+            self.id,
+            self.score,
+            if self.metadata.is_some() { "yes" } else { "no" }
+        )
+    }
 }
 
 impl Clone for SearchResult {
@@ -103,60 +256,30 @@ struct SearchResponse {
     aggregations: HashMap<String, Py<PyAny>>,
 }
 
-// Convert PyObject to serde_json::Value
-fn py_to_json<'py>(py: Python<'py>, obj: &Py<PyAny>) -> PyResult<Value> {
-    let bound = obj.bind(py);
-    if bound.is_none() {
-        return Ok(Value::Null);
+#[pymethods]
+impl SearchResponse {
+    fn dict(&self, py: Python) -> PyResult<Py<PyAny>> {
+        let dict = PyDict::new(py);
+        let results_list = PyList::new(py, self.results.iter().map(|r| r.dict(py).unwrap()))?;
+        dict.set_item("results", results_list)?;
+        dict.set_item("aggregations", &self.aggregations)?;
+        Ok(dict.into())
     }
 
-    if let Ok(s) = bound.extract::<String>() {
-        return Ok(Value::String(s));
+    fn model_dump(&self, py: Python) -> PyResult<Py<PyAny>> {
+        self.dict(py)
     }
 
-    if let Ok(b) = bound.extract::<bool>() {
-        return Ok(Value::Bool(b));
+    fn __repr__(&self) -> String {
+        format!(
+            "SearchResponse(results={}, aggregations={})",
+            self.results.len(),
+            self.aggregations.len()
+        )
     }
 
-    if let Ok(i) = bound.extract::<i64>() {
-        return Ok(Value::Number(serde_json::Number::from(i)));
-    }
-
-    if let Ok(f) = bound.extract::<f64>() {
-        if let Some(n) = serde_json::Number::from_f64(f) {
-            return Ok(Value::Number(n));
-        }
-    }
-
-    Ok(Value::String(bound.to_string()))
-}
-
-// Helper to convert JSON Value to PyObject
-fn json_to_py(py: Python, v: Value) -> Py<PyAny> {
-    match v {
-        Value::Null => py.None(),
-        Value::Bool(b) => b.into_py_any(py).unwrap(),
-        Value::Number(n) => {
-            if let Some(i) = n.as_i64() {
-                i.into_py_any(py).unwrap()
-            } else if let Some(f) = n.as_f64() {
-                f.into_py_any(py).unwrap()
-            } else {
-                n.to_string().into_py_any(py).unwrap()
-            }
-        }
-        Value::String(s) => s.into_py_any(py).unwrap(),
-        Value::Array(a) => {
-            let list = PyList::new(py, a.into_iter().map(|i| json_to_py(py, i))).unwrap();
-            list.into()
-        }
-        Value::Object(o) => {
-            let dict = PyDict::new(py);
-            for (k, v) in o {
-                dict.set_item(k, json_to_py(py, v)).ok();
-            }
-            dict.into()
-        }
+    fn __len__(&self) -> usize {
+        self.results.len()
     }
 }
 
@@ -205,40 +328,9 @@ impl SearchBuilder {
         })?;
 
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            let res = inner
-                .execute()
-                .await
-                .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
+            let res = inner.execute().await.map_err(to_py_err)?;
 
-            Python::attach(|py| {
-                let mut py_results = Vec::with_capacity(res.results.len());
-                for r in res.results {
-                    let py_metadata = r.metadata.map(|m| {
-                        let mut map = HashMap::new();
-                        for (k, v) in m {
-                            map.insert(k, json_to_py(py, v));
-                        }
-                        map
-                    });
-
-                    py_results.push(SearchResult {
-                        id: r.id,
-                        score: r.score,
-                        vector: r.vector,
-                        metadata: py_metadata,
-                    });
-                }
-
-                let mut py_aggregations = HashMap::new();
-                for (k, v) in res.aggregations {
-                    py_aggregations.insert(k, json_to_py(py, v));
-                }
-
-                Ok(SearchResponse {
-                    results: py_results,
-                    aggregations: py_aggregations,
-                })
-            })
+            Python::attach(|py| convert_search_response(py, res))
         })
     }
 }
@@ -272,14 +364,81 @@ impl Collection {
         }
 
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            inner
-                .insert(rust_points)
-                .await
-                .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))
+            inner.insert(rust_points).await.map_err(to_py_err)
         })
     }
 
-    fn search(&self, vector: Vec<f32>) -> SearchBuilder {
+    #[pyo3(signature = (points, batch_size=None, parallel=None))]
+    fn insert_batch<'p>(
+        &self,
+        py: Python<'p>,
+        points: Vec<PyRef<'p, KabodPoint>>,
+        batch_size: Option<usize>,
+        parallel: Option<usize>,
+    ) -> PyResult<Bound<'p, PyAny>> {
+        let inner = self.inner.clone();
+        let size = batch_size.unwrap_or(1000);
+
+        let mut rust_points = Vec::with_capacity(points.len());
+        for p in points {
+            let mut metadata = None;
+            if let Some(py_meta) = &p.metadata {
+                let mut meta_map = HashMap::new();
+                for (k, v) in py_meta {
+                    meta_map.insert(k.clone(), py_to_json(py, v)?);
+                }
+                metadata = Some(meta_map);
+            }
+
+            let point = Point {
+                id: p.id.clone(),
+                vector: p.vector.clone(),
+                metadata,
+            };
+            rust_points.push(point);
+        }
+
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            inner
+                .insert_batch(rust_points, size, parallel)
+                .await
+                .map_err(to_py_err)
+        })
+    }
+
+    #[pyo3(signature = (vector, top_k=10, filter=None, include_metadata=true, include_vector=false))]
+    fn search<'p>(
+        &self,
+        py: Python<'p>,
+        vector: Vec<f32>,
+        top_k: usize,
+        filter: Option<Bound<'p, PyAny>>,
+        include_metadata: bool,
+        include_vector: bool,
+    ) -> PyResult<Bound<'p, PyAny>> {
+        let mut builder = self
+            .inner
+            .search(vector)
+            .limit(top_k)
+            .include_metadata(include_metadata)
+            .include_vector(include_vector);
+
+        if let Some(f) = filter {
+            let json_val = py_to_json(py, &f.unbind())?;
+            let rust_filter: Filter = serde_json::from_value(json_val).map_err(|e| {
+                PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Invalid filter: {}", e))
+            })?;
+            builder = builder.filter(rust_filter);
+        }
+
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            let res = builder.execute().await.map_err(to_py_err)?;
+
+            Python::attach(|py| convert_search_response(py, res))
+        })
+    }
+
+    fn build_search(&self, vector: Vec<f32>) -> SearchBuilder {
         SearchBuilder {
             inner: Some(self.inner.search(vector)),
         }
@@ -288,20 +447,14 @@ impl Collection {
     fn delete<'p>(&self, py: Python<'p>, ids: Vec<String>) -> PyResult<Bound<'p, PyAny>> {
         let inner = self.inner.clone();
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            inner
-                .delete(ids)
-                .await
-                .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))
+            inner.delete(ids).await.map_err(to_py_err)
         })
     }
 
     fn delete_collection<'p>(&self, py: Python<'p>) -> PyResult<Bound<'p, PyAny>> {
         let inner = self.inner.clone();
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            inner
-                .delete_collection()
-                .await
-                .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))
+            inner.delete_collection().await.map_err(to_py_err)
         })
     }
 
@@ -330,45 +483,7 @@ impl Collection {
         };
 
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            inner
-                .create(schema)
-                .await
-                .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))
-        })
-    }
-
-    fn insert_batch<'p>(
-        &self,
-        py: Python<'p>,
-        points: Vec<PyRef<'p, KabodPoint>>,
-        batch_size: usize,
-    ) -> PyResult<Bound<'p, PyAny>> {
-        let inner = self.inner.clone();
-
-        let mut rust_points = Vec::with_capacity(points.len());
-        for p in points {
-            let mut metadata = None;
-            if let Some(py_meta) = &p.metadata {
-                let mut meta_map = HashMap::new();
-                for (k, v) in py_meta {
-                    meta_map.insert(k.clone(), py_to_json(py, v)?);
-                }
-                metadata = Some(meta_map);
-            }
-
-            let point = Point {
-                id: p.id.clone(),
-                vector: p.vector.clone(),
-                metadata,
-            };
-            rust_points.push(point);
-        }
-
-        pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            inner
-                .insert_batch(rust_points, batch_size)
-                .await
-                .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))
+            inner.create(schema).await.map_err(to_py_err)
         })
     }
 
@@ -380,7 +495,7 @@ impl Collection {
     ) -> PyResult<Bound<'p, PyAny>> {
         let inner = self.inner.clone();
         let iterator = points.try_iter()?;
-        let py_iter: Py<pyo3::types::PyIterator> = iterator.unbind();
+        let py_iter: Py<PyIterator> = iterator.unbind();
 
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
             loop {
@@ -412,11 +527,7 @@ impl Collection {
                                     });
                                 }
                             }
-                            Some(Err(_e)) => {
-                                done = true;
-                                break;
-                            }
-                            None => {
+                            _ => {
                                 done = true;
                                 break;
                             }
@@ -425,9 +536,7 @@ impl Collection {
                 });
 
                 if !batch.is_empty() {
-                    inner.insert(batch).await.map_err(|e| {
-                        PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string())
-                    })?;
+                    inner.insert(batch).await.map_err(to_py_err)?;
                 }
 
                 if done {
@@ -439,13 +548,125 @@ impl Collection {
     }
 }
 
+// Convert PyObject to serde_json::Value
+fn py_to_json<'py>(py: Python<'py>, obj: &Py<PyAny>) -> PyResult<Value> {
+    let bound = obj.bind(py);
+    if bound.is_none() {
+        return Ok(Value::Null);
+    }
+
+    if let Ok(s) = bound.extract::<String>() {
+        return Ok(Value::String(s));
+    }
+
+    if let Ok(b) = bound.extract::<bool>() {
+        return Ok(Value::Bool(b));
+    }
+
+    if let Ok(i) = bound.extract::<i64>() {
+        return Ok(Value::Number(serde_json::Number::from(i)));
+    }
+
+    if let Ok(f) = bound.extract::<f64>() {
+        if let Some(n) = serde_json::Number::from_f64(f) {
+            return Ok(Value::Number(n));
+        }
+    }
+
+    if let Ok(dict) = bound.cast::<PyDict>() {
+        let mut map = serde_json::Map::new();
+        for (k, v) in dict {
+            let k_str = k.extract::<String>()?;
+            map.insert(k_str, py_to_json(py, &v.unbind())?);
+        }
+        return Ok(Value::Object(map));
+    }
+
+    if let Ok(list) = bound.cast::<PyList>() {
+        let mut arr = Vec::with_capacity(list.len());
+        for item in list {
+            arr.push(py_to_json(py, &item.unbind())?);
+        }
+        return Ok(Value::Array(arr));
+    }
+
+    Ok(Value::String(bound.to_string()))
+}
+
+// Helper to convert JSON Value to PyObject
+fn json_to_py(py: Python, v: Value) -> Py<PyAny> {
+    match v {
+        Value::Null => py.None(),
+        Value::Bool(b) => b.into_py_any(py).unwrap(),
+        Value::Number(n) => {
+            if let Some(i) = n.as_i64() {
+                i.into_py_any(py).unwrap()
+            } else if let Some(f) = n.as_f64() {
+                f.into_py_any(py).unwrap()
+            } else {
+                n.to_string().into_py_any(py).unwrap()
+            }
+        }
+        Value::String(s) => s.into_py_any(py).unwrap(),
+        Value::Array(a) => {
+            let list = PyList::new(py, a.into_iter().map(|i| json_to_py(py, i))).unwrap();
+            list.into()
+        }
+        Value::Object(o) => {
+            let dict = PyDict::new(py);
+            for (k, v) in o {
+                dict.set_item(k, json_to_py(py, v)).ok();
+            }
+            dict.into()
+        }
+    }
+}
+
+fn convert_search_response(py: Python, res: RustSearchResponse) -> PyResult<SearchResponse> {
+    let mut py_results = Vec::with_capacity(res.results.len());
+    for r in res.results {
+        let py_metadata = r.metadata.map(|m| {
+            let mut map = HashMap::new();
+            for (k, v) in m {
+                map.insert(k, json_to_py(py, v));
+            }
+            map
+        });
+
+        py_results.push(SearchResult {
+            id: r.id,
+            score: r.score,
+            vector: r.vector,
+            metadata: py_metadata,
+        });
+    }
+
+    let mut py_aggregations = HashMap::new();
+    for (k, v) in res.aggregations {
+        py_aggregations.insert(k, json_to_py(py, v));
+    }
+
+    Ok(SearchResponse {
+        results: py_results,
+        aggregations: py_aggregations,
+    })
+}
+
 #[pymodule]
-fn kabod(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn kabod(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<KabodClient>()?;
     m.add_class::<Collection>()?;
     m.add_class::<SearchResult>()?;
     m.add_class::<SearchResponse>()?;
     m.add_class::<SearchBuilder>()?;
     m.add_class::<KabodPoint>()?;
+    m.add("KabodError", py.get_type::<KabodError>())?;
+    m.add("ConfigError", py.get_type::<KabodConfigError>())?;
+    m.add("DatabaseError", py.get_type::<KabodDatabaseError>())?;
+    m.add(
+        "SerializationError",
+        py.get_type::<KabodSerializationError>(),
+    )?;
+    m.add("ValidationError", py.get_type::<KabodValidationError>())?;
     Ok(())
 }

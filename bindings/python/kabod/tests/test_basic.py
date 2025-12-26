@@ -15,8 +15,6 @@ def test_point_creation():
     p = Point(id="1", vector=[0.5, 0.25], metadata={"key": "value"})
     assert p.id == "1"
     assert p.vector == [0.5, 0.25]
-    # Check if metadata is successfully retrieved as dict (or mapped type)
-    print(f"Metadata: {p.metadata}")
     assert p.metadata["key"] == "value"
     print("Point creation success.")
 

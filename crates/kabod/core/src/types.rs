@@ -42,7 +42,7 @@ pub enum DistanceMetric {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VectorQuery {
     pub collection: String,
-    pub vector: Vec<f32>,
+    pub vector: Option<Vec<f32>>,
     pub filter: Option<Filter>,
     pub top_k: usize,
     pub offset: Option<usize>,

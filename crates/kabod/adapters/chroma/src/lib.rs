@@ -88,31 +88,71 @@ impl VectorDatabase for ChromaAdapter {
 
         let filter: Option<chroma::types::Where> = query.filter.as_ref().map(convert_filter);
 
-        let results = coll
-            .query(
-                vec![query.vector.clone()],
-                Some(query.top_k as u32),
-                filter,
-                None,
-                None,
-            )
-            .await
-            .map_err(|e| KabodError::Database(format!("Failed to query: {}", e)))?;
-
         let mut search_results = Vec::new();
 
-        let ids = results.ids;
-        if let Some(first_ids) = ids.first() {
-            let distances = results.distances.and_then(|d| d.into_iter().next());
-            let metadatas = results.metadatas.and_then(|m| m.into_iter().next());
+        if let Some(vector) = &query.vector {
+            let results = coll
+                .query(
+                    vec![vector.clone()],
+                    Some(query.top_k as u32),
+                    filter,
+                    None,
+                    None,
+                )
+                .await
+                .map_err(|e| KabodError::Database(format!("Failed to query: {}", e)))?;
 
-            for (i, id) in first_ids.iter().enumerate() {
-                let score = distances
-                    .as_ref()
-                    .and_then(|d| d.get(i))
-                    .and_then(|v| *v)
-                    .unwrap_or(0.0);
+            let ids = results.ids;
+            if let Some(first_ids) = ids.first() {
+                let distances = results.distances.and_then(|d| d.into_iter().next());
+                let metadatas = results.metadatas.and_then(|m| m.into_iter().next());
 
+                for (i, id) in first_ids.iter().enumerate() {
+                    let score = distances
+                        .as_ref()
+                        .and_then(|d| d.get(i))
+                        .and_then(|v| *v)
+                        .unwrap_or(0.0);
+
+                    let metadata: Option<HashMap<String, serde_json::Value>> = metadatas
+                        .as_ref()
+                        .and_then(|m| m.get(i))
+                        .and_then(|maybe_m| maybe_m.as_ref())
+                        .map(|m: &HashMap<String, chroma::types::MetadataValue>| {
+                            m.iter()
+                                .filter_map(|(k, v)| {
+                                    serde_json::to_value(v).ok().map(|val| (k.clone(), val))
+                                })
+                                .collect()
+                        });
+
+                    search_results.push(SearchResult {
+                        id: id.clone(),
+                        score,
+                        vector: None,
+                        metadata,
+                    });
+                }
+            }
+        } else {
+            // Filter-only search using get
+            let results = coll
+                .get(
+                    None,
+                    filter,
+                    Some(query.top_k as u32),
+                    query.offset.map(|o| o as u32),
+                    None,
+                )
+                .await
+                .map_err(|e| KabodError::Database(format!("Failed to get: {}", e)))?;
+
+            let ids = results.ids;
+            let metadatas = results.metadatas;
+            // embeddings are option in GetResult, but we probably didn't request them (default include?)
+            // Assuming default include gets metadata but maybe not embeddings unless requested.
+
+            for (i, id) in ids.iter().enumerate() {
                 let metadata: Option<HashMap<String, serde_json::Value>> = metadatas
                     .as_ref()
                     .and_then(|m| m.get(i))
@@ -127,7 +167,7 @@ impl VectorDatabase for ChromaAdapter {
 
                 search_results.push(SearchResult {
                     id: id.clone(),
-                    score,
+                    score: 1.0, // Exact match
                     vector: None,
                     metadata,
                 });
