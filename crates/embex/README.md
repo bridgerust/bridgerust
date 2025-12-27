@@ -1,7 +1,5 @@
 # Embex
 
-<div align="center">
-
 ![Embex Logo](../../images/logo.png)
 
 ## The Universal Vector Database Client
@@ -12,8 +10,6 @@
 [![NPM](https://img.shields.io/npm/v/@bridgerust/embex?color=red)](https://www.npmjs.com/package/@bridgerust/embex)
 [![Crates.io](https://img.shields.io/crates/v/bridge-embex.svg)](https://crates.io/crates/bridge-embex)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-
-</div>
 
 ---
 
@@ -68,15 +64,41 @@ npm install @bridgerust/embex
 
 ### CLI Support
 
-To manage migrations and scaffold resources from the terminal:
+To manage migrations and scaffold resources, you can use the CLI via Rust, Python, or Node.js.
+
+#### Option 1: Standalone (Rust)
+
+Recommended for global installation or CI/CD.
 
 ```bash
 cargo install embex-cli
+# Run directly:
+embex migrate status
+```
+
+#### Option 2: Python
+
+Included with the library.
+
+```bash
+pip install embex
+# Run as a script:
+embex migrate status
+```
+
+#### Option 3: Node.js
+
+Included with the library.
+
+```bash
+npm install @bridgerust/embex
+# Run via npx:
+npx embex migrate status
 ```
 
 ## 🖥️ CLI Usage
 
-The `embex` CLI tool brings a Rails-like experience to your vector database management.
+The commands are identical regardless of how you install the tool (just prefix with `npx` for Node.js).
 
 ### Configuration
 

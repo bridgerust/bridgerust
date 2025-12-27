@@ -1,10 +1,8 @@
 # One Rust core. Every ecosystem
 
-<div style="text-align: center">
-    <img src="images/logo.png" alt="BridgeRust Logo" width="200" height="200">
-</div>
-
 **BridgeRust** builds high-performance infrastructure libraries for Python, Node.js, and other ecosystems, powered by a shared Rust core.
+
+![Embex Logo](images/logo.png)
 
 ## 🚀 Active Projects
 

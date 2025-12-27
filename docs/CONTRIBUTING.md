@@ -91,7 +91,7 @@ npm test -- tests/integration/
 
 ## Project Structure
 
-```
+```bash
 bridgerust/
 ├── crates/
 │   ├── core/              # Shared utilities
@@ -348,29 +348,47 @@ Update `crates/embex/client/src/client.rs` to handle the new provider.
 - [ ] Benchmarks added for performance-critical code
 - [ ] CHANGELOG.md updated (if user-facing change)
 
-## Release Process
+### Release Process
 
-### Pre-Release Checklist
+We provide an automated script to handle testing, building, and publishing for all ecosystems.
 
-- [ ] All tests pass (`cargo test --workspace`)
-- [ ] No clippy warnings (`cargo clippy --all -- -D warnings`)
-- [ ] Code is formatted (`cargo fmt --all --check`)
-- [ ] CHANGELOG.md updated with all changes
-- [ ] README.md reflects current features
-- [ ] All API documentation is up-to-date
-- [ ] Examples are tested and working
-- [ ] Version numbers updated consistently
+#### Release Prerequisites
 
-### Release Steps
+To support cross-compilation (Linux/Windows) from macOS/Linux, install:
 
-1. **Update Versions**: Bump version in `Cargo.toml`, `package.json`, and `pyproject.toml`
-2. **Update CHANGELOG**: Move "Unreleased" section to new version with date
-3. **Create Git Tag**: `git tag -a v0.2.0 -m "Release v0.2.0"`
-4. **Push Tag**: `git push origin v0.2.0` (triggers release workflow)
-5. **Monitor CI**: Ensure all builds and tests pass
-6. **Approve Publishing**: Manually approve publishing to crates.io, PyPI, npm via GitHub Environments
+1. **Zig** (for Node.js cross-compilation):
 
-See [CI/CD documentation](CI_CD.md) for automated release workflow details.
+   ```bash
+    brew install zig
+   ```
+
+2. **Docker** (for Python manylinux wheels):
+   Ensure Docker Desktop is running.
+
+#### Running the Release Script
+
+Use `scripts/release.py` to automate the process:
+
+```bash
+# 1. Dry Run (Recommended first)
+# Runs tests and builds artifacts without publishing
+./scripts/release.py --dry-run
+
+# 2. Publish All
+./scripts/release.py
+
+# 3. Publish Specific Component
+./scripts/release.py --only rust
+./scripts/release.py --only python
+./scripts/release.py --only node
+```
+
+The script will:
+
+1. Run all unit and integration tests across the workspace.
+2. Publish Rust crates to Crates.io in topological order.
+3. Build and publish Python wheels to PyPI (using Docker for Linux wheels).
+4. Build and publish Node.js bindings to NPM.
 
 ### PR Description Template
 
