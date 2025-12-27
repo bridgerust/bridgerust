@@ -1,14 +1,15 @@
 use napi::bindgen_prelude::*;
+use napi::{Result, Status};
+use tokio::sync::Mutex;
+use std::sync::Arc;
+use std::collections::HashMap;
 
 use bridge_kabod::{
     config::KabodConfig, types::Point as RustPoint, KabodClient as RustClient,
-    QueryBuilder as RustQueryBuilder,
+    QueryBuilder as RustQueryBuilder, Migration, MigrationManager, VectorDatabase,
 };
 
 use napi_derive::napi;
-use std::collections::HashMap;
-use std::sync::Arc;
-use tokio::sync::Mutex;
 
 fn to_napi_err(err: bridge_kabod::error::KabodError) -> Error {
     use bridge_kabod::error::KabodError::*;
@@ -18,6 +19,54 @@ fn to_napi_err(err: bridge_kabod::error::KabodError) -> Error {
         Serialization(e) => Error::new(Status::InvalidArg, e.to_string()),
         Validation(e) => Error::new(Status::InvalidArg, e),
         other => Error::from_reason(other.to_string()),
+    }
+}
+
+#[derive(serde::Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum MigrationOp {
+    CreateCollection { schema: bridge_kabod::types::CollectionSchema },
+    DeleteCollection { name: String },
+}
+
+pub struct DeclarativeMigrationAdapter {
+    version: String,
+    up_ops: Vec<MigrationOp>,
+    down_ops: Vec<MigrationOp>,
+}
+
+#[async_trait::async_trait]
+impl Migration for DeclarativeMigrationAdapter {
+    fn version(&self) -> String {
+        self.version.clone()
+    }
+
+    async fn up(&self, db: Arc<dyn VectorDatabase>) -> bridge_kabod::error::Result<()> {
+        for op in &self.up_ops {
+            match op {
+                MigrationOp::CreateCollection { schema } => {
+                    db.create_collection(schema).await?;
+                }
+                MigrationOp::DeleteCollection { name } => {
+                    db.delete_collection(name).await?;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    async fn down(&self, db: Arc<dyn VectorDatabase>) -> bridge_kabod::error::Result<()> {
+        for op in &self.down_ops {
+            match op {
+                MigrationOp::CreateCollection { schema } => {
+                    db.create_collection(schema).await?;
+                }
+                MigrationOp::DeleteCollection { name } => {
+                    db.delete_collection(name).await?;
+                }
+            }
+        }
+        Ok(())
     }
 }
 
@@ -69,6 +118,47 @@ impl KabodClient {
         Collection {
             inner: self.inner.collection(&name),
         }
+    }
+
+    /// Run database migrations.
+    ///
+    /// @param migrations - Array of migration objects
+    /// {
+    ///   version: string,
+    ///   operations: [{ type: 'create_collection', schema: ... }, { type: 'delete_collection', name: ... }],
+    ///   down_operations: [...]
+    /// }
+    #[napi]
+    pub async fn run_migrations(&self, migrations: Vec<serde_json::Value>) -> Result<()> {
+        let db = self.inner.db();
+        let manager = MigrationManager::new(db);
+
+        let mut rust_migrations: Vec<Box<dyn Migration>> = Vec::with_capacity(migrations.len());
+
+        for m in migrations {
+            let version = m.get("version")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| Error::new(Status::InvalidArg, "Migration missing version".to_string()))?
+                .to_string();
+            
+ 
+            let up_ops: Vec<MigrationOp> = serde_json::from_value(m.get("operations").cloned().unwrap_or(serde_json::Value::Null))
+                .map_err(|e| Error::new(Status::InvalidArg, format!("Invalid operations: {}", e)))?;
+
+            let down_ops: Vec<MigrationOp> = serde_json::from_value(m.get("downOperations").cloned().unwrap_or(serde_json::Value::Null))
+                .map_err(|e| Error::new(Status::InvalidArg, format!("Invalid downOperations: {}", e)))?;
+
+            rust_migrations.push(Box::new(DeclarativeMigrationAdapter {
+                version,
+                up_ops,
+                down_ops,
+            }));
+        }
+
+        manager
+            .run_migrations(rust_migrations)
+            .await
+            .map_err(to_napi_err)
     }
 }
 

@@ -24,6 +24,16 @@ export declare class Collection {
   delete(ids: Array<string>): Promise<void>
   deleteCollection(): Promise<void>
   create(dimension: number, distance: string): Promise<void>
+  /**
+   * Create the collection with optional dimension.
+   *
+   * For providers like Chroma that infer dimension from the first insert,
+   * you can pass `undefined` for dimension. For other providers, dimension is required.
+   *
+   * @param dimension - Optional dimension. Use `undefined` for Chroma (infers from first insert).
+   * @param distance - Distance metric ("cosine", "euclidean", or "dot").
+   */
+  createAuto(dimension?: number | undefined | null, distance?: string | undefined | null): Promise<void>
   insertBatch(points: Array<Point>, batchSize?: number | undefined | null, parallel?: number | undefined | null): Promise<void>
 }
 
@@ -47,6 +57,17 @@ export declare class KabodClient {
    */
   static newAsync(provider: string, url: string, apiKey?: string | undefined | null): Promise<KabodClient>
   collection(name: string): Collection
+  /**
+   * Run database migrations.
+   *
+   * @param migrations - Array of migration objects
+   * {
+   *   version: string,
+   *   operations: [{ type: 'create_collection', schema: ... }, { type: 'delete_collection', name: ... }],
+   *   down_operations: [...]
+   * }
+   */
+  runMigrations(migrations: Array<any>): Promise<void>
 }
 
 export declare class QueryBuilder {
