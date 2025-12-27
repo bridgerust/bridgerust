@@ -1,6 +1,6 @@
-# Kabod Best Practices
+# Embex Best Practices
 
-This guide covers best practices for using Kabod effectively in production.
+This guide covers best practices for using Embex effectively in production.
 
 ## Table of Contents
 
@@ -19,7 +19,7 @@ This guide covers best practices for using Kabod effectively in production.
 Connection pooling is enabled by default. Configure pool size based on your workload:
 
 ```rust
-let config = KabodConfig {
+let config = EmbexConfig {
     provider: "qdrant".to_string(),
     url: "http://localhost:6333".to_string(),
     pool_size: 20,              // Increase for high concurrency
@@ -38,7 +38,7 @@ let config = KabodConfig {
 
 ```rust
 // ✅ Good: Reuse client
-let client = KabodClient::new(config)?;
+let client = EmbexClient::new(config)?;
 let collection = client.collection("docs");
 
 // Use collection for multiple operations
@@ -46,9 +46,9 @@ collection.insert(points1).await?;
 collection.insert(points2).await?;
 
 // ❌ Bad: Creating new client for each operation
-let client1 = KabodClient::new(config.clone())?;
+let client1 = EmbexClient::new(config.clone())?;
 client1.collection("docs").insert(points1).await?;
-let client2 = KabodClient::new(config.clone())?;
+let client2 = EmbexClient::new(config.clone())?;
 client2.collection("docs").insert(points2).await?;
 ```
 
@@ -110,7 +110,7 @@ collection.insert_batch(points, 1000, Some(5)).await?;
 Use retry logic for transient errors:
 
 ```rust
-use bridge_kabod_core::retry::{RetryConfig, retry_with_backoff};
+use bridge_embex_core::retry::{RetryConfig, retry_with_backoff};
 use std::time::Duration;
 
 let config = RetryConfig::new(3)
@@ -129,15 +129,15 @@ let result = retry_with_backoff(&config, || {
 ```rust
 match collection.create(schema).await {
     Ok(()) => {},
-    Err(KabodError::CollectionExists(name)) => {
+    Err(EmbexError::CollectionExists(name)) => {
         // Collection already exists - not an error
         println!("Collection {} already exists", name);
     }
-    Err(KabodError::Connection(e)) => {
+    Err(EmbexError::Connection(e)) => {
         // Retryable error
         eprintln!("Connection error: {}", e);
     }
-    Err(KabodError::Timeout(e)) => {
+    Err(EmbexError::Timeout(e)) => {
         // Retryable error
         eprintln!("Timeout: {}", e);
     }
@@ -226,7 +226,7 @@ collection.insert_batch(points, 1000, Some(5)).await?;
 ### Monitoring Batch Performance
 
 ```rust
-use bridge_kabod_core::observability::Timer;
+use bridge_embex_core::observability::Timer;
 
 let timer = Timer::start();
 collection.insert_batch(points, 1000, Some(3)).await?;
@@ -240,7 +240,7 @@ println!("Inserted {} points in {}ms", points.len(), elapsed);
 ### Initialize Tracing
 
 ```rust
-use bridge_kabod_core::observability::init_tracing;
+use bridge_embex_core::observability::init_tracing;
 
 // Initialize with default subscriber
 init_tracing();
@@ -276,13 +276,13 @@ Set appropriate log levels:
 
 ```bash
 # Development
-RUST_LOG=kabod=debug
+RUST_LOG=embex=debug
 
 # Production
-RUST_LOG=kabod=info
+RUST_LOG=embex=info
 
 # Troubleshooting
-RUST_LOG=kabod=trace
+RUST_LOG=embex=trace
 ```
 
 ## Provider Selection
@@ -419,7 +419,7 @@ for batch in updates {
 ```rust
 // ❌ Bad
 async fn handle_request() {
-    let client = KabodClient::new(config.clone())?;
+    let client = EmbexClient::new(config.clone())?;
     // Use client
 }
 ```
@@ -435,7 +435,7 @@ collection.insert(points).await.unwrap();
 
 ```rust
 // ❌ Bad
-let client = KabodClient::new(config)?; // Blocking
+let client = EmbexClient::new(config)?; // Blocking
 ```
 
 ### ❌ Don't: Insert Points One at a Time

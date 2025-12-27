@@ -1,6 +1,6 @@
-# Migrating from Chroma to Kabod
+# Migrating from Chroma to Embex
 
-Kabod allows you to switch from Chroma's embedded or client mode to a unified interface. This guide helps you migrate from Chroma to Kabod.
+Embex allows you to switch from Chroma's embedded or client mode to a unified interface. This guide helps you migrate from Chroma to Embex.
 
 ## Table of Contents
 
@@ -31,13 +31,13 @@ client = chromadb.HttpClient(host='localhost', port=8000)
 client = chromadb.PersistentClient(path="./my_db")
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
-from kabod import KabodClient
+from embex import EmbexClient
 
 # For HTTP client mode
-client = KabodClient(provider="chroma", url="http://localhost:8000")
+client = EmbexClient(provider="chroma", url="http://localhost:8000")
 
 # Note: Persistent mode not directly supported - use HTTP client
 ```
@@ -54,12 +54,12 @@ const client = new ChromaClient({
 });
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
-import { KabodClient } from "@bridgerust/kabod";
+import { EmbexClient } from "@bridgerust/embex";
 
-const client = new KabodClient("chroma", "http://localhost:8000");
+const client = new EmbexClient("chroma", "http://localhost:8000");
 ```
 
 ## Creating Collections
@@ -75,7 +75,7 @@ collection = client.create_collection(
 )
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
 # Option 1: Use create_auto() to let Chroma infer dimension (recommended for Chroma)
@@ -104,7 +104,7 @@ const collection = await client.createCollection({
 });
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
 // Option 1: Use createAuto() to let Chroma infer dimension (recommended for Chroma)
@@ -129,11 +129,11 @@ collection.add(
 )
 ```
 
-**Kabod:**
-Kabod focuses on the vectors themselves, assuming you have an embedding model.
+**Embex:**
+Embex focuses on the vectors themselves, assuming you have an embedding model.
 
 ```python
-from kabod import Point
+from embex import Point
 
 await client.collection("my_collection").insert([
     Point(
@@ -149,7 +149,7 @@ await client.collection("my_collection").insert([
 ])
 ```
 
-**Key Difference**: Chroma can generate embeddings automatically, but Kabod requires pre-computed vectors.
+**Key Difference**: Chroma can generate embeddings automatically, but Embex requires pre-computed vectors.
 
 ### Node.js
 
@@ -163,7 +163,7 @@ await collection.add({
 });
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
 await client.collection("my_collection").insert([
@@ -198,7 +198,7 @@ results = collection.query(
 )
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
 results = await client.collection("my_collection").search(
@@ -207,7 +207,7 @@ results = await client.collection("my_collection").search(
 )
 ```
 
-**Key Difference**: Chroma can search by text (with embeddings) or by vectors. Kabod requires vectors.
+**Key Difference**: Chroma can search by text (with embeddings) or by vectors. Embex requires vectors.
 
 ### Node.js
 
@@ -220,7 +220,7 @@ const results = await collection.query({
 });
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
 const results = await client
@@ -242,7 +242,7 @@ results = collection.query(
 )
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
 results = await client.collection("my_collection").search(
@@ -277,7 +277,7 @@ const results = await collection.query({
 });
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
 const results = await client
@@ -305,7 +305,7 @@ collection.add(
 )
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
 # Explicit batch with parallel execution
@@ -331,14 +331,14 @@ except ChromaError as e:
     print(f"Error: {e}")
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
-from kabod import KabodError
+from embex import EmbexError
 
 try:
     await client.collection("my_collection").insert(...)
-except KabodError as e:
+except EmbexError as e:
     print(f"Error: {e}")
 ```
 
@@ -347,12 +347,12 @@ except KabodError as e:
 **Chroma:**
 Chroma client manages HTTP connections internally.
 
-**Kabod:**
+**Embex:**
 
 ```python
-from kabod import KabodClient
+from embex import EmbexClient
 
-client = KabodClient(
+client = EmbexClient(
     provider="chroma",
     url="http://localhost:8000",
     pool_size=20,  # Accepted for API consistency
@@ -360,21 +360,21 @@ client = KabodClient(
 )
 ```
 
-Note: Chroma's internal client manages pooling, but Kabod accepts these parameters for consistency.
+Note: Chroma's internal client manages pooling, but Embex accepts these parameters for consistency.
 
 ## Key Differences
 
-1. **Embeddings**: Chroma can generate embeddings automatically, Kabod requires pre-computed vectors
-2. **Dimension**: Chroma infers dimension from first insert, Kabod requires it at creation
-3. **Text Search**: Chroma supports text-based search, Kabod requires vectors
-4. **Persistent Mode**: Chroma supports embedded/persistent mode, Kabod uses HTTP client
-5. **Filter Syntax**: Chroma uses simple dict filters, Kabod uses unified filter format
+1. **Embeddings**: Chroma can generate embeddings automatically, Embex requires pre-computed vectors
+2. **Dimension**: Chroma infers dimension from first insert, Embex requires it at creation
+3. **Text Search**: Chroma supports text-based search, Embex requires vectors
+4. **Persistent Mode**: Chroma supports embedded/persistent mode, Embex uses HTTP client
+5. **Filter Syntax**: Chroma uses simple dict filters, Embex uses unified filter format
 
 ## Troubleshooting
 
 ### Issue: Dimension not specified
 
-**Problem**: Chroma infers dimension from the first insert, but Kabod's standard `create()` method requires it upfront.
+**Problem**: Chroma infers dimension from the first insert, but Embex's standard `create()` method requires it upfront.
 
 **Solution**: Use `create_auto()` with `dimension=None` to let Chroma infer dimension:
 
@@ -383,7 +383,7 @@ Note: Chroma's internal client manages pooling, but Kabod accepts these paramete
 collection = client.create_collection(name="my_collection")
 # Dimension inferred from first insert
 
-# After (Kabod - using create_auto)
+# After (Embex - using create_auto)
 await client.collection("my_collection").create_auto(
     dimension=None,  # Chroma will infer from first insert
     distance="cosine"
@@ -400,7 +400,7 @@ await client.collection("my_collection").create(
 
 ### Issue: Text-based search not available
 
-**Problem**: Chroma can search by text using built-in embedding functions, but Kabod currently requires pre-computed vectors.
+**Problem**: Chroma can search by text using built-in embedding functions, but Embex currently requires pre-computed vectors.
 
 **Current Workaround**: Generate embeddings before searching:
 
@@ -408,7 +408,7 @@ await client.collection("my_collection").create(
 # Before (Chroma)
 results = collection.query(query_texts=["query text"])
 
-# After (Kabod - current)
+# After (Embex - current)
 # Generate embedding first using your embedding model
 from sentence_transformers import SentenceTransformer
 
@@ -425,7 +425,7 @@ results = await client.collection("my_collection").search(
 
 ### Issue: Persistent mode not available
 
-**Problem**: Chroma supports embedded/persistent client mode, but Kabod currently only supports HTTP client mode.
+**Problem**: Chroma supports embedded/persistent client mode, but Embex currently only supports HTTP client mode.
 
 **Current Workaround**: Run Chroma as a server and connect via HTTP:
 
@@ -433,14 +433,14 @@ results = await client.collection("my_collection").search(
 # Start Chroma server (in a separate terminal)
 # chroma run --path ./my_db --port 8000
 
-# Then use Kabod with HTTP client
-from kabod import KabodClient
+# Then use Embex with HTTP client
+from embex import EmbexClient
 
-client = KabodClient(provider="chroma", url="http://localhost:8000")
+client = EmbexClient(provider="chroma", url="http://localhost:8000")
 collection = client.collection("my_collection")
 ```
 
-**Alternative**: If you need persistent mode, you can continue using Chroma's persistent client for local development and use Kabod with HTTP client for production deployments.
+**Alternative**: If you need persistent mode, you can continue using Chroma's persistent client for local development and use Embex with HTTP client for production deployments.
 
 **Future Improvement**: We're planning to add support for Chroma's persistent client mode. See [CHROMA_IMPROVEMENTS.md](CHROMA_IMPROVEMENTS.md) for details.
 

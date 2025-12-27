@@ -49,6 +49,6 @@ Expected speedups:
 Run benchmarks to measure actual performance on your hardware:
 
 ```bash
-cd benchmarks/kabod
+cd benchmarks/embex
 cargo bench --bench simd_bench
 ```

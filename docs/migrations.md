@@ -1,6 +1,6 @@
 # Migration System
 
-Kabod provides a robust migration system for managing database schema changes and data transformations over time.
+Embex provides a robust migration system for managing database schema changes and data transformations over time.
 
 ## Table of Contents
 
@@ -13,7 +13,7 @@ Kabod provides a robust migration system for managing database schema changes an
 
 ## Overview
 
-The migration system tracks applied migrations in a special `_kabod_migrations` collection and ensures:
+The migration system tracks applied migrations in a special `_embex_migrations` collection and ensures:
 
 - Migrations are applied in order
 - Already-applied migrations are skipped
@@ -25,9 +25,9 @@ The migration system tracks applied migrations in a special `_kabod_migrations` 
 Migrations implement the `Migration` trait with `up()` and `down()` methods:
 
 ```rust
-use bridge_kabod::Migration;
-use bridge_kabod::VectorDatabase;
-use bridge_kabod_core::error::Result;
+use bridge_embex::Migration;
+use bridge_embex::VectorDatabase;
+use bridge_embex_core::error::Result;
 use std::sync::Arc;
 
 struct CreateUsersCollection;
@@ -39,7 +39,7 @@ impl Migration for CreateUsersCollection {
     }
 
     async fn up(&self, db: Arc<dyn VectorDatabase>) -> Result<()> {
-        use bridge_kabod_core::types::{CollectionSchema, DistanceMetric};
+        use bridge_embex_core::types::{CollectionSchema, DistanceMetric};
 
         let schema = CollectionSchema {
             name: "users".to_string(),
@@ -69,16 +69,16 @@ Use a consistent versioning scheme:
 ### Basic Usage
 
 ```rust
-use bridge_kabod::{KabodClient, MigrationManager};
-use bridge_kabod_infrastructure::config::KabodConfig;
+use bridge_embex::{EmbexClient, MigrationManager};
+use bridge_embex_infrastructure::config::EmbexConfig;
 
-let config = KabodConfig {
+let config = EmbexConfig {
     provider: "qdrant".to_string(),
     url: "http://localhost:6333".to_string(),
     ..Default::default()
 };
 
-let client = KabodClient::new(config)?;
+let client = EmbexClient::new(config)?;
 let manager = MigrationManager::new(client.db());
 
 let migrations: Vec<Box<dyn Migration>> = vec![
@@ -309,8 +309,8 @@ If a rollback fails:
 ### Complete Example
 
 ```rust
-use bridge_kabod::{KabodClient, Migration, MigrationManager};
-use bridge_kabod_infrastructure::config::KabodConfig;
+use bridge_embex::{EmbexClient, Migration, MigrationManager};
+use bridge_embex_infrastructure::config::EmbexConfig;
 use std::sync::Arc;
 
 #[async_trait::async_trait]
@@ -332,13 +332,13 @@ impl Migration for CreateUsersCollection {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let config = KabodConfig {
+    let config = EmbexConfig {
         provider: "qdrant".to_string(),
         url: "http://localhost:6333".to_string(),
         ..Default::default()
     };
 
-    let client = KabodClient::new(config)?;
+    let client = EmbexClient::new(config)?;
     let manager = MigrationManager::new(client.db());
 
     let migrations: Vec<Box<dyn Migration>> = vec![
@@ -359,9 +359,9 @@ async fn main() -> Result<()> {
 In Node.js, migrations are defined as declarative objects:
 
 ```javascript
-const { KabodClient } = require("@bridgerust/kabod");
+const { EmbexClient } = require("@bridgerust/embex");
 
-const client = new KabodClient("qdrant", "http://localhost:6333");
+const client = new EmbexClient("qdrant", "http://localhost:6333");
 
 const migrations = [
   {
@@ -395,20 +395,20 @@ In Python, you can use any object that has `version` attribute and `up`/`down` m
 
 ```python
 import asyncio
-from kabod import KabodClient
+from embex import EmbexClient
 
 class CreateUsersMigration:
     def __init__(self):
         self.version = "20240101000000_create_users"
 
-    async def up(self, client: KabodClient):
+    async def up(self, client: EmbexClient):
         await client.collection("users").create(dimension=384, distance="cosine")
 
-    async def down(self, client: KabodClient):
+    async def down(self, client: EmbexClient):
         await client.collection("users").delete_collection()
 
 async def main():
-    client = KabodClient("qdrant", "http://localhost:6333")
+    client = EmbexClient("qdrant", "http://localhost:6333")
 
     migrations = [CreateUsersMigration()]
 

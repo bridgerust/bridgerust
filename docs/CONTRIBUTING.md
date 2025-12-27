@@ -47,7 +47,7 @@ cargo clippy --all -- -D warnings
 ### Python Bindings Setup
 
 ```bash
-cd bindings/python/kabod
+cd bindings/python/embex
 
 # Create virtual environment
 python -m venv .venv
@@ -63,7 +63,7 @@ pytest tests/
 ### Node.js Bindings Setup
 
 ```bash
-cd bindings/node/@bridgerust/kabod
+cd bindings/node/@bridgerust/embex
 
 # Install dependencies
 npm install
@@ -95,7 +95,7 @@ npm test -- tests/integration/
 bridgerust/
 ├── crates/
 │   ├── core/              # Shared utilities
-│   ├── kabod/
+│   ├── embex/
 │   │   ├── core/          # Core types, traits, error handling
 │   │   ├── client/        # Main client facade
 │   │   └── adapters/      # Database-specific adapters
@@ -134,7 +134,7 @@ bridgerust/
 // ✅ Good: Proper error handling
 pub fn create_collection(&self, schema: &CollectionSchema) -> Result<()> {
     self.db.create_collection(schema).await
-        .map_err(|e| KabodError::Database(format!("Failed to create: {}", e)))
+        .map_err(|e| EmbexError::Database(format!("Failed to create: {}", e)))
 }
 
 // ❌ Bad: Using unwrap
@@ -233,7 +233,7 @@ pub trait VectorDatabase: Send + Sync {
 
 ### Client Layer
 
-The `KabodClient` provides a high-level API that:
+The `EmbexClient` provides a high-level API that:
 
 - Manages connection pooling
 - Handles retries with exponential backoff
@@ -245,20 +245,20 @@ The `KabodClient` provides a high-level API that:
 ### Step 1: Create Adapter Crate
 
 ```bash
-mkdir -p crates/kabod/adapters/newdb
-cd crates/kabod/adapters/newdb
+mkdir -p crates/embex/adapters/newdb
+cd crates/embex/adapters/newdb
 ```
 
 Create `Cargo.toml`:
 
 ```toml
 [package]
-name = "bridge-kabod-newdb"
+name = "bridge-embex-newdb"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
-bridge-kabod-core = { path = "../../core" }
+bridge-embex-core = { path = "../../core" }
 async-trait = "0.1.89"
 tracing = "0.1.44"
 # Add database-specific dependencies
@@ -268,9 +268,9 @@ tracing = "0.1.44"
 
 ```rust
 use async_trait::async_trait;
-use bridge_kabod_core::db::VectorDatabase;
-use bridge_kabod_core::error::Result;
-use bridge_kabod_core::types::*;
+use bridge_embex_core::db::VectorDatabase;
+use bridge_embex_core::error::Result;
+use bridge_embex_core::types::*;
 
 pub struct NewDBAdapter {
     // Adapter-specific fields
@@ -289,15 +289,15 @@ impl VectorDatabase for NewDBAdapter {
 
 ### Step 3: Add to Client
 
-Update `crates/kabod/client/Cargo.toml`:
+Update `crates/embex/client/Cargo.toml`:
 
 ```toml
 [features]
-newdb = ["dep:bridge-kabod-newdb"]
+newdb = ["dep:bridge-embex-newdb"]
 all = ["qdrant", "pinecone", ..., "newdb"]
 ```
 
-Update `crates/kabod/client/src/client.rs` to handle the new provider.
+Update `crates/embex/client/src/client.rs` to handle the new provider.
 
 ### Step 4: Add Tests
 

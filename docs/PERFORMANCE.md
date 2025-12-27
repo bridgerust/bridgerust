@@ -1,6 +1,6 @@
-# Kabod Performance Guide
+# Embex Performance Guide
 
-This document provides comprehensive performance information for Kabod, including benchmarks, optimization strategies, and best practices.
+This document provides comprehensive performance information for Embex, including benchmarks, optimization strategies, and best practices.
 
 ## Table of Contents
 
@@ -12,7 +12,7 @@ This document provides comprehensive performance information for Kabod, includin
 
 ## SIMD Optimizations
 
-Kabod includes SIMD-accelerated vector operations for maximum performance.
+Embex includes SIMD-accelerated vector operations for maximum performance.
 
 ### Enabling SIMD
 
@@ -67,9 +67,9 @@ Connection pooling significantly improves performance for high-concurrency workl
 ### Configuration
 
 ```rust
-use bridge_kabod_infrastructure::config::KabodConfig;
+use bridge_embex_infrastructure::config::EmbexConfig;
 
-let config = KabodConfig {
+let config = EmbexConfig {
     provider: "qdrant".to_string(),
     url: "http://localhost:6333".to_string(),
     pool_size: 20,              // Increase for high concurrency
@@ -90,7 +90,7 @@ See [Connection Pooling Documentation](connection_pooling.md) for detailed infor
 
 ### Overhead Analysis
 
-Kabod adds minimal overhead compared to native clients:
+Embex adds minimal overhead compared to native clients:
 
 | Operation         | Overhead | Notes                |
 | ----------------- | -------- | -------------------- |
@@ -134,12 +134,12 @@ for point in points {
 
 ```rust
 // ✅ Good: Reuse client
-let client = KabodClient::new(config)?;
+let client = EmbexClient::new(config)?;
 let collection = client.collection("docs");
 
 // ❌ Bad: Creating new clients
-let client1 = KabodClient::new(config.clone())?;
-let client2 = KabodClient::new(config.clone())?;
+let client1 = EmbexClient::new(config.clone())?;
+let client2 = EmbexClient::new(config.clone())?;
 ```
 
 ### 3. Enable SIMD Optimizations
@@ -155,7 +155,7 @@ RUSTFLAGS="-C target-feature=+avx2" cargo build --release
 Match pool size to your concurrency requirements:
 
 ```rust
-let config = KabodConfig {
+let config = EmbexConfig {
     pool_size: 50,  // For high concurrency
     ..Default::default()
 };
@@ -197,7 +197,7 @@ SIMD optimizations are most effective for:
 
 ```bash
 cargo install cargo-criterion
-cd benchmarks/kabod
+cd benchmarks/embex
 ```
 
 ### Run All Benchmarks
@@ -232,7 +232,7 @@ cargo bench -- --baseline main
 
 ## Performance Monitoring
 
-Use Kabod's built-in metrics to monitor performance:
+Use Embex's built-in metrics to monitor performance:
 
 ```rust
 let metrics = client.metrics();
@@ -246,7 +246,7 @@ println!("Error rate: {:.2}%",
 
 ## Summary
 
-Kabod provides high-performance vector operations through:
+Embex provides high-performance vector operations through:
 
 1. **SIMD Optimizations**: 3-8x speedup for vector operations
 2. **Connection Pooling**: Efficient resource management
@@ -254,4 +254,4 @@ Kabod provides high-performance vector operations through:
 4. **Batch Operations**: Optimized for throughput
 5. **Built-in Metrics**: Performance monitoring
 
-For detailed benchmark results, see [benchmarks/kabod/README.md](../../benchmarks/kabod/README.md).
+For detailed benchmark results, see [benchmarks/embex/README.md](../../benchmarks/embex/README.md).

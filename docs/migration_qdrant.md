@@ -1,6 +1,6 @@
-# Migrating from Qdrant Client to Kabod
+# Migrating from Qdrant Client to Embex
 
-Kabod provides a higher-level abstraction while maintaining Qdrant's performance. This guide helps you migrate your existing Qdrant code to Kabod.
+Embex provides a higher-level abstraction while maintaining Qdrant's performance. This guide helps you migrate your existing Qdrant code to Embex.
 
 ## Table of Contents
 
@@ -28,12 +28,12 @@ from qdrant_client import QdrantClient
 client = QdrantClient(url="http://localhost:6333")
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
-from kabod import KabodClient
+from embex import EmbexClient
 
-client = KabodClient(provider="qdrant", url="http://localhost:6333")
+client = EmbexClient(provider="qdrant", url="http://localhost:6333")
 ```
 
 ### Node.js
@@ -46,12 +46,12 @@ import { QdrantClient } from "@qdrant/js-client-rest";
 const client = new QdrantClient({ url: "http://localhost:6333" });
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
-import { KabodClient } from "@bridgerust/kabod";
+import { EmbexClient } from "@bridgerust/embex";
 
-const client = new KabodClient("qdrant", "http://localhost:6333");
+const client = new EmbexClient("qdrant", "http://localhost:6333");
 ```
 
 ### Rust
@@ -64,18 +64,18 @@ use qdrant_client::QdrantClient;
 let client = QdrantClient::from_url("http://localhost:6333").build()?;
 ```
 
-**Kabod:**
+**Embex:**
 
 ```rust
-use bridge_kabod::client::KabodClient;
-use bridge_kabod_infrastructure::config::KabodConfig;
+use bridge_embex::client::EmbexClient;
+use bridge_embex_infrastructure::config::EmbexConfig;
 
-let config = KabodConfig {
+let config = EmbexConfig {
     provider: "qdrant".to_string(),
     url: "http://localhost:6333".to_string(),
     ..Default::default()
 };
-let client = KabodClient::new(config)?;
+let client = EmbexClient::new(config)?;
 ```
 
 ## Creating Collections
@@ -96,7 +96,7 @@ client.create_collection(
 )
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
 await client.collection("my_collection").create(
@@ -115,7 +115,7 @@ await client.createCollection("my_collection", {
 });
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
 await client.collection("my_collection").create(768, "cosine");
@@ -142,10 +142,10 @@ client.upsert(
 )
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
-from kabod import Point
+from embex import Point
 
 await client.collection("my_collection").insert([
     Point(
@@ -156,7 +156,7 @@ await client.collection("my_collection").insert([
 ])
 ```
 
-**Key Difference**: Qdrant uses `payload`, Kabod uses `metadata`. Qdrant accepts integer IDs, Kabod uses string IDs.
+**Key Difference**: Qdrant uses `payload`, Embex uses `metadata`. Qdrant accepts integer IDs, Embex uses string IDs.
 
 ### Node.js
 
@@ -174,7 +174,7 @@ await client.upsert("my_collection", {
 });
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
 await client.collection("my_collection").insert([
@@ -200,7 +200,7 @@ results = client.search(
 )
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
 results = await client.collection("my_collection").search(
@@ -220,7 +220,7 @@ const results = await client.search("my_collection", {
 });
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
 const results = await client
@@ -252,7 +252,7 @@ results = client.search(
 )
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
 results = await client.collection("my_collection").search(
@@ -294,7 +294,7 @@ const results = await client.search("my_collection", {
 });
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
 const results = await client
@@ -321,7 +321,7 @@ client.upsert(
 )
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
 # Explicit batch with parallel execution
@@ -346,7 +346,7 @@ client.set_payload(
 )
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
 await client.collection("my_collection").update_metadata([
@@ -371,14 +371,14 @@ except QdrantException as e:
     print(f"Error: {e}")
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
-from kabod import KabodError
+from embex import EmbexError
 
 try:
     await client.collection("my_collection").create(...)
-except KabodError as e:
+except EmbexError as e:
     print(f"Error: {e}")
 ```
 
@@ -387,12 +387,12 @@ except KabodError as e:
 **Qdrant Client:**
 Qdrant client manages its own connection pooling internally.
 
-**Kabod:**
+**Embex:**
 
 ```python
-from kabod import KabodClient
+from embex import EmbexClient
 
-client = KabodClient(
+client = EmbexClient(
     provider="qdrant",
     url="http://localhost:6333",
     pool_size=20,  # Accepted for API consistency
@@ -400,21 +400,21 @@ client = KabodClient(
 )
 ```
 
-Note: Qdrant's internal client manages pooling, but Kabod accepts these parameters for consistency.
+Note: Qdrant's internal client manages pooling, but Embex accepts these parameters for consistency.
 
 ## Key Differences
 
-1. **ID Types**: Qdrant accepts integers and UUIDs, Kabod uses strings
-2. **Payload vs Metadata**: Qdrant uses `payload`, Kabod uses `metadata`
-3. **Async/Await**: Kabod operations are async, Qdrant Python client is sync by default
-4. **Error Types**: Different error types (`QdrantException` vs `KabodError`)
-5. **Unified API**: Kabod provides the same API across all providers
+1. **ID Types**: Qdrant accepts integers and UUIDs, Embex uses strings
+2. **Payload vs Metadata**: Qdrant uses `payload`, Embex uses `metadata`
+3. **Async/Await**: Embex operations are async, Qdrant Python client is sync by default
+4. **Error Types**: Different error types (`QdrantException` vs `EmbexError`)
+5. **Unified API**: Embex provides the same API across all providers
 
 ## Troubleshooting
 
 ### Issue: Integer IDs not working
 
-**Problem**: Qdrant allows integer IDs, but Kabod requires strings.
+**Problem**: Qdrant allows integer IDs, but Embex requires strings.
 
 **Solution**: Convert integer IDs to strings:
 
@@ -428,7 +428,7 @@ Point(id="1", ...)
 
 ### Issue: Payload not found
 
-**Problem**: Qdrant uses `payload`, Kabod uses `metadata`.
+**Problem**: Qdrant uses `payload`, Embex uses `metadata`.
 
 **Solution**: Rename `payload` to `metadata`:
 
@@ -442,9 +442,9 @@ metadata={"key": "value"}
 
 ### Issue: Sync vs Async
 
-**Problem**: Qdrant Python client is sync, Kabod is async.
+**Problem**: Qdrant Python client is sync, Embex is async.
 
-**Solution**: Use `await` for all Kabod operations:
+**Solution**: Use `await` for all Embex operations:
 
 ```python
 # Before

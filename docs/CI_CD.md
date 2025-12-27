@@ -128,12 +128,12 @@ cargo clippy --workspace --all-features -- -D warnings
 cargo test --workspace --all-features
 
 # Python tests
-cd bindings/python/kabod
+cd bindings/python/embex
 maturin develop --features all
 pytest tests/
 
 # Node.js tests
-cd bindings/node/@bridgerust/kabod
+cd bindings/node/@bridgerust/embex
 npm ci
 npm run build
 npm test

@@ -1,0 +1,32 @@
+[package]
+name = "embex-node"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+default = ["all"]
+all = ["qdrant", "pinecone", "chroma", "lancedb", "pgvector", "weaviate", "milvus"]
+qdrant = ["bridge-embex/qdrant"]
+pinecone = ["bridge-embex/pinecone"]
+chroma = ["bridge-embex/chroma"]
+lancedb = ["bridge-embex/lancedb"]
+pgvector = ["bridge-embex/pgvector"]
+weaviate = ["bridge-embex/weaviate"]
+milvus = ["bridge-embex/milvus"]
+
+[dependencies]
+napi = { version = "3.7.1", features = ["async", "serde-json"] }
+napi-derive = "3.4.1"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.147"
+async-trait = "0.1.89"
+bridge-embex = { path = "../../../../crates/embex/client", default-features = false, features = ["all"] }
+tokio = { version = "1.48.0", features = ["full"] }
+embex-cli = { path = "../../../../cli/embex-cli" }
+
+
+[build-dependencies]
+napi-build = "2.3.1"

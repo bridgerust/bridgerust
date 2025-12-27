@@ -1,22 +1,22 @@
-# Kabod Python API Reference
+# Embex Python API Reference
 
-Complete API documentation for the Python implementation of Kabod.
+Complete API documentation for the Python implementation of Embex.
 
 ## Installation
 
 ```bash
-pip install kabod-py
+pip install embex-py
 # OR
-uv pip install kabod-py
+uv pip install embex-py
 ```
 
 ## Quick Start
 
 ```python
-from kabod import KabodClient, Point
+from embex import EmbexClient, Point
 
 # Initialize client
-client = KabodClient(provider="qdrant", url="http://localhost:6333")
+client = EmbexClient(provider="qdrant", url="http://localhost:6333")
 
 # Get collection
 collection = client.collection("my_docs")
@@ -36,12 +36,12 @@ for r in results.results:
     print(f"ID: {r.id}, Score: {r.score}")
 ```
 
-## KabodClient
+## EmbexClient
 
 ### Constructor
 
 ```python
-KabodClient(
+EmbexClient(
     provider: str,
     url: str,
     api_key: Optional[str] = None
@@ -58,17 +58,17 @@ KabodClient(
 
 ```python
 # Qdrant
-client = KabodClient("qdrant", "http://localhost:6333")
+client = EmbexClient("qdrant", "http://localhost:6333")
 
 # Pinecone
-client = KabodClient(
+client = EmbexClient(
     provider="pinecone",
     url="",
     api_key="your-api-key"
 )
 
 # Chroma
-client = KabodClient("chroma", "http://localhost:8000")
+client = EmbexClient("chroma", "http://localhost:8000")
 ```
 
 ### Async Initialization
@@ -76,7 +76,7 @@ client = KabodClient("chroma", "http://localhost:8000")
 For providers requiring async initialization (Milvus, PgVector, LanceDB):
 
 ```python
-client = await KabodClient.new_async(
+client = await EmbexClient.new_async(
     provider="lancedb",
     url="/path/to/database"
 )
@@ -122,7 +122,7 @@ Insert points into the collection.
 **Example:**
 
 ```python
-from kabod import Point
+from embex import Point
 
 points = [
     Point(
@@ -248,7 +248,7 @@ Point(
 **Example:**
 
 ```python
-from kabod import Point
+from embex import Point
 
 point = Point(
     id="doc1",
@@ -359,24 +359,24 @@ filter = {
 
 ## Error Handling
 
-Kabod raises Python exceptions for errors:
+Embex raises Python exceptions for errors:
 
 ```python
-from kabod import KabodClient, KabodError
+from embex import EmbexClient, EmbexError
 
 try:
-    client = KabodClient("qdrant", "http://localhost:6333")
+    client = EmbexClient("qdrant", "http://localhost:6333")
     collection = client.collection("test")
     await collection.create(dimension=768, distance="cosine")
-except KabodError as e:
-    print(f"Kabod error: {e}")
+except EmbexError as e:
+    print(f"Embex error: {e}")
 except Exception as e:
     print(f"Other error: {e}")
 ```
 
 ### Error Types
 
-- `KabodError` - Base exception
+- `EmbexError` - Base exception
 - `ConfigError` - Configuration errors
 - `DatabaseError` - Database operation errors
 - `SerializationError` - Serialization errors
@@ -386,11 +386,11 @@ except Exception as e:
 
 ```python
 import asyncio
-from kabod import KabodClient, Point
+from embex import EmbexClient, Point
 
 async def main():
     # Initialize client
-    client = KabodClient("qdrant", "http://localhost:6333")
+    client = EmbexClient("qdrant", "http://localhost:6333")
     collection = client.collection("documents")
 
     # Create collection

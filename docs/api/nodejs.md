@@ -1,22 +1,22 @@
-# Kabod Node.js API Reference
+# Embex Node.js API Reference
 
-Complete API documentation for the Node.js/TypeScript implementation of Kabod.
+Complete API documentation for the Node.js/TypeScript implementation of Embex.
 
 ## Installation
 
 ```bash
-npm install @bridgerust/kabod
+npm install @bridgerust/embex
 # OR
-bun add @bridgerust/kabod
+bun add @bridgerust/embex
 ```
 
 ## Quick Start
 
 ```typescript
-import { KabodClient } from "@bridgerust/kabod";
+import { EmbexClient } from "@bridgerust/embex";
 
 // Initialize client
-const client = new KabodClient("qdrant", "http://localhost:6333");
+const client = new EmbexClient("qdrant", "http://localhost:6333");
 
 // Get collection
 const collection = client.collection("my_docs");
@@ -37,12 +37,12 @@ for (const r of results.results) {
 }
 ```
 
-## KabodClient
+## EmbexClient
 
 ### Constructor
 
 ```typescript
-new KabodClient(
+new EmbexClient(
   provider: string,
   url: string,
   apiKey?: string | null
@@ -59,13 +59,13 @@ new KabodClient(
 
 ```typescript
 // Qdrant
-const client = new KabodClient("qdrant", "http://localhost:6333");
+const client = new EmbexClient("qdrant", "http://localhost:6333");
 
 // Pinecone
-const client = new KabodClient("pinecone", "", "your-api-key");
+const client = new EmbexClient("pinecone", "", "your-api-key");
 
 // Chroma
-const client = new KabodClient("chroma", "http://localhost:8000");
+const client = new EmbexClient("chroma", "http://localhost:8000");
 ```
 
 ### Static Method: `newAsync`
@@ -73,7 +73,7 @@ const client = new KabodClient("chroma", "http://localhost:8000");
 For providers requiring async initialization (Milvus, PgVector, LanceDB):
 
 ```typescript
-const client = await KabodClient.newAsync("lancedb", "/path/to/database");
+const client = await EmbexClient.newAsync("lancedb", "/path/to/database");
 ```
 
 ### Methods
@@ -535,13 +535,13 @@ const filter = {
 
 ## Error Handling
 
-Kabod throws JavaScript errors for failures:
+Embex throws JavaScript errors for failures:
 
 ```typescript
-import { KabodClient } from "@bridgerust/kabod";
+import { EmbexClient } from "@bridgerust/embex";
 
 try {
-  const client = new KabodClient("qdrant", "http://localhost:6333");
+  const client = new EmbexClient("qdrant", "http://localhost:6333");
   const collection = client.collection("test");
   await collection.create(768, "cosine");
 } catch (error) {
@@ -552,11 +552,11 @@ try {
 ## Complete Example
 
 ```typescript
-import { KabodClient } from "@bridgerust/kabod";
+import { EmbexClient } from "@bridgerust/embex";
 
 async function main() {
   // Initialize client
-  const client = new KabodClient("qdrant", "http://localhost:6333");
+  const client = new EmbexClient("qdrant", "http://localhost:6333");
   const collection = client.collection("documents");
 
   // Create collection
@@ -618,9 +618,9 @@ main().catch(console.error);
 Full TypeScript definitions are included:
 
 ```typescript
-import { KabodClient, Point, SearchResponse } from "@bridgerust/kabod";
+import { EmbexClient, Point, SearchResponse } from "@bridgerust/embex";
 
-const client: KabodClient = new KabodClient("qdrant", "http://localhost:6333");
+const client: EmbexClient = new EmbexClient("qdrant", "http://localhost:6333");
 const points: Point[] = [
   { id: "1", vector: [0.1, 0.2], metadata: { title: "Doc" } },
 ];

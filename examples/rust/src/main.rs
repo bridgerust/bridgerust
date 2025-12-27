@@ -1,18 +1,18 @@
-use bridge_kabod::client::KabodClient;
-use bridge_kabod_core::config::KabodConfig;
-use bridge_kabod_core::types::{CollectionSchema, DistanceMetric, Point};
+use bridge_embex::client::EmbexClient;
+use bridge_embex_core::config::EmbexConfig;
+use bridge_embex_core::types::{CollectionSchema, DistanceMetric, Point};
 use anyhow::Result;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let config = KabodConfig {
+    let config = EmbexConfig {
         provider: "qdrant".to_string(),
         url: "http://localhost:6333".to_string(),
         api_key: None,
         ..Default::default()
     };
 
-    let client = KabodClient::new(config)?;
+    let client = EmbexClient::new(config)?;
 
     let collection_name = "rust_example";
     let schema = CollectionSchema {

@@ -496,3 +496,4 @@ Thumbs.db
 *.rar
 *.old.*
 *.node
+*.DS_Store

@@ -8,16 +8,16 @@
 
 ## 🚀 Active Projects
 
-### [Kabod](crates/kabod) (Vector Database ORM)
+### [Embex](crates/embex) (Vector Database ORM)
 
 **The Universal Vector Database Client.** One API for Qdrant, Pinecone, Chroma, LanceDB, and more.
 
 - **Unified API**: Switch providers instantly. "Write once, run anywhere."
 - **Performance**: Rust-core with SIMD acceleration (**4x faster** vector ops).
 - **Production Ready**: Built-in migrations, connection pooling, and observability.
-- **Language Support**: First-class bindings for [Python](crates/kabod#python), [Node.js](crates/kabod#nodejs-typescript), and [Rust](crates/kabod#rust).
+- **Language Support**: First-class bindings for [Python](crates/embex#python), [Node.js](crates/embex#nodejs-typescript), and [Rust](crates/embex#rust).
 
-[**⟶ Read the full Kabod Documentation**](crates/kabod)
+[**⟶ Read the full Embex Documentation**](crates/embex)
 
 ### [Bridge Schema](crates/schema) (JSON Validator)
 
@@ -75,21 +75,21 @@ A high-performance JSON Schema validator.
 ### Python
 
 ```bash
-pip install kabod-py      # For Kabod
+pip install embex      # For Embex
 pip install bridge-schema # For Schema
 ```
 
 ### Node.js
 
 ```bash
-npm install @bridgerust/kabod
+npm install @bridgerust/embex
 ```
 
 ### Rust
 
 ```toml
 [dependencies]
-bridge-kabod = "0.1"
+bridge-embex = "0.1"
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) (coming soon).
 

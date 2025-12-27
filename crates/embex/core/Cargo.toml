@@ -1,0 +1,29 @@
+[package]
+name = "bridge-embex-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Core types and traits for Embex Vector ORM"
+
+[dependencies]
+bridge-core = { path = "../../core", features = ["simd"] }
+anyhow = "1.0.100"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.147"
+thiserror = "2.0.17"
+tokio = { version = "1.48", features = ["full", "rt-multi-thread"] }
+async-trait = "0.1.89"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(feature, values("simd"))'] }
+
+[features]
+default = []
+simd = ["bridge-core/simd"]
+
+[dev-dependencies]
+proptest = "1.9"
+tokio-test = "0.4.4"

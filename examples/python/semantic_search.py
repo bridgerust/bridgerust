@@ -1,7 +1,7 @@
 import asyncio
 import random
 from typing import List
-from kabod import KabodClient, Point
+from embex import EmbexClient, Point
 
 # Mock embedding function (in a real app, use OpenAI/HuggingFace)
 def get_embedding(text: str) -> List[float]:
@@ -12,7 +12,7 @@ def get_embedding(text: str) -> List[float]:
 async def main():
     # 1. Initialize Client (using Qdrant as backend for this example)
     # Ensure you have a Qdrant instance running at localhost:6333
-    client = KabodClient(provider="qdrant", url="http://localhost:6333")
+    client = EmbexClient(provider="qdrant", url="http://localhost:6333")
     
     collection_name = "semantic_books"
     

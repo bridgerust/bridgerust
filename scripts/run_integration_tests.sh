@@ -1,10 +1,10 @@
 #!/bin/bash
-# Kabod Integration Test Runner
+# Embex Integration Test Runner
 # This script spins up databases and runs integration tests
 
 set -e
 
-echo "🚀 Kabod Integration Test Runner"
+echo "🚀 Embex Integration Test Runner"
 echo "================================"
 
 if ! docker info > /dev/null 2>&1; then
@@ -40,7 +40,7 @@ check_service "Chroma" "http://localhost:8000/api/v1/heartbeat"
 check_service "Weaviate" "http://localhost:8080/v1/.well-known/ready"
 check_service "Milvus" "http://localhost:9091/healthz"
     
-if pg_isready -h localhost -p 5432 -U kabod > /dev/null 2>&1; then
+if pg_isready -h localhost -p 5432 -U embex > /dev/null 2>&1; then
     echo "  ✅ pgvector is ready"
 else
     echo "  ⚠️  pgvector might not be ready (pg_isready not available or failed)"
@@ -48,7 +48,7 @@ fi
 
 echo ""
 echo "🧪 Running Python integration tests..."
-cd bindings/python/kabod
+cd bindings/python/embex
 if command -v uv > /dev/null 2>&1; then
     uv pip install -e . pytest pytest-asyncio
     uv run pytest tests/integration/ -v --integration
@@ -59,7 +59,7 @@ fi
 
 echo ""
 echo "🧪 Running Node.js integration tests..."
-cd ../../../bindings/node/@bridgerust/kabod
+cd ../../../bindings/node/@bridgerust/embex
 if command -v bun > /dev/null 2>&1; then
     bun run build
     bun test tests/integration/

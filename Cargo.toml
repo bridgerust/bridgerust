@@ -3,20 +3,21 @@ resolver = "3"
 members = [
     "crates/core",
     "crates/schema",
-    "crates/kabod/client",
-    "crates/kabod/core",
-    "crates/kabod/infrastructure",
-    "crates/kabod/adapters/qdrant",
-    "crates/kabod/adapters/pinecone",
-    "crates/kabod/adapters/chroma",
-    "crates/kabod/adapters/lancedb",
-    "crates/kabod/adapters/pgvector",
+    "crates/embex/client",
+    "crates/embex/core",
+    "crates/embex/infrastructure",
+    "crates/embex/adapters/qdrant",
+    "crates/embex/adapters/pinecone",
+    "crates/embex/adapters/chroma",
+    "crates/embex/adapters/lancedb",
+    "crates/embex/adapters/pgvector",
     "bindings/python/bridge-schema",
-    "bindings/python/kabod",
-    "bindings/node/@bridgerust/kabod",
-    "benchmarks/kabod",
-    "crates/kabod/adapters/weaviate",
-    "crates/kabod/adapters/milvus"
+    "bindings/python/embex",
+    "bindings/node/@bridgerust/embex",
+    "benchmarks/embex",
+    "crates/embex/adapters/weaviate",
+    "crates/embex/adapters/milvus",
+    "cli/embex-cli"
 ]
 
 [workspace.package]

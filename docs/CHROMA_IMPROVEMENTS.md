@@ -27,7 +27,7 @@ This document outlines improvements that can be made to the Chroma adapter to ad
 **Code Changes**:
 
 ```rust
-// In bridge-kabod-core/src/types.rs
+// In bridge-embex-core/src/types.rs
 pub struct CollectionSchema {
     pub name: String,
     pub dimension: Option<usize>,  // Changed from usize
@@ -87,7 +87,7 @@ impl ChromaAdapter {
         let embedding = if let Some(ref fn_) = self.embedding_fn {
             fn_(query_text)
         } else {
-            return Err(KabodError::Configuration(
+            return Err(EmbexError::Configuration(
                 "No embedding function configured".to_string()
             ));
         };
@@ -115,7 +115,7 @@ impl ChromaAdapter {
 
 - Add a new constructor `new_persistent` that uses `PersistentClient`
 - Keep HTTP client as default for consistency
-- Add configuration option in `KabodConfig`
+- Add configuration option in `EmbexConfig`
 
 **Code Changes**:
 
@@ -125,7 +125,7 @@ use chroma::PersistentClient;  // If available in chroma crate
 impl ChromaAdapter {
     pub fn new_persistent(path: impl AsRef<Path>) -> Result<Self> {
         let client = PersistentClient::new(path)
-            .map_err(|e| KabodError::Database(format!("Failed to create persistent client: {}", e)))?;
+            .map_err(|e| EmbexError::Database(format!("Failed to create persistent client: {}", e)))?;
 
         Ok(Self {
             client: ChromaHttpClient::from_persistent(client)?,  // Or similar API

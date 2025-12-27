@@ -1,6 +1,6 @@
-# Migrating from LanceDB to Kabod
+# Migrating from LanceDB to Embex
 
-Kabod provides a unified interface for LanceDB, abstracting away the embedded database details. This guide helps you migrate from LanceDB to Kabod.
+Embex provides a unified interface for LanceDB, abstracting away the embedded database details. This guide helps you migrate from LanceDB to Embex.
 
 ## Table of Contents
 
@@ -26,12 +26,12 @@ import lancedb
 db = lancedb.connect("./data")
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
-from kabod import KabodClient
+from embex import EmbexClient
 
-client = await KabodClient.new_async(
+client = await EmbexClient.new_async(
     provider="lancedb",
     url="./data"
 )
@@ -47,12 +47,12 @@ import { connect } from "vectordb";
 const db = await connect("./data");
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
-import { KabodClient } from "@bridgerust/kabod";
+import { EmbexClient } from "@bridgerust/embex";
 
-const client = await KabodClient.newAsync("lancedb", "./data");
+const client = await EmbexClient.newAsync("lancedb", "./data");
 ```
 
 ## Creating Tables
@@ -69,7 +69,7 @@ data = [
 tbl = db.create_table("my_table", data)
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
 await client.collection("my_table").create(
@@ -78,7 +78,7 @@ await client.collection("my_table").create(
 )
 ```
 
-**Key Difference**: LanceDB creates tables with initial data, Kabod creates empty collections.
+**Key Difference**: LanceDB creates tables with initial data, Embex creates empty collections.
 
 ### Node.js
 
@@ -92,7 +92,7 @@ const data = [
 const tbl = await db.createTable("my_table", data);
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
 await client.collection("my_table").create(2, "euclidean");
@@ -110,10 +110,10 @@ tbl.add([
 ])
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
-from kabod import Point
+from embex import Point
 
 await client.collection("my_table").insert([
     Point(
@@ -124,7 +124,7 @@ await client.collection("my_table").insert([
 ])
 ```
 
-**Key Difference**: LanceDB uses dicts with vector as a key, Kabod uses Point objects with metadata.
+**Key Difference**: LanceDB uses dicts with vector as a key, Embex uses Point objects with metadata.
 
 ### Node.js
 
@@ -134,7 +134,7 @@ await client.collection("my_table").insert([
 await tbl.add([{ vector: [3.1, 3.2], item: "baz", price: 30.0 }]);
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
 await client.collection("my_table").insert([
@@ -158,7 +158,7 @@ results = tbl.search([1.1, 1.2]).limit(5).to_pandas()
 results = tbl.search([1.1, 1.2]).limit(5).to_arrow()
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
 results = await client.collection("my_table").search(
@@ -167,7 +167,7 @@ results = await client.collection("my_table").search(
 )
 ```
 
-**Key Difference**: LanceDB returns pandas/arrow, Kabod returns structured results.
+**Key Difference**: LanceDB returns pandas/arrow, Embex returns structured results.
 
 ### Node.js
 
@@ -177,7 +177,7 @@ results = await client.collection("my_table").search(
 const results = await tbl.search([1.1, 1.2]).limit(5).toArray();
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
 const results = await client.collection("my_table").search([1.1, 1.2], 5);
@@ -193,7 +193,7 @@ const results = await client.collection("my_table").search([1.1, 1.2], 5);
 results = tbl.search([1.1, 1.2]).where("price > 15").limit(5).to_pandas()
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
 results = await client.collection("my_table").search(
@@ -228,7 +228,7 @@ const results = await tbl
   .toArray();
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
 const results = await client.collection("my_table").search([1.1, 1.2], 5, {
@@ -250,7 +250,7 @@ const results = await client.collection("my_table").search([1.1, 1.2], 5, {
 tbl.add([...])  # Large list
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
 # Explicit batch with parallel execution
@@ -274,30 +274,30 @@ except Exception as e:
     print(f"Error: {e}")
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
-from kabod import KabodError
+from embex import EmbexError
 
 try:
     await client.collection("my_table").insert(...)
-except KabodError as e:
+except EmbexError as e:
     print(f"Error: {e}")
 ```
 
 ## Key Differences
 
-1. **Table Creation**: LanceDB creates with initial data, Kabod creates empty collections
-2. **Data Format**: LanceDB uses dicts with `vector` key, Kabod uses Point objects
-3. **Return Format**: LanceDB returns pandas/arrow, Kabod returns structured results
-4. **Filter Syntax**: LanceDB uses SQL-like strings, Kabod uses unified filter format
-5. **Async**: LanceDB Python is sync, Kabod is async
+1. **Table Creation**: LanceDB creates with initial data, Embex creates empty collections
+2. **Data Format**: LanceDB uses dicts with `vector` key, Embex uses Point objects
+3. **Return Format**: LanceDB returns pandas/arrow, Embex returns structured results
+4. **Filter Syntax**: LanceDB uses SQL-like strings, Embex uses unified filter format
+5. **Async**: LanceDB Python is sync, Embex is async
 
 ## Troubleshooting
 
 ### Issue: Table creation with data
 
-**Problem**: LanceDB creates tables with initial data, Kabod creates empty collections.
+**Problem**: LanceDB creates tables with initial data, Embex creates empty collections.
 
 **Solution**: Create collection first, then insert data:
 
@@ -305,14 +305,14 @@ except KabodError as e:
 # Before (LanceDB)
 tbl = db.create_table("my_table", data)
 
-# After (Kabod)
+# After (Embex)
 await client.collection("my_table").create(dimension=2, distance="euclidean")
 await client.collection("my_table").insert([...])  # Insert data separately
 ```
 
 ### Issue: Vector key vs metadata
 
-**Problem**: LanceDB uses `vector` as a dict key, Kabod uses `vector` as a Point field.
+**Problem**: LanceDB uses `vector` as a dict key, Embex uses `vector` as a Point field.
 
 **Solution**: Restructure data:
 
@@ -320,21 +320,21 @@ await client.collection("my_table").insert([...])  # Insert data separately
 # Before (LanceDB)
 {"vector": [1.1, 1.2], "item": "foo"}
 
-# After (Kabod)
+# After (Embex)
 Point(id="1", vector=[1.1, 1.2], metadata={"item": "foo"})
 ```
 
 ### Issue: Sync vs Async
 
-**Problem**: LanceDB Python is sync, Kabod is async.
+**Problem**: LanceDB Python is sync, Embex is async.
 
-**Solution**: Use `await` for all Kabod operations:
+**Solution**: Use `await` for all Embex operations:
 
 ```python
 # Before (LanceDB)
 tbl = db.create_table("my_table", data)
 
-# After (Kabod)
+# After (Embex)
 await client.collection("my_table").create(dimension=2, distance="euclidean")
 ```
 

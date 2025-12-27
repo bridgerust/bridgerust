@@ -1,6 +1,6 @@
-# Migrating from Milvus to Kabod
+# Migrating from Milvus to Embex
 
-Kabod provides a unified interface for Milvus, abstracting away the complex setup. This guide helps you migrate from Milvus to Kabod.
+Embex provides a unified interface for Milvus, abstracting away the complex setup. This guide helps you migrate from Milvus to Embex.
 
 ## Table of Contents
 
@@ -31,12 +31,12 @@ connections.connect(
 )
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
-from kabod import KabodClient
+from embex import EmbexClient
 
-client = await KabodClient.new_async(
+client = await EmbexClient.new_async(
     provider="milvus",
     url="http://localhost:19530"
 )
@@ -54,12 +54,12 @@ const client = new MilvusClient({
 });
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
-import { KabodClient } from "@bridgerust/kabod";
+import { EmbexClient } from "@bridgerust/embex";
 
-const client = await KabodClient.newAsync("milvus", "http://localhost:19530");
+const client = await EmbexClient.newAsync("milvus", "http://localhost:19530");
 ```
 
 ## Creating Collections
@@ -79,7 +79,7 @@ schema = CollectionSchema(fields, "My collection")
 collection = Collection("my_collection", schema)
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
 await client.collection("my_collection").create(
@@ -88,7 +88,7 @@ await client.collection("my_collection").create(
 )
 ```
 
-**Key Difference**: Milvus requires explicit schema definition, Kabod simplifies this.
+**Key Difference**: Milvus requires explicit schema definition, Embex simplifies this.
 
 ### Node.js
 
@@ -104,7 +104,7 @@ await client.createCollection({
 });
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
 await client.collection("my_collection").create(768, "cosine");
@@ -125,10 +125,10 @@ collection.insert(data)
 collection.flush()
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
-from kabod import Point
+from embex import Point
 
 await client.collection("my_collection").insert([
     Point(id="1", vector=[0.1] * 768, metadata={}),
@@ -137,7 +137,7 @@ await client.collection("my_collection").insert([
 ])
 ```
 
-**Key Difference**: Milvus uses separate lists for IDs and vectors, Kabod uses Point objects.
+**Key Difference**: Milvus uses separate lists for IDs and vectors, Embex uses Point objects.
 
 ### Node.js
 
@@ -153,7 +153,7 @@ await client.insert({
 });
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
 await client.collection("my_collection").insert([
@@ -179,7 +179,7 @@ results = collection.search(
 )
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
 results = await client.collection("my_collection").search(
@@ -188,7 +188,7 @@ results = await client.collection("my_collection").search(
 )
 ```
 
-**Key Difference**: Milvus requires collection loading and explicit parameters, Kabod simplifies this.
+**Key Difference**: Milvus requires collection loading and explicit parameters, Embex simplifies this.
 
 ### Node.js
 
@@ -204,7 +204,7 @@ const results = await client.search({
 });
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
 const results = await client
@@ -228,7 +228,7 @@ results = collection.search(
 )
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
 results = await client.collection("my_collection").search(
@@ -264,7 +264,7 @@ const results = await client.search({
 });
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
 const results = await client
@@ -289,7 +289,7 @@ collection.insert([...])  # Large list
 collection.flush()
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
 # Explicit batch with parallel execution
@@ -315,14 +315,14 @@ except MilvusException as e:
     print(f"Error: {e}")
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
-from kabod import KabodError
+from embex import EmbexError
 
 try:
     await client.collection("my_collection").insert(...)
-except KabodError as e:
+except EmbexError as e:
     print(f"Error: {e}")
 ```
 
@@ -331,12 +331,12 @@ except KabodError as e:
 **Milvus:**
 Milvus client manages connections internally.
 
-**Kabod:**
+**Embex:**
 
 ```python
-from kabod import KabodClient
+from embex import EmbexClient
 
-client = await KabodClient.new_async(
+client = await EmbexClient.new_async(
     provider="milvus",
     url="http://localhost:19530",
     pool_size=20,  # Max idle connections per host
@@ -346,11 +346,11 @@ client = await KabodClient.new_async(
 
 ## Key Differences
 
-1. **Schema Definition**: Milvus requires explicit schema, Kabod simplifies this
-2. **Collection Loading**: Milvus requires explicit loading, Kabod handles automatically
-3. **Data Format**: Milvus uses separate lists, Kabod uses Point objects
-4. **Flush Operations**: Milvus requires explicit flush, Kabod handles automatically
-5. **Unified API**: Kabod provides the same API across all providers
+1. **Schema Definition**: Milvus requires explicit schema, Embex simplifies this
+2. **Collection Loading**: Milvus requires explicit loading, Embex handles automatically
+3. **Data Format**: Milvus uses separate lists, Embex uses Point objects
+4. **Flush Operations**: Milvus requires explicit flush, Embex handles automatically
+5. **Unified API**: Embex provides the same API across all providers
 
 ## Troubleshooting
 
@@ -358,20 +358,20 @@ client = await KabodClient.new_async(
 
 **Problem**: Milvus requires explicit collection loading before search.
 
-**Solution**: Kabod handles this automatically, but ensure collection exists:
+**Solution**: Embex handles this automatically, but ensure collection exists:
 
 ```python
 # Before (Milvus)
 collection.load()
 results = collection.search(...)
 
-# After (Kabod)
+# After (Embex)
 results = await client.collection("my_collection").search(...)  # Auto-loaded
 ```
 
 ### Issue: Data format mismatch
 
-**Problem**: Milvus uses separate lists for IDs and vectors, Kabod uses Point objects.
+**Problem**: Milvus uses separate lists for IDs and vectors, Embex uses Point objects.
 
 **Solution**: Restructure data:
 
@@ -383,7 +383,7 @@ data = [
 ]
 collection.insert(data)
 
-# After (Kabod)
+# After (Embex)
 await client.collection("my_collection").insert([
     Point(id="1", vector=[0.1] * 768, metadata={}),
     Point(id="2", vector=[0.2] * 768, metadata={}),
@@ -395,14 +395,14 @@ await client.collection("my_collection").insert([
 
 **Problem**: Milvus requires explicit flush for data persistence.
 
-**Solution**: Kabod handles this automatically:
+**Solution**: Embex handles this automatically:
 
 ```python
 # Before (Milvus)
 collection.insert(data)
 collection.flush()
 
-# After (Kabod)
+# After (Embex)
 await client.collection("my_collection").insert([...])  # Auto-flushed
 ```
 

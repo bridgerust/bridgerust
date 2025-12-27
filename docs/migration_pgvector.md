@@ -1,6 +1,6 @@
-# Migrating from PgVector to Kabod
+# Migrating from PgVector to Embex
 
-Kabod abstracts away the SQL complexity of PgVector. This guide helps you migrate from PgVector to Kabod.
+Embex abstracts away the SQL complexity of PgVector. This guide helps you migrate from PgVector to Embex.
 
 ## Table of Contents
 
@@ -29,12 +29,12 @@ cur = conn.cursor()
 cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
-from kabod import KabodClient
+from embex import EmbexClient
 
-client = await KabodClient.new_async(
+client = await EmbexClient.new_async(
     provider="pgvector",
     url="postgresql://user:password@localhost:5432/dbname"
 )
@@ -53,12 +53,12 @@ const pool = new Pool({
 await pool.query("CREATE EXTENSION IF NOT EXISTS vector");
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
-import { KabodClient } from "@bridgerust/kabod";
+import { EmbexClient } from "@bridgerust/embex";
 
-const client = await KabodClient.newAsync(
+const client = await EmbexClient.newAsync(
   "pgvector",
   "postgresql://user:password@localhost:5432/dbname"
 );
@@ -79,14 +79,14 @@ cur.execute("""
 """)
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
-# Kabod manages the table creation for you
+# Embex manages the table creation for you
 await client.collection("items").create(dimension=768, distance="cosine")
 ```
 
-**Key Difference**: Kabod automatically creates the table with proper vector column and indexes.
+**Key Difference**: Embex automatically creates the table with proper vector column and indexes.
 
 ### Node.js
 
@@ -101,7 +101,7 @@ await pool.query(`
 `);
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
 await client.collection("items").create(768, "cosine");
@@ -121,17 +121,17 @@ cur.execute(
 conn.commit()
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
-from kabod import Point
+from embex import Point
 
 await client.collection("items").insert([
     Point(id="1", vector=[0.1] * 768, metadata={})
 ])
 ```
 
-**Key Difference**: Kabod handles transactions and provides structured Point objects.
+**Key Difference**: Embex handles transactions and provides structured Point objects.
 
 ### Node.js
 
@@ -143,7 +143,7 @@ await pool.query("INSERT INTO items (embedding) VALUES ($1)", [
 ]);
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
 await client.collection("items").insert([
@@ -171,7 +171,7 @@ cur.execute("""
 results = cur.fetchall()
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
 results = await client.collection("items").search(
@@ -180,7 +180,7 @@ results = await client.collection("items").search(
 )
 ```
 
-**Key Difference**: Kabod handles SQL complexity and distance calculations automatically.
+**Key Difference**: Embex handles SQL complexity and distance calculations automatically.
 
 ### Node.js
 
@@ -198,7 +198,7 @@ const results = await pool.query(
 );
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
 const results = await client
@@ -222,7 +222,7 @@ cur.execute("""
 """, ([0.1] * 768, "tech", [0.1] * 768))
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
 results = await client.collection("items").search(
@@ -262,7 +262,7 @@ const results = await pool.query(
 );
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
 const results = await client
@@ -292,7 +292,7 @@ for i in range(0, len(vectors), 100):
 conn.commit()
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
 # Explicit batch with parallel execution
@@ -318,14 +318,14 @@ except psycopg2.Error as e:
     print(f"Error: {e}")
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
-from kabod import KabodError
+from embex import EmbexError
 
 try:
     await client.collection("items").insert(...)
-except KabodError as e:
+except EmbexError as e:
     print(f"Error: {e}")
 ```
 
@@ -342,12 +342,12 @@ connection_pool = psycopg2.pool.SimpleConnectionPool(
 )
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
-from kabod import KabodClient
+from embex import EmbexClient
 
-client = await KabodClient.new_async(
+client = await EmbexClient.new_async(
     provider="pgvector",
     url="postgresql://user:password@localhost:5432/dbname",
     pool_size=20,  # Max connections
@@ -355,15 +355,15 @@ client = await KabodClient.new_async(
 )
 ```
 
-**Key Difference**: Kabod manages connection pooling automatically via `sqlx`.
+**Key Difference**: Embex manages connection pooling automatically via `sqlx`.
 
 ## Key Differences
 
-1. **SQL Abstraction**: Kabod hides SQL complexity, PgVector requires SQL knowledge
-2. **Table Management**: Kabod creates tables automatically, PgVector requires manual DDL
-3. **Transactions**: Kabod handles transactions, PgVector requires manual commit/rollback
-4. **Connection Pooling**: Kabod manages pooling, PgVector requires manual pool setup
-5. **Unified API**: Kabod provides the same API across all providers
+1. **SQL Abstraction**: Embex hides SQL complexity, PgVector requires SQL knowledge
+2. **Table Management**: Embex creates tables automatically, PgVector requires manual DDL
+3. **Transactions**: Embex handles transactions, PgVector requires manual commit/rollback
+4. **Connection Pooling**: Embex manages pooling, PgVector requires manual pool setup
+5. **Unified API**: Embex provides the same API across all providers
 
 ## Troubleshooting
 
@@ -371,7 +371,7 @@ client = await KabodClient.new_async(
 
 **Problem**: PgVector extension must exist before use.
 
-**Solution**: Kabod handles this automatically, but ensure PostgreSQL has the extension available:
+**Solution**: Embex handles this automatically, but ensure PostgreSQL has the extension available:
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS vector;
@@ -379,7 +379,7 @@ CREATE EXTENSION IF NOT EXISTS vector;
 
 ### Issue: Table already exists
 
-**Problem**: PgVector tables are created manually, Kabod creates them automatically.
+**Problem**: PgVector tables are created manually, Embex creates them automatically.
 
 **Solution**: Either drop existing tables or use different collection names:
 
@@ -391,15 +391,15 @@ await client.collection("items_v2").create(dimension=768, distance="cosine")
 
 ### Issue: SQL syntax errors
 
-**Problem**: PgVector requires SQL knowledge, Kabod abstracts this away.
+**Problem**: PgVector requires SQL knowledge, Embex abstracts this away.
 
-**Solution**: Use Kabod's unified API instead of SQL:
+**Solution**: Use Embex's unified API instead of SQL:
 
 ```python
 # Before (PgVector)
 cur.execute("SELECT * FROM items WHERE category = %s", ("tech",))
 
-# After (Kabod)
+# After (Embex)
 results = await collection.search(
     vector=...,
     filter={"op": "key", "args": ["category", {"op": "eq", "args": "tech"}]}

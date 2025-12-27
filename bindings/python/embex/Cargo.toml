@@ -1,0 +1,32 @@
+[package]
+name = "embex"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "Python bindings for Embex Vector ORM"
+license.workspace = true
+repository.workspace = true
+
+[lib]
+name = "embex"
+crate-type = ["cdylib"]
+
+[features]
+default = ["all"]
+all = ["qdrant", "pinecone", "chroma", "lancedb", "pgvector", "weaviate", "milvus"]
+qdrant = ["bridge-embex/qdrant"]
+pinecone = ["bridge-embex/pinecone"]
+chroma = ["bridge-embex/chroma"]
+lancedb = ["bridge-embex/lancedb"]
+pgvector = ["bridge-embex/pgvector"]
+weaviate = ["bridge-embex/weaviate"]
+milvus = ["bridge-embex/milvus"]
+
+[dependencies]
+bridge-embex = { path = "../../../crates/embex/client", default-features = false, features = ["all"] }
+pyo3 = { version = "0.27.2", features = ["extension-module", "abi3-py38"] }
+pyo3-async-runtimes = { version = "0.27.0", features = ["tokio-runtime"] }
+tokio = { version = "1.48", features = ["full"] }
+serde_json = "1.0.147"
+async-trait = "0.1.89"
+embex-cli = { path = "../../../cli/embex-cli" }

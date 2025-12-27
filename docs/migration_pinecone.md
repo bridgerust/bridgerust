@@ -1,6 +1,6 @@
-# Migrating from Pinecone to Kabod
+# Migrating from Pinecone to Embex
 
-Kabod unifies the Pinecone API with other vector database providers. This guide helps you migrate from Pinecone to Kabod.
+Embex unifies the Pinecone API with other vector database providers. This guide helps you migrate from Pinecone to Embex.
 
 ## Table of Contents
 
@@ -28,12 +28,12 @@ pc = Pinecone(api_key="YOUR_API_KEY")
 idx = pc.Index("my-index")
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
-from kabod import KabodClient
+from embex import EmbexClient
 
-client = KabodClient(
+client = EmbexClient(
     provider="pinecone",
     url="https://index-host.pinecone.io",  # Your index host
     api_key="YOUR_API_KEY"
@@ -52,12 +52,12 @@ const pc = new Pinecone({ apiKey: "YOUR_API_KEY" });
 const idx = pc.index("my-index");
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
-import { KabodClient } from "@bridgerust/kabod";
+import { EmbexClient } from "@bridgerust/embex";
 
-const client = new KabodClient(
+const client = new EmbexClient(
   "pinecone",
   "https://index-host.pinecone.io",
   "YOUR_API_KEY"
@@ -79,15 +79,15 @@ pc.create_index(
 )
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
 # Note: Pinecone indexes are typically created via Pinecone console
-# Kabod assumes the index already exists
+# Embex assumes the index already exists
 await collection.create(dimension=768, distance="cosine")
 ```
 
-**Important**: Pinecone indexes are usually created via the Pinecone console or API. Kabod's `create()` method validates the collection exists but doesn't create Pinecone indexes.
+**Important**: Pinecone indexes are usually created via the Pinecone console or API. Embex's `create()` method validates the collection exists but doesn't create Pinecone indexes.
 
 ## Upserting Vectors
 
@@ -103,10 +103,10 @@ idx.upsert(
 )
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
-from kabod import Point
+from embex import Point
 
 await collection.insert([
     Point(
@@ -131,7 +131,7 @@ await idx.upsert([
 ]);
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
 await collection.insert([
@@ -157,7 +157,7 @@ results = idx.query(
 )
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
 results = await collection.search(
@@ -179,7 +179,7 @@ const results = await idx.query({
 });
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
 const results = await collection.search(Array(768).fill(0.1), 5, {
@@ -201,7 +201,7 @@ results = idx.query(
 )
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
 results = await collection.search(
@@ -236,7 +236,7 @@ const results = await idx.query({
 });
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
 const results = await collection.search(Array(768).fill(0.1), 5, {
@@ -261,7 +261,7 @@ idx.upsert(
 )
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
 await collection.update_metadata([
@@ -284,14 +284,14 @@ except PineconeException as e:
     print(f"Error: {e}")
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
-from kabod import KabodError
+from embex import EmbexError
 
 try:
     await collection.search(...)
-except KabodError as e:
+except EmbexError as e:
     print(f"Error: {e}")
 ```
 
@@ -300,12 +300,12 @@ except KabodError as e:
 **Pinecone:**
 Pinecone client manages HTTP connections internally.
 
-**Kabod:**
+**Embex:**
 
 ```python
-from kabod import KabodClient
+from embex import EmbexClient
 
-client = KabodClient(
+client = EmbexClient(
     provider="pinecone",
     url="https://index-host.pinecone.io",
     api_key="YOUR_API_KEY",
@@ -316,11 +316,11 @@ client = KabodClient(
 
 ## Key Differences
 
-1. **Index Creation**: Pinecone indexes are created via console/API, not programmatically in Kabod
-2. **Filter Syntax**: Pinecone uses MongoDB-style filters (`{"key": {"$eq": "value"}}`), Kabod uses a unified filter format
-3. **Metadata Updates**: Pinecone requires re-upserting, Kabod has dedicated `update_metadata()` method
+1. **Index Creation**: Pinecone indexes are created via console/API, not programmatically in Embex
+2. **Filter Syntax**: Pinecone uses MongoDB-style filters (`{"key": {"$eq": "value"}}`), Embex uses a unified filter format
+3. **Metadata Updates**: Pinecone requires re-upserting, Embex has dedicated `update_metadata()` method
 4. **URL Format**: Pinecone uses index host URLs, not a single API endpoint
-5. **Unified API**: Kabod provides the same API across all providers
+5. **Unified API**: Embex provides the same API across all providers
 
 ## Troubleshooting
 
@@ -332,13 +332,13 @@ client = KabodClient(
 
 ```python
 # Create index via Pinecone console or API
-# Then use Kabod to interact with it
+# Then use Embex to interact with it
 await collection.create(dimension=768, distance="cosine")  # Validates existence
 ```
 
 ### Issue: Filter syntax different
 
-**Problem**: Pinecone uses MongoDB-style filters, Kabod uses unified format.
+**Problem**: Pinecone uses MongoDB-style filters, Embex uses unified format.
 
 **Solution**: Convert filter syntax:
 
@@ -346,7 +346,7 @@ await collection.create(dimension=768, distance="cosine")  # Validates existence
 # Pinecone
 filter={"genre": {"$eq": "drama"}}
 
-# Kabod
+# Embex
 filter={
     "op": "key",
     "args": ["genre", {"op": "eq", "args": "drama"}]
@@ -357,13 +357,13 @@ filter={
 
 **Problem**: Pinecone doesn't have direct metadata updates.
 
-**Solution**: Use Kabod's `update_metadata()` method:
+**Solution**: Use Embex's `update_metadata()` method:
 
 ```python
 # Before (Pinecone)
 idx.upsert(vectors=[{"id": "A", "values": [...], "metadata": {...}}])
 
-# After (Kabod)
+# After (Embex)
 await collection.update_metadata([{"id": "A", "metadata": {...}}])
 ```
 

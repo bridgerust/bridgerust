@@ -1,6 +1,6 @@
-# Connection Pooling in Kabod
+# Connection Pooling in Embex
 
-Kabod implements connection pooling across all database adapters to optimize performance and resource usage. This document explains how pooling works for each provider and how to configure it.
+Embex implements connection pooling across all database adapters to optimize performance and resource usage. This document explains how pooling works for each provider and how to configure it.
 
 ## Overview
 
@@ -15,11 +15,11 @@ These adapters support explicit pool size configuration:
 #### PgVector
 
 - **Type**: SQL connection pool (via `sqlx::PgPool`)
-- **Configuration**: `pool_size` in `KabodConfig`
+- **Configuration**: `pool_size` in `EmbexConfig`
 - **Default**: 10 connections
 - **Usage**:
   ```rust
-  let config = KabodConfig {
+  let config = EmbexConfig {
       provider: "pgvector".to_string(),
       url: "postgresql://...".to_string(),
       pool_size: 20,  // Configure pool size
@@ -30,12 +30,12 @@ These adapters support explicit pool size configuration:
 #### Pinecone, Milvus, Weaviate
 
 - **Type**: HTTP connection pool (via `reqwest::Client`)
-- **Configuration**: `pool_size` in `KabodConfig` (maps to `pool_max_idle_per_host`)
+- **Configuration**: `pool_size` in `EmbexConfig` (maps to `pool_max_idle_per_host`)
 - **Default**: 10 idle connections per host
 - **Idle Timeout**: 90 seconds
 - **Usage**:
   ```rust
-  let config = KabodConfig {
+  let config = EmbexConfig {
       provider: "pinecone".to_string(),
       url: "https://...".to_string(),
       api_key: Some("...".to_string()),
@@ -51,13 +51,13 @@ These adapters use their own internal connection pooling:
 #### Qdrant
 
 - **Type**: Internal HTTP client pooling (via `qdrant-client`)
-- **Configuration**: Not directly configurable through Kabod
+- **Configuration**: Not directly configurable through Embex
 - **Note**: The `pool_size` parameter is accepted for API consistency but the qdrant-client manages its own pooling
 
 #### Chroma
 
 - **Type**: Internal HTTP client pooling (via `chroma` crate)
-- **Configuration**: Not directly configurable through Kabod
+- **Configuration**: Not directly configurable through Embex
 - **Note**: The `pool_size` parameter is accepted for API consistency but the chroma crate manages its own pooling
 
 ### No Pooling Required
@@ -70,12 +70,12 @@ These adapters use their own internal connection pooling:
 
 ## Configuration
 
-### Via KabodConfig
+### Via EmbexConfig
 
 ```rust
-use bridge_kabod_infrastructure::config::KabodConfig;
+use bridge_embex_infrastructure::config::EmbexConfig;
 
-let config = KabodConfig {
+let config = EmbexConfig {
     provider: "qdrant".to_string(),
     url: "http://localhost:6333".to_string(),
     pool_size: 20,              // Maximum connections in pool
@@ -87,15 +87,15 @@ let config = KabodConfig {
 ### Via Environment Variables
 
 ```bash
-export KABOD_PROVIDER=qdrant
-export KABOD_URL=http://localhost:6333
-export KABOD_POOL_SIZE=20
-export KABOD_IDLE_TIMEOUT_SECS=90
+export EMBEX_PROVIDER=qdrant
+export EMBEX_URL=http://localhost:6333
+export EMBEX_POOL_SIZE=20
+export EMBEX_IDLE_TIMEOUT_SECS=90
 ```
 
 ### Via Configuration File
 
-Create `kabod.toml`:
+Create `embex.toml`:
 
 ```toml
 provider = "qdrant"
@@ -118,7 +118,7 @@ Always reuse client instances:
 
 ```rust
 // ✅ Good: Reuse client
-let client = KabodClient::new(config)?;
+let client = EmbexClient::new(config)?;
 let collection = client.collection("docs");
 
 // Use collection for multiple operations
@@ -126,9 +126,9 @@ collection.insert(points1).await?;
 collection.insert(points2).await?;
 
 // ❌ Bad: Creating new client for each operation
-let client1 = KabodClient::new(config.clone())?;
+let client1 = EmbexClient::new(config.clone())?;
 client1.collection("docs").insert(points1).await?;
-let client2 = KabodClient::new(config.clone())?;
+let client2 = EmbexClient::new(config.clone())?;
 client2.collection("docs").insert(points2).await?;
 ```
 
@@ -173,7 +173,7 @@ PgPoolOptions::new()
 You can check the pooling status for any provider:
 
 ```rust
-use bridge_kabod_infrastructure::pooling::get_pooling_status;
+use bridge_embex_infrastructure::pooling::get_pooling_status;
 
 let status = get_pooling_status("pgvector");
 match status {

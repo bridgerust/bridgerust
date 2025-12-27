@@ -2,7 +2,7 @@ services:
   # ========== Qdrant ==========
   qdrant:
     image: qdrant/qdrant:latest
-    container_name: kabod-qdrant
+    container_name: embex-qdrant
     ports:
       - "6333:6333"
       - "6334:6334"
@@ -14,7 +14,7 @@ services:
   # ========== Chroma ==========
   chroma:
     image: chromadb/chroma:latest
-    container_name: kabod-chroma
+    container_name: embex-chroma
     ports:
       - "8000:8000"
     volumes:
@@ -26,7 +26,7 @@ services:
   # ========== Weaviate ==========
   weaviate:
     image: semitechnologies/weaviate:latest
-    container_name: kabod-weaviate
+    container_name: embex-weaviate
     ports:
       - "8080:8080"
       - "50051:50051"
@@ -42,7 +42,7 @@ services:
   # ========== Milvus (Standalone) ==========
   etcd:
     image: quay.io/coreos/etcd:v3.5.5
-    container_name: kabod-milvus-etcd
+    container_name: embex-milvus-etcd
     environment:
       - ETCD_AUTO_COMPACTION_MODE=revision
       - ETCD_AUTO_COMPACTION_RETENTION=1000
@@ -54,7 +54,7 @@ services:
 
   minio:
     image: minio/minio:RELEASE.2023-03-20T20-16-18Z
-    container_name: kabod-milvus-minio
+    container_name: embex-milvus-minio
     environment:
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
@@ -72,7 +72,7 @@ services:
 
   milvus:
     image: milvusdb/milvus:v2.4.5
-    container_name: kabod-milvus
+    container_name: embex-milvus
     command: ["milvus", "run", "standalone"]
     environment:
       ETCD_ENDPOINTS: etcd:2379
@@ -89,13 +89,13 @@ services:
   # ========== PostgreSQL + pgvector ==========
   postgres:
     image: pgvector/pgvector:pg16
-    container_name: kabod-pgvector
+    container_name: embex-pgvector
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_USER: kabod
-      POSTGRES_PASSWORD: kabod_test
-      POSTGRES_DB: kabod_test
+      POSTGRES_USER: embex
+      POSTGRES_PASSWORD: embex_test
+      POSTGRES_DB: embex_test
     volumes:
       - postgres_data:/var/lib/postgresql/data
 

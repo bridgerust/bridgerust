@@ -1,6 +1,6 @@
-# Observability in Kabod
+# Observability in Embex
 
-Kabod provides comprehensive observability through metrics and distributed tracing, enabling you to monitor performance, debug issues, and optimize your vector database operations.
+Embex provides comprehensive observability through metrics and distributed tracing, enabling you to monitor performance, debug issues, and optimize your vector database operations.
 
 ## Table of Contents
 
@@ -12,7 +12,7 @@ Kabod provides comprehensive observability through metrics and distributed traci
 
 ## Metrics
 
-Kabod automatically tracks metrics for all operations, providing insights into performance and error rates.
+Embex automatically tracks metrics for all operations, providing insights into performance and error rates.
 
 ### Available Metrics
 
@@ -39,10 +39,10 @@ Kabod automatically tracks metrics for all operations, providing insights into p
 ### Accessing Metrics
 
 ```rust
-use bridge_kabod::KabodClient;
-use bridge_kabod_infrastructure::config::KabodConfig;
+use bridge_embex::EmbexClient;
+use bridge_embex_infrastructure::config::EmbexConfig;
 
-let client = KabodClient::new(config)?;
+let client = EmbexClient::new(config)?;
 let collection = client.collection("my_collection");
 
 // Perform operations
@@ -81,7 +81,7 @@ let avg_overall = snapshot.avg_latency_ms();
 ### Example: Monitoring Performance
 
 ```rust
-use bridge_kabod::Timer;
+use bridge_embex::Timer;
 
 let timer = Timer::start();
 collection.insert_batch(points, 1000, Some(3)).await?;
@@ -97,12 +97,12 @@ println!("Average insert latency: {:.2}ms", snapshot.avg_insert_latency_ms());
 
 ## Tracing
 
-Kabod uses the `tracing` crate for structured logging and distributed tracing. All operations are automatically instrumented with tracing spans.
+Embex uses the `tracing` crate for structured logging and distributed tracing. All operations are automatically instrumented with tracing spans.
 
 ### Initializing Tracing
 
 ```rust
-use bridge_kabod::init_tracing;
+use bridge_embex::init_tracing;
 
 // Initialize with default subscriber
 init_tracing();
@@ -124,10 +124,10 @@ Control tracing verbosity with environment variables:
 export RUST_LOG=info
 
 # Set specific module log level
-export RUST_LOG=bridge_kabod=debug,info
+export RUST_LOG=bridge_embex=debug,info
 
 # Enable tracing for specific provider
-export RUST_LOG=bridge_kabod::adapters::qdrant=trace
+export RUST_LOG=bridge_embex::adapters::qdrant=trace
 ```
 
 ### Tracing Spans
@@ -160,7 +160,7 @@ Registry::default()
 use tracing_opentelemetry::OpenTelemetryLayer;
 use opentelemetry::global;
 
-let tracer = global::tracer("kabod");
+let tracer = global::tracer("embex");
 let telemetry = OpenTelemetryLayer::new(tracer);
 
 Registry::default()
@@ -174,19 +174,19 @@ Registry::default()
 ### Basic Monitoring
 
 ```rust
-use bridge_kabod::{KabodClient, init_tracing};
-use bridge_kabod_infrastructure::config::KabodConfig;
+use bridge_embex::{EmbexClient, init_tracing};
+use bridge_embex_infrastructure::config::EmbexConfig;
 
 // Initialize tracing
 init_tracing();
 
-let config = KabodConfig {
+let config = EmbexConfig {
     provider: "qdrant".to_string(),
     url: "http://localhost:6333".to_string(),
     ..Default::default()
 };
 
-let client = KabodClient::new(config)?;
+let client = EmbexClient::new(config)?;
 let collection = client.collection("docs");
 
 // Perform operations
@@ -202,7 +202,7 @@ println!("Errors: {}", metrics.total_errors());
 ### Performance Monitoring
 
 ```rust
-use bridge_kabod::Timer;
+use bridge_embex::Timer;
 
 // Monitor batch insert performance
 let timer = Timer::start();
@@ -239,15 +239,15 @@ if snapshot.error_rate() > 5.0 {
 use prometheus::{Counter, Histogram, Registry};
 
 let registry = Registry::new();
-let insert_counter = Counter::new("kabod_inserts_total", "Total inserts").unwrap();
+let insert_counter = Counter::new("embex_inserts_total", "Total inserts").unwrap();
 let search_histogram = Histogram::with_opts(
-    HistogramOpts::new("kabod_search_duration_seconds", "Search duration")
+    HistogramOpts::new("embex_search_duration_seconds", "Search duration")
 ).unwrap();
 
 registry.register(Box::new(insert_counter.clone())).unwrap();
 registry.register(Box::new(search_histogram.clone())).unwrap();
 
-// Update Prometheus metrics from Kabod metrics
+// Update Prometheus metrics from Embex metrics
 let snapshot = client.metrics();
 insert_counter.inc_by(snapshot.inserts);
 // ... update other metrics
@@ -265,7 +265,7 @@ use tracing_subscriber::EnvFilter;
 
 // Or programmatically
 let filter = EnvFilter::new("info")
-    .add_directive("bridge_kabod::adapters::qdrant=debug".parse().unwrap());
+    .add_directive("bridge_embex::adapters::qdrant=debug".parse().unwrap());
 
 tracing_subscriber::fmt()
     .with_env_filter(filter)
@@ -335,7 +335,7 @@ let snapshot = client.metrics();
 
 ```rust
 // Enable debug tracing for specific operations
-// RUST_LOG=bridge_kabod::adapters::qdrant=debug cargo run
+// RUST_LOG=bridge_embex::adapters::qdrant=debug cargo run
 
 // Or use tracing spans in your code
 use tracing::instrument;
@@ -350,7 +350,7 @@ async fn my_operation(collection: &Collection) -> Result<()> {
 
 ## Summary
 
-Kabod's observability features provide:
+Embex's observability features provide:
 
 1. **Automatic Metrics**: Track all operations, errors, and latencies
 2. **Structured Tracing**: Distributed tracing with context propagation

@@ -1,43 +1,43 @@
-# Kabod Rust API Reference
+# Embex Rust API Reference
 
-Complete API documentation for the Rust implementation of Kabod.
+Complete API documentation for the Rust implementation of Embex.
 
 ## Table of Contents
 
-- [KabodClient](#kabodclient)
+- [EmbexClient](#embexclient)
 - [Collection](#collection)
 - [Types](#types)
 - [Error Handling](#error-handling)
 - [Configuration](#configuration)
 
-## KabodClient
+## EmbexClient
 
 The main client for interacting with vector databases.
 
 ### Creating a Client
 
 ```rust
-use bridge_kabod::client::KabodClient;
-use bridge_kabod_core::config::KabodConfig;
+use bridge_embex::client::EmbexClient;
+use bridge_embex_core::config::EmbexConfig;
 
 // Synchronous initialization (for Qdrant, Pinecone, Chroma, Weaviate)
-let config = KabodConfig {
+let config = EmbexConfig {
     provider: "qdrant".to_string(),
     url: "http://localhost:6333".to_string(),
     api_key: None,
     ..Default::default()
 };
 
-let client = KabodClient::new(config)?;
+let client = EmbexClient::new(config)?;
 
 // Async initialization (for Milvus, PgVector, LanceDB)
-let config = KabodConfig {
+let config = EmbexConfig {
     provider: "lancedb".to_string(),
     url: "/path/to/database".to_string(),
     ..Default::default()
 };
 
-let client = KabodClient::new_async(config).await?;
+let client = EmbexClient::new_async(config).await?;
 ```
 
 ### Methods
@@ -71,7 +71,7 @@ Represents a collection in the vector database.
 ### Creating a Collection
 
 ```rust
-use bridge_kabod_core::types::{CollectionSchema, DistanceMetric};
+use bridge_embex_core::types::{CollectionSchema, DistanceMetric};
 
 let schema = CollectionSchema {
     name: "my_collection".to_string(),
@@ -85,7 +85,7 @@ collection.create(schema).await?;
 ### Inserting Points
 
 ```rust
-use bridge_kabod_core::types::Point;
+use bridge_embex_core::types::Point;
 
 let points = vec![
     Point {
@@ -112,7 +112,7 @@ collection.insert_batch(points, 1000, Some(3)).await?;
 #### Using Query Builder
 
 ```rust
-use bridge_kabod_core::query::QueryBuilder;
+use bridge_embex_core::query::QueryBuilder;
 
 let results = collection
     .search(vec![0.1, 0.2, 0.3])
@@ -130,7 +130,7 @@ for result in results.results {
 #### Using Query Method
 
 ```rust
-use bridge_kabod_core::query::QueryBuilder;
+use bridge_embex_core::query::QueryBuilder;
 
 let query = QueryBuilder::new("my_collection", vec![0.1, 0.2, 0.3])
     .limit(10)
@@ -244,12 +244,12 @@ pub struct SearchResponse {
 
 ## Error Handling
 
-All operations return `Result<T, KabodError>`.
+All operations return `Result<T, EmbexError>`.
 
 ### Error Types
 
 ```rust
-pub enum KabodError {
+pub enum EmbexError {
     Config(ConfigError),
     Database(String),
     Connection(String),
@@ -271,7 +271,7 @@ pub enum KabodError {
 ```rust
 match collection.create(schema).await {
     Ok(()) => println!("Collection created"),
-    Err(KabodError::CollectionExists(name)) => {
+    Err(EmbexError::CollectionExists(name)) => {
         println!("Collection {} already exists", name);
     }
     Err(e) => eprintln!("Error: {}", e),
@@ -281,7 +281,7 @@ match collection.create(schema).await {
 ### Retry Logic
 
 ```rust
-use bridge_kabod_core::retry::{RetryConfig, retry_with_backoff};
+use bridge_embex_core::retry::{RetryConfig, retry_with_backoff};
 
 let config = RetryConfig::new(3)
     .with_initial_delay(Duration::from_millis(100))
@@ -296,10 +296,10 @@ let result = retry_with_backoff(&config, || {
 
 ## Configuration
 
-### KabodConfig
+### EmbexConfig
 
 ```rust
-pub struct KabodConfig {
+pub struct EmbexConfig {
     pub provider: String,
     pub url: String,
     pub api_key: Option<String>,
@@ -316,7 +316,7 @@ Options are passed via the `options` HashMap:
 
 ```rust
 // Pinecone
-let config = KabodConfig {
+let config = EmbexConfig {
     provider: "pinecone".to_string(),
     url: "".to_string(),
     api_key: Some("api-key".to_string()),
@@ -331,7 +331,7 @@ let config = KabodConfig {
 };
 
 // PgVector
-let config = KabodConfig {
+let config = EmbexConfig {
     provider: "pgvector".to_string(),
     url: "postgresql://user:pass@localhost/db".to_string(),
     options: {
@@ -348,7 +348,7 @@ let config = KabodConfig {
 ### Initializing Tracing
 
 ```rust
-use bridge_kabod_core::observability::init_tracing;
+use bridge_embex_core::observability::init_tracing;
 
 // Initialize with default subscriber
 init_tracing();
@@ -377,21 +377,21 @@ println!("Average insert latency: {}ms", snapshot.insert_latency_ms);
 ### Complete Example
 
 ```rust
-use bridge_kabod::client::KabodClient;
-use bridge_kabod_core::config::KabodConfig;
-use bridge_kabod_core::types::{CollectionSchema, DistanceMetric, Point};
-use bridge_kabod_core::query::QueryBuilder;
+use bridge_embex::client::EmbexClient;
+use bridge_embex_core::config::EmbexConfig;
+use bridge_embex_core::types::{CollectionSchema, DistanceMetric, Point};
+use bridge_embex_core::query::QueryBuilder;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize client
-    let config = KabodConfig {
+    let config = EmbexConfig {
         provider: "qdrant".to_string(),
         url: "http://localhost:6333".to_string(),
         ..Default::default()
     };
 
-    let client = KabodClient::new(config)?;
+    let client = EmbexClient::new(config)?;
     let collection = client.collection("documents");
 
     // Create collection

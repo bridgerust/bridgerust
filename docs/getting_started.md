@@ -1,23 +1,23 @@
-# Getting Started with Kabod
+# Getting Started with Embex
 
-Kabod is a high-performance vector database ORM for Rust, Python, and Node.js. It provides a unified API to interact with multiple vector backend providers.
+Embex is a high-performance vector database ORM for Rust, Python, and Node.js. It provides a unified API to interact with multiple vector backend providers.
 
 ## Installation
 
 ### Python
 
 ```bash
-pip install kabod-py
+pip install embex-py
 # OR
-uv pip install kabod-py
+uv pip install embex-py
 ```
 
 ### Node.js
 
 ```bash
-npm install @bridgerust/kabod
+npm install @bridgerust/embex
 # OR
-bun add @bridgerust/kabod
+bun add @bridgerust/embex
 ```
 
 ### Rust
@@ -26,7 +26,7 @@ Add to `Cargo.toml`:
 
 ```toml
 [dependencies]
-bridge-kabod = { version = "0.1", features = ["qdrant", "simd"] } # Enable provider and SIMD
+bridge-embex = { version = "0.1", features = ["qdrant", "simd"] } # Enable provider and SIMD
 tokio = { version = "1", features = ["full"] }
 ```
 
@@ -35,10 +35,10 @@ tokio = { version = "1", features = ["full"] }
 ### Python
 
 ```python
-from kabod import KabodClient, Point
+from embex import EmbexClient, Point
 
 # Initialize client
-client = KabodClient(provider="qdrant", url="http://localhost:6333")
+client = EmbexClient(provider="qdrant", url="http://localhost:6333")
 collection = client.collection("my_docs")
 
 # Create collection
@@ -61,10 +61,10 @@ for r in results.results:
 ### Node.js/TypeScript
 
 ```typescript
-import { KabodClient } from "@bridgerust/kabod";
+import { EmbexClient } from "@bridgerust/embex";
 
 // Initialize client
-const client = new KabodClient("qdrant", "http://localhost:6333");
+const client = new EmbexClient("qdrant", "http://localhost:6333");
 const collection = client.collection("my_docs");
 
 // Create collection
@@ -95,17 +95,17 @@ for (const r of results.results) {
 ### Rust
 
 ```rust
-use bridge_kabod::client::KabodClient;
-use bridge_kabod_infrastructure::config::KabodConfig;
-use bridge_kabod_core::types::{CollectionSchema, DistanceMetric, Point};
+use bridge_embex::client::EmbexClient;
+use bridge_embex_infrastructure::config::EmbexConfig;
+use bridge_embex_core::types::{CollectionSchema, DistanceMetric, Point};
 
-let config = KabodConfig {
+let config = EmbexConfig {
     provider: "qdrant".to_string(),
     url: "http://localhost:6333".to_string(),
     ..Default::default()
 };
 
-let client = KabodClient::new(config)?;
+let client = EmbexClient::new(config)?;
 let collection = client.collection("my_docs");
 
 // Create collection
@@ -144,13 +144,13 @@ Switch between vector databases with a single line change:
 
 ```python
 # Qdrant
-client = KabodClient(provider="qdrant", url="http://localhost:6333")
+client = EmbexClient(provider="qdrant", url="http://localhost:6333")
 
 # Pinecone
-client = KabodClient(provider="pinecone", url="", api_key="your-key")
+client = EmbexClient(provider="pinecone", url="", api_key="your-key")
 
 # Chroma
-client = KabodClient(provider="chroma", url="http://localhost:8000")
+client = EmbexClient(provider="chroma", url="http://localhost:8000")
 ```
 
 ### 2. Advanced Query Building
@@ -201,7 +201,7 @@ await collection.updateMetadata([
 
 ```rust
 // Enable SIMD optimizations
-bridge-kabod = { version = "0.1", features = ["qdrant", "simd"] }
+bridge-embex = { version = "0.1", features = ["qdrant", "simd"] }
 
 // Use SIMD-accelerated operations
 let similarity = point1.cosine_similarity(&point2);
@@ -213,7 +213,7 @@ let distance = point1.l2_distance(&point2);
 Monitor your application with built-in metrics and tracing:
 
 ```rust
-use bridge_kabod_infrastructure::observability::{init_tracing, KabodMetrics};
+use bridge_embex_infrastructure::observability::{init_tracing, EmbexMetrics};
 
 // Initialize tracing
 init_tracing();
@@ -231,9 +231,9 @@ println!("Error rate: {:.2}%", metrics.error_rate() * 100.0);
 Connect to your preferred backend:
 
 ```python
-from kabod import KabodClient
+from embex import EmbexClient
 
-client = KabodClient(provider="qdrant", url="http://localhost:6333")
+client = EmbexClient(provider="qdrant", url="http://localhost:6333")
 ```
 
 ### Step 2: Create Collection
@@ -250,7 +250,7 @@ await collection.create(dimension=768, distance="cosine")
 Insert points with vectors and metadata:
 
 ```python
-from kabod import Point
+from embex import Point
 
 await collection.insert([
     Point(

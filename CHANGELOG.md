@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added - Kabod
+### Added - Embex
 
 #### Performance Optimizations
 
@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - HTTP-based adapters (Pinecone, Milvus, Weaviate): `reqwest` client pooling
   - PgVector: `sqlx` connection pool
   - Qdrant and Chroma: Leverage internal client pooling
-  - Configurable via `pool_size` and `idle_timeout_secs` in `KabodConfig`
+  - Configurable via `pool_size` and `idle_timeout_secs` in `EmbexConfig`
   - Documentation and verification utilities added
 
 #### Observability
@@ -66,13 +66,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Method chaining for fluent API
   - Available in Rust, Python, and Node.js
 
-### Changed - Kabod
+### Changed - Embex
 
 #### Architecture Refactoring
 
 - **Clean Architecture**: Improved separation of concerns
-  - Created `bridge-kabod-infrastructure` crate for cross-cutting concerns
-  - Refactored `bridge-kabod-core` to pure domain layer
+  - Created `bridge-embex-infrastructure` crate for cross-cutting concerns
+  - Refactored `bridge-embex-core` to pure domain layer
   - Moved query builder from core to client (application layer)
   - Better dependency management and modularity
 
@@ -144,7 +144,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.0] - Initial Release
 
-### Added - Kabod
+### Added - Embex
 
 #### Core Features
 
@@ -181,14 +181,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### SIMD Optimizations
 
-- Enable SIMD feature: `bridge-kabod = { version = "0.1", features = ["simd"] }`
+- Enable SIMD feature: `bridge-embex = { version = "0.1", features = ["simd"] }`
 - Use new `Point` helper methods: `point.cosine_similarity()`, `point.l2_distance()`, etc.
 
 #### Connection Pooling
 
-- Configure pooling via `KabodConfig`:
+- Configure pooling via `EmbexConfig`:
   ```rust
-  let config = KabodConfig {
+  let config = EmbexConfig {
       pool_size: 10,
       idle_timeout_secs: 90,
       ..Default::default()

@@ -1,6 +1,6 @@
-# Migrating from Weaviate to Kabod
+# Migrating from Weaviate to Embex
 
-Kabod provides a unified interface for Weaviate, abstracting away GraphQL complexity. This guide helps you migrate from Weaviate to Kabod.
+Embex provides a unified interface for Weaviate, abstracting away GraphQL complexity. This guide helps you migrate from Weaviate to Embex.
 
 ## Table of Contents
 
@@ -27,12 +27,12 @@ import weaviate
 client = weaviate.Client("http://localhost:8080")
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
-from kabod import KabodClient
+from embex import EmbexClient
 
-client = KabodClient(provider="weaviate", url="http://localhost:8080")
+client = EmbexClient(provider="weaviate", url="http://localhost:8080")
 ```
 
 ### Node.js
@@ -48,12 +48,12 @@ const client = weaviate.client({
 });
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
-import { KabodClient } from "@bridgerust/kabod";
+import { EmbexClient } from "@bridgerust/embex";
 
-const client = new KabodClient("weaviate", "http://localhost:8080");
+const client = new EmbexClient("weaviate", "http://localhost:8080");
 ```
 
 ## Creating Classes
@@ -74,7 +74,7 @@ class_obj = {
 client.schema.create_class(class_obj)
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
 await client.collection("Article").create(
@@ -83,7 +83,7 @@ await client.collection("Article").create(
 )
 ```
 
-**Key Difference**: Weaviate uses GraphQL schema with classes, Kabod uses simple collection creation.
+**Key Difference**: Weaviate uses GraphQL schema with classes, Embex uses simple collection creation.
 
 ### Node.js
 
@@ -103,7 +103,7 @@ await client.schema
   .do();
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
 await client.collection("Article").create(768, "cosine");
@@ -126,10 +126,10 @@ client.data_object.create(
 )
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
-from kabod import Point
+from embex import Point
 
 await client.collection("Article").insert([
     Point(
@@ -140,7 +140,7 @@ await client.collection("Article").insert([
 ])
 ```
 
-**Key Difference**: Weaviate uses data objects with separate vector, Kabod uses Point objects with metadata.
+**Key Difference**: Weaviate uses data objects with separate vector, Embex uses Point objects with metadata.
 
 ### Node.js
 
@@ -158,7 +158,7 @@ await client.data
   .do();
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
 await client.collection("Article").insert([
@@ -182,7 +182,7 @@ result = client.query.get("Article", ["title", "content"]).with_near_vector({
 }).with_limit(5).do()
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
 results = await client.collection("Article").search(
@@ -191,7 +191,7 @@ results = await client.collection("Article").search(
 )
 ```
 
-**Key Difference**: Weaviate uses GraphQL queries, Kabod uses simple search API.
+**Key Difference**: Weaviate uses GraphQL queries, Embex uses simple search API.
 
 ### Node.js
 
@@ -207,7 +207,7 @@ const result = await client.graphql
   .do();
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
 const results = await client
@@ -229,7 +229,7 @@ result = client.query.get("Article", ["title"]).with_where({
 }).with_limit(5).do()
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
 results = await client.collection("Article").search(
@@ -270,7 +270,7 @@ const result = await client.graphql
   .do();
 ```
 
-**Kabod:**
+**Embex:**
 
 ```typescript
 const results = await client
@@ -300,7 +300,7 @@ with client.batch as batch:
         )
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
 # Explicit batch with parallel execution
@@ -324,14 +324,14 @@ except weaviate.exceptions.WeaviateBaseError as e:
     print(f"Error: {e}")
 ```
 
-**Kabod:**
+**Embex:**
 
 ```python
-from kabod import KabodError
+from embex import EmbexError
 
 try:
     await client.collection("Article").insert(...)
-except KabodError as e:
+except EmbexError as e:
     print(f"Error: {e}")
 ```
 
@@ -340,12 +340,12 @@ except KabodError as e:
 **Weaviate:**
 Weaviate client manages HTTP connections internally.
 
-**Kabod:**
+**Embex:**
 
 ```python
-from kabod import KabodClient
+from embex import EmbexClient
 
-client = KabodClient(
+client = EmbexClient(
     provider="weaviate",
     url="http://localhost:8080",
     pool_size=20,  # Max idle connections per host
@@ -355,19 +355,19 @@ client = KabodClient(
 
 ## Key Differences
 
-1. **Schema**: Weaviate uses GraphQL schema with classes, Kabod uses simple collections
-2. **Query Language**: Weaviate uses GraphQL, Kabod uses unified API
-3. **Data Objects**: Weaviate uses data objects, Kabod uses Point objects
-4. **Vector Storage**: Weaviate stores vectors separately, Kabod includes in Point
-5. **Unified API**: Kabod provides the same API across all providers
+1. **Schema**: Weaviate uses GraphQL schema with classes, Embex uses simple collections
+2. **Query Language**: Weaviate uses GraphQL, Embex uses unified API
+3. **Data Objects**: Weaviate uses data objects, Embex uses Point objects
+4. **Vector Storage**: Weaviate stores vectors separately, Embex includes in Point
+5. **Unified API**: Embex provides the same API across all providers
 
 ## Troubleshooting
 
 ### Issue: GraphQL schema complexity
 
-**Problem**: Weaviate requires GraphQL schema definition, Kabod simplifies this.
+**Problem**: Weaviate requires GraphQL schema definition, Embex simplifies this.
 
-**Solution**: Use Kabod's simple collection creation:
+**Solution**: Use Embex's simple collection creation:
 
 ```python
 # Before (Weaviate)
@@ -378,13 +378,13 @@ class_obj = {
 }
 client.schema.create_class(class_obj)
 
-# After (Kabod)
+# After (Embex)
 await client.collection("Article").create(dimension=768, distance="cosine")
 ```
 
 ### Issue: Data object format
 
-**Problem**: Weaviate uses data objects with separate vector, Kabod uses Point objects.
+**Problem**: Weaviate uses data objects with separate vector, Embex uses Point objects.
 
 **Solution**: Restructure data:
 
@@ -396,7 +396,7 @@ client.data_object.create(
     vector=[0.1] * 768
 )
 
-# After (Kabod)
+# After (Embex)
 await client.collection("Article").insert([
     Point(id="1", vector=[0.1] * 768, metadata={"title": "Article"})
 ])
@@ -404,15 +404,15 @@ await client.collection("Article").insert([
 
 ### Issue: GraphQL queries
 
-**Problem**: Weaviate uses GraphQL, Kabod uses simple search API.
+**Problem**: Weaviate uses GraphQL, Embex uses simple search API.
 
-**Solution**: Use Kabod's unified search:
+**Solution**: Use Embex's unified search:
 
 ```python
 # Before (Weaviate)
 result = client.query.get("Article", ["title"]).with_near_vector({...}).do()
 
-# After (Kabod)
+# After (Embex)
 results = await client.collection("Article").search(vector=[...], top_k=5)
 ```
 

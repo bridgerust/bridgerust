@@ -1,4 +1,4 @@
-import { KabodClient } from "@bridgerust/kabod";
+import { EmbexClient } from "@bridgerust/embex";
 
 // Mock LLM function
 async function generateAnswer(
@@ -18,7 +18,7 @@ function getEmbedding(text: string): number[] {
 
 async function main() {
   // 1. Initialize Client
-  const client = new KabodClient("qdrant", "http://localhost:6333");
+  const client = new EmbexClient("qdrant", "http://localhost:6333");
 
   const collectionName = "knowledge_base";
 
@@ -42,7 +42,7 @@ async function main() {
     },
     {
       id: "2",
-      content: "Kabod is a vector ORM for Rust.",
+      content: "Embex is a vector ORM for Rust.",
       source: "bridgerust.dev",
     },
   ];
@@ -60,7 +60,7 @@ async function main() {
   console.log(`Ingested ${points.length} documents.`);
 
   // 4. RAG Flow
-  const question = "What is Kabod?";
+  const question = "What is Embex?";
   console.log(`\nUser asks: "${question}"`);
 
   const queryVector = getEmbedding(question);
