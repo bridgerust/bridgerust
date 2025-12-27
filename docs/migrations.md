@@ -354,6 +354,71 @@ async fn main() -> Result<()> {
 }
 ```
 
+### Node.js Example
+
+In Node.js, migrations are defined as declarative objects:
+
+```javascript
+const { KabodClient } = require("@bridgerust/kabod");
+
+const client = new KabodClient("qdrant", "http://localhost:6333");
+
+const migrations = [
+  {
+    version: "20240101000000_create_users",
+    operations: [
+      {
+        type: "create_collection",
+        schema: {
+          name: "users",
+          dimension: 384,
+          metric: "cosine",
+        },
+      },
+    ],
+    downOperations: [
+      {
+        type: "delete_collection",
+        name: "users",
+      },
+    ],
+  },
+];
+
+// Run migrations
+await client.runMigrations(migrations);
+```
+
+### Python Example
+
+In Python, you can use any object that has `version` attribute and `up`/`down` methods:
+
+```python
+import asyncio
+from kabod import KabodClient
+
+class CreateUsersMigration:
+    def __init__(self):
+        self.version = "20240101000000_create_users"
+
+    async def up(self, client: KabodClient):
+        await client.collection("users").create(dimension=384, distance="cosine")
+
+    async def down(self, client: KabodClient):
+        await client.collection("users").delete_collection()
+
+async def main():
+    client = KabodClient("qdrant", "http://localhost:6333")
+
+    migrations = [CreateUsersMigration()]
+
+    # Run migrations
+    await client.run_migrations(migrations)
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
 ## Summary
 
 The migration system provides:
