@@ -10,13 +10,14 @@
 
 ### [Kabod](crates/kabod) (Vector Database ORM)
 
-Kabod is a high-performance, unified client for vector databases like Qdrant, Pinecone, Chroma, LanceDB, and PgVector.
+**The Universal Vector Database Client.** One API for Qdrant, Pinecone, Chroma, LanceDB, and more.
 
-- **Unified API**: Switch providers with one line of config.
-- **Zero-Copy**: High-performance data transfer.
-- **SIMD Optimized**: 2-4x faster vector operations with SIMD acceleration.
-- **Production Ready**: Connection pooling, observability, and comprehensive error handling.
-- **Docs**: [Getting Started](docs/getting_started.md) | [Migration Guides](docs/) | [CHANGELOG](CHANGELOG.md)
+- **Unified API**: Switch providers instantly. "Write once, run anywhere."
+- **Performance**: Rust-core with SIMD acceleration (**4x faster** vector ops).
+- **Production Ready**: Built-in migrations, connection pooling, and observability.
+- **Language Support**: First-class bindings for [Python](crates/kabod#python), [Node.js](crates/kabod#nodejs-typescript), and [Rust](crates/kabod#rust).
+
+[**⟶ Read the full Kabod Documentation**](crates/kabod)
 
 ### [Bridge Schema](crates/schema) (JSON Validator)
 

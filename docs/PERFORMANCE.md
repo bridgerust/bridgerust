@@ -33,14 +33,16 @@ RUSTFLAGS="-C target-feature=+neon" cargo build --release
 
 | Operation         | Vector Size | AVX2 Speedup | SSE4.1 Speedup | NEON Speedup |
 | ----------------- | ----------- | ------------ | -------------- | ------------ |
-| Dot Product       | 128         | 2.5x         | 2.0x           | 2.0x         |
-| Dot Product       | 256         | 3.5x         | 2.5x           | 2.5x         |
-| Dot Product       | 512         | 5.5x         | 3.5x           | 3.5x         |
+| Dot Product       | 128         | 2.5x         | 2.0x           | 3.6x         |
+| Dot Product       | 256         | 3.5x         | 2.5x           | 3.4x         |
+| Dot Product       | 512         | 5.5x         | 3.5x           | 3.7x         |
 | Dot Product       | 768         | 6.5x         | 4.0x           | 4.0x         |
-| Dot Product       | 1536        | 7.5x         | 4.5x           | 4.5x         |
-| L2 Distance       | 768         | 6.0x         | 3.8x           | 3.8x         |
+| Dot Product       | 1536        | 7.5x         | 4.5x           | 4.0x         |
+| L2 Distance       | 128         | 3.0x         | 2.0x           | 3.8x         |
+| L2 Distance       | 768         | 6.0x         | 3.8x           | 3.5x         |
 | Cosine Similarity | 768         | 5.8x         | 3.6x           | 3.6x         |
-| Normalization     | 768         | 6.2x         | 3.9x           | 3.9x         |
+| Normalization     | 128         | 2.0x         | 1.5x           | 1.4x         |
+| Normalization     | 768         | 6.2x         | 3.9x           | 1.4x         |
 
 ### Using SIMD Operations
 
