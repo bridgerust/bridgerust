@@ -63,6 +63,115 @@ describe("Qdrant Adapter", () => {
     expect(results.results.length).toBe(2);
   });
 
+  it("should use search() method with direct parameters", async () => {
+    try {
+      await collection.deleteCollection();
+    } catch (e) {}
+    await collection.create(TEST_DIMENSION, "cosine");
+
+    const points = [
+      { id: randomUUID(), vector: randomVector(), metadata: { category: "A" } },
+      { id: randomUUID(), vector: randomVector(), metadata: { category: "B" } },
+    ];
+
+    await collection.insert(points);
+
+    const results = await collection.search(
+      randomVector(),
+      2,
+      null,
+      true,
+      false
+    );
+    expect(results.results.length).toBe(2);
+    expect(results.results[0].id).toBeDefined();
+    expect(results.results[0].score).toBeDefined();
+  });
+
+  it("should search with filters", async () => {
+    try {
+      await collection.deleteCollection();
+    } catch (e) {}
+    await collection.create(TEST_DIMENSION, "cosine");
+
+    const points = [
+      {
+        id: "f1",
+        vector: randomVector(),
+        metadata: { status: "active", score: 10 },
+      },
+      {
+        id: "f2",
+        vector: randomVector(),
+        metadata: { status: "inactive", score: 20 },
+      },
+      {
+        id: "f3",
+        vector: randomVector(),
+        metadata: { status: "active", score: 30 },
+      },
+    ];
+
+    await collection.insert(points);
+
+    const filter = {
+      op: "key",
+      args: ["status", { op: "eq", args: "active" }],
+    };
+
+    const results = await collection.search(
+      randomVector(),
+      10,
+      filter,
+      true,
+      false
+    );
+    expect(results.results.length).toBeGreaterThanOrEqual(2);
+    results.results.forEach((r) => {
+      expect(r.metadata?.status).toBe("active");
+    });
+  });
+
+  it("should use search builder pattern", async () => {
+    try {
+      await collection.deleteCollection();
+    } catch (e) {}
+    await collection.create(TEST_DIMENSION, "cosine");
+
+    const points = [
+      { id: randomUUID(), vector: randomVector(), metadata: { type: "test" } },
+    ];
+    await collection.insert(points);
+
+    const builder = collection.buildSearch(randomVector());
+    const results = await builder
+      .limit(5)
+      .includeMetadata(true)
+      .includeVector(false)
+      .execute();
+
+    expect(results.results).toBeDefined();
+    expect(Array.isArray(results.results)).toBe(true);
+  });
+
+  it("should insert batch with parallel option", async () => {
+    try {
+      await collection.deleteCollection();
+    } catch (e) {}
+    await collection.create(TEST_DIMENSION, "cosine");
+
+    const points = Array.from({ length: 50 }, () => ({
+      id: randomUUID(),
+      vector: randomVector(),
+      metadata: { batch: "test" },
+    }));
+
+    await collection.insertBatch(points, 10, 3);
+
+    const results = await collection.query(randomVector(), { limit: 50 });
+    expect(results.results.length).toBeGreaterThanOrEqual(50);
+  });
+
   it("should delete points", async () => {
     try {
       await collection.deleteCollection();
@@ -112,6 +221,21 @@ describe("Chroma Adapter", () => {
 
     const results = await collection.query(randomVector(), { limit: 2 });
     expect(results.results.length).toBe(2);
+  });
+
+  it("should use search() method", async () => {
+    try {
+      await collection.deleteCollection();
+    } catch (e) {}
+    await collection.create(TEST_DIMENSION, "cosine");
+
+    const points = [
+      { id: "c3", vector: randomVector(), metadata: { type: "search" } },
+    ];
+    await collection.insert(points);
+
+    const results = await collection.search(randomVector(), 1);
+    expect(results.results.length).toBeGreaterThanOrEqual(1);
   });
 });
 
@@ -180,6 +304,21 @@ describe("Milvus Adapter", () => {
     const results = await collection.query(randomVector(), { limit: 2 });
     expect(results.results.length).toBeGreaterThanOrEqual(1);
   });
+
+  it("should use search() method", async () => {
+    try {
+      await collection.deleteCollection();
+    } catch (e) {}
+    await collection.create(TEST_DIMENSION, "cosine");
+
+    const points = [
+      { id: "m3", vector: randomVector(), metadata: { test: "milvus" } },
+    ];
+    await collection.insert(points);
+
+    const results = await collection.search(randomVector(), 1);
+    expect(results.results.length).toBeGreaterThanOrEqual(1);
+  });
 });
 
 describe("pgvector Adapter", () => {
@@ -217,6 +356,32 @@ describe("pgvector Adapter", () => {
     const results = await collection.query(randomVector(), { limit: 2 });
     expect(results.results.length).toBeGreaterThanOrEqual(1);
   });
+
+  it("should use search() method with filters", async () => {
+    try {
+      await collection.deleteCollection();
+    } catch (e) {}
+    await collection.create(TEST_DIMENSION, "cosine");
+
+    const points = [
+      { id: "pg3", vector: randomVector(), metadata: { status: "active" } },
+    ];
+    await collection.insert(points);
+
+    const filter = {
+      op: "key",
+      args: ["status", { op: "eq", args: "active" }],
+    };
+
+    const results = await collection.search(
+      randomVector(),
+      5,
+      filter,
+      true,
+      false
+    );
+    expect(results.results.length).toBeGreaterThanOrEqual(1);
+  });
 });
 
 describe("LanceDB Adapter", () => {
@@ -250,6 +415,27 @@ describe("LanceDB Adapter", () => {
     await collection.insert(points);
 
     const results = await collection.query(randomVector(), { limit: 2 });
+    expect(results.results.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("should use search() method", async () => {
+    try {
+      await collection.deleteCollection();
+    } catch (e) {}
+    await collection.create(TEST_DIMENSION, "cosine");
+
+    const points = [
+      { id: "l3", vector: randomVector(), metadata: { name: "lance3" } },
+    ];
+    await collection.insert(points);
+
+    const results = await collection.search(
+      randomVector(),
+      1,
+      null,
+      true,
+      false
+    );
     expect(results.results.length).toBeGreaterThanOrEqual(1);
   });
 });

@@ -574,4 +574,5 @@ if (!nativeBinding) {
 module.exports = nativeBinding
 module.exports.Collection = nativeBinding.Collection
 module.exports.KabodClient = nativeBinding.KabodClient
+module.exports.QueryBuilder = nativeBinding.QueryBuilder
 module.exports.SearchBuilder = nativeBinding.SearchBuilder

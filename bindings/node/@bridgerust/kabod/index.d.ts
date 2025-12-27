@@ -5,8 +5,22 @@ export declare class Collection {
   insert(points: Array<Point>): Promise<void>
   /** Search for similar vectors. */
   query(vector: Array<number>, options?: SearchOptions | undefined | null): Promise<SearchResponse>
+  /**
+   * Search for similar vectors with direct parameters.
+   *
+   * @param vector - Query vector
+   * @param topK - Number of results to return (default: 10)
+   * @param filter - Optional metadata filter
+   * @param includeMetadata - Whether to include metadata (default: true)
+   * @param includeVector - Whether to include vectors (default: false)
+   */
+  search(vector: Array<number>, topK?: number | undefined | null, filter?: any | undefined | null, includeMetadata?: boolean | undefined | null, includeVector?: boolean | undefined | null): Promise<SearchResponse>
   /** Search using a builder pattern. */
-  search(vector: Array<number>): SearchBuilder
+  buildSearch(vector: Array<number>): SearchBuilder
+  /** Query using a builder pattern (filter-only, no vector search). */
+  buildQuery(): QueryBuilder
+  /** Update metadata for points in the collection. */
+  updateMetadata(updates: Array<MetadataUpdate>): Promise<void>
   delete(ids: Array<string>): Promise<void>
   deleteCollection(): Promise<void>
   create(dimension: number, distance: string): Promise<void>
@@ -35,13 +49,31 @@ export declare class KabodClient {
   collection(name: string): Collection
 }
 
+export declare class QueryBuilder {
+  limit(limit: number): Promise<QueryBuilder>
+  offset(offset: number): Promise<QueryBuilder>
+  includeVector(include: boolean): Promise<QueryBuilder>
+  includeMetadata(include: boolean): Promise<QueryBuilder>
+  filter(filter: any): Promise<QueryBuilder>
+  aggregation(aggType: string): Promise<QueryBuilder>
+  execute(): Promise<SearchResponse>
+}
+
 export declare class SearchBuilder {
   limit(limit: number): Promise<SearchBuilder>
   offset(offset: number): Promise<SearchBuilder>
   includeVector(include: boolean): Promise<SearchBuilder>
   includeMetadata(include: boolean): Promise<SearchBuilder>
   filter(filter: any): Promise<SearchBuilder>
+  aggregation(aggType: string): Promise<SearchBuilder>
   execute(): Promise<SearchResponse>
+}
+
+export interface MetadataUpdate {
+  /** Point ID to update. */
+  id: string
+  /** Metadata updates to apply. */
+  updates: Record<string, any>
 }
 
 /** A point in the vector database. */

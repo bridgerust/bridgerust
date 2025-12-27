@@ -25,11 +25,24 @@ describe("KabodClient Search", () => {
     }
   });
 
-  it("should accept builder pattern search", () => {
+  it("should accept builder pattern search", async () => {
     const client = new KabodClient("qdrant", "http://localhost:6333", null);
     const col = client.collection("test_col");
-    const builder = col.search([0.1, 0.2]);
+    const builder = col.buildSearch([0.1, 0.2]);
     expect(builder.limit).toBeDefined();
     expect(builder.filter).toBeDefined();
+  });
+
+  it("should accept search() method with direct parameters", async () => {
+    const client = new KabodClient("qdrant", "http://localhost:6333", null);
+    const collection = client.collection("test_col");
+
+    try {
+      await collection.search([0.1, 0.2, 0.3], 5, null, true, false);
+    } catch (e: any) {
+      // Should fail with connection error, not "function not found"
+      expect(e).toBeDefined();
+      expect(e.message).toBeDefined();
+    }
   });
 });

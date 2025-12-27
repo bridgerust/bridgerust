@@ -1,6 +1,9 @@
 use napi::bindgen_prelude::*;
 
-use bridge_kabod::{config::KabodConfig, types::Point as RustPoint, KabodClient as RustClient};
+use bridge_kabod::{
+    config::KabodConfig, types::Point as RustPoint, KabodClient as RustClient,
+    QueryBuilder as RustQueryBuilder,
+};
 
 use napi_derive::napi;
 use std::collections::HashMap;
@@ -27,19 +30,16 @@ pub struct KabodClient {
 #[napi]
 impl KabodClient {
     /// Create a new Kabod client.
-    /// 
+    ///
     /// @param provider - The database provider (e.g., 'qdrant', 'pinecone').
     /// @param url - The connection URL.
     /// @param apiKey - Optional API key.
     #[napi(constructor)]
     pub fn new(provider: String, url: String, api_key: Option<String>) -> Result<Self> {
-        let config = KabodConfig {
-            provider,
-            url,
-            api_key,
-            timeout_ms: None,
-            options: Default::default(),
-        };
+        let mut config = KabodConfig::default();
+        config.provider = provider;
+        config.url = url;
+        config.api_key = api_key;
 
         let client = RustClient::new(config).map_err(to_napi_err)?;
 
@@ -48,19 +48,16 @@ impl KabodClient {
 
     /// Create a new Kabod client with async initialization.
     /// Required for providers like 'milvus', 'pgvector', and 'lancedb'.
-    /// 
+    ///
     /// @param provider - The database provider.
     /// @param url - The connection URL.
     /// @param apiKey - Optional API key.
     #[napi(factory)]
     pub async fn new_async(provider: String, url: String, api_key: Option<String>) -> Result<Self> {
-        let config = KabodConfig {
-            provider,
-            url,
-            api_key,
-            timeout_ms: None,
-            options: Default::default(),
-        };
+        let mut config = KabodConfig::default();
+        config.provider = provider;
+        config.url = url;
+        config.api_key = api_key;
 
         let client = RustClient::new_async(config).await.map_err(to_napi_err)?;
 
@@ -114,6 +111,14 @@ pub struct SearchOptions {
     pub include_vector: Option<bool>,
     /// Pagination offset.
     pub offset: Option<u32>,
+}
+
+#[napi(object)]
+pub struct MetadataUpdate {
+    /// Point ID to update.
+    pub id: String,
+    /// Metadata updates to apply.
+    pub updates: HashMap<String, serde_json::Value>,
 }
 
 #[napi]
@@ -181,13 +186,87 @@ impl Collection {
         })
     }
 
+    /// Search for similar vectors with direct parameters.
+    ///
+    /// @param vector - Query vector
+    /// @param topK - Number of results to return (default: 10)
+    /// @param filter - Optional metadata filter
+    /// @param includeMetadata - Whether to include metadata (default: true)
+    /// @param includeVector - Whether to include vectors (default: false)
+    #[napi]
+    pub async fn search(
+        &self,
+        vector: Vec<f64>,
+        top_k: Option<u32>,
+        filter: Option<serde_json::Value>,
+        include_metadata: Option<bool>,
+        include_vector: Option<bool>,
+    ) -> Result<SearchResponse> {
+        let vec_f32: Vec<f32> = vector.into_iter().map(|v| v as f32).collect();
+        let mut builder = self
+            .inner
+            .search(vec_f32)
+            .limit(top_k.unwrap_or(10) as usize)
+            .include_metadata(include_metadata.unwrap_or(true))
+            .include_vector(include_vector.unwrap_or(false));
+
+        if let Some(f) = filter {
+            let rust_filter: bridge_kabod::types::Filter = serde_json::from_value(f)
+                .map_err(|e| Error::from_reason(format!("Invalid filter: {}", e)))?;
+            builder = builder.filter(rust_filter);
+        }
+
+        let res = builder.execute().await.map_err(to_napi_err)?;
+
+        Ok(SearchResponse {
+            results: res
+                .results
+                .into_iter()
+                .map(|r| SearchResult {
+                    id: r.id,
+                    score: r.score as f64,
+                    vector: r.vector.map(|v| v.into_iter().map(|x| x as f64).collect()),
+                    metadata: r.metadata,
+                })
+                .collect(),
+            aggregations: res.aggregations,
+        })
+    }
+
     /// Search using a builder pattern.
     #[napi]
-    pub fn search(&self, vector: Vec<f64>) -> SearchBuilder {
+    pub fn build_search(&self, vector: Vec<f64>) -> SearchBuilder {
         let vec_f32: Vec<f32> = vector.into_iter().map(|v| v as f32).collect();
         SearchBuilder {
             inner: Arc::new(Mutex::new(Some(self.inner.search(vec_f32)))),
         }
+    }
+
+    /// Query using a builder pattern (filter-only, no vector search).
+    #[napi]
+    pub fn build_query(&self) -> QueryBuilder {
+        let collection_inner = self.inner.clone();
+        QueryBuilder {
+            collection_inner,
+            inner: Arc::new(Mutex::new(Some(self.inner.build_query()))),
+        }
+    }
+
+    /// Update metadata for points in the collection.
+    #[napi]
+    pub async fn update_metadata(&self, updates: Vec<MetadataUpdate>) -> Result<()> {
+        let inner = self.inner.clone();
+        let rust_updates: Vec<bridge_kabod::types::MetadataUpdate> = updates
+            .into_iter()
+            .map(|u| bridge_kabod::types::MetadataUpdate {
+                id: u.id,
+                updates: u.updates,
+            })
+            .collect();
+        inner
+            .update_metadata(rust_updates)
+            .await
+            .map_err(to_napi_err)
     }
 
     #[napi]
@@ -248,6 +327,10 @@ impl Collection {
             .await
             .map_err(to_napi_err)
     }
+
+    // Note: insert_stream is not yet implemented for Node.js.
+    // The Python version uses async iterables which require complex napi-rs interop.
+    // For now, use insert_batch for bulk operations.
 }
 
 #[napi]
@@ -316,6 +399,27 @@ impl SearchBuilder {
     }
 
     #[napi]
+    pub async fn aggregation(&self, agg_type: String) -> Result<Self> {
+        let agg = match agg_type.as_str() {
+            "count" => bridge_kabod::types::Aggregation::Count,
+            _ => {
+                return Err(Error::from_reason(format!(
+                    "Invalid aggregation type: {}",
+                    agg_type
+                )))
+            }
+        };
+
+        let mut inner = self.inner.lock().await;
+        if let Some(builder) = inner.take() {
+            *inner = Some(builder.aggregate(agg));
+        }
+        Ok(Self {
+            inner: self.inner.clone(),
+        })
+    }
+
+    #[napi]
     pub async fn execute(&self) -> Result<SearchResponse> {
         let mut inner = self.inner.lock().await;
         let builder = inner
@@ -323,6 +427,128 @@ impl SearchBuilder {
             .ok_or_else(|| Error::from_reason("Search already executed"))?;
 
         let res = builder.execute().await.map_err(to_napi_err)?;
+
+        Ok(SearchResponse {
+            results: res
+                .results
+                .into_iter()
+                .map(|r| SearchResult {
+                    id: r.id,
+                    score: r.score as f64,
+                    vector: r.vector.map(|v| v.into_iter().map(|x| x as f64).collect()),
+                    metadata: r.metadata,
+                })
+                .collect(),
+            aggregations: res.aggregations,
+        })
+    }
+}
+
+#[napi]
+pub struct QueryBuilder {
+    collection_inner: bridge_kabod::client::Collection,
+    inner: Arc<Mutex<Option<RustQueryBuilder>>>,
+}
+
+#[napi]
+impl QueryBuilder {
+    #[napi]
+    pub async fn limit(&self, limit: u32) -> Result<Self> {
+        let mut inner = self.inner.lock().await;
+        if let Some(builder) = inner.take() {
+            *inner = Some(builder.limit(limit as usize));
+        }
+        Ok(Self {
+            collection_inner: self.collection_inner.clone(),
+            inner: self.inner.clone(),
+        })
+    }
+
+    #[napi]
+    pub async fn offset(&self, offset: u32) -> Result<Self> {
+        let mut inner = self.inner.lock().await;
+        if let Some(builder) = inner.take() {
+            *inner = Some(builder.offset(offset as usize));
+        }
+        Ok(Self {
+            collection_inner: self.collection_inner.clone(),
+            inner: self.inner.clone(),
+        })
+    }
+
+    #[napi]
+    pub async fn include_vector(&self, include: bool) -> Result<Self> {
+        let mut inner = self.inner.lock().await;
+        if let Some(builder) = inner.take() {
+            *inner = Some(builder.include_vector(include));
+        }
+        Ok(Self {
+            collection_inner: self.collection_inner.clone(),
+            inner: self.inner.clone(),
+        })
+    }
+
+    #[napi]
+    pub async fn include_metadata(&self, include: bool) -> Result<Self> {
+        let mut inner = self.inner.lock().await;
+        if let Some(builder) = inner.take() {
+            *inner = Some(builder.include_metadata(include));
+        }
+        Ok(Self {
+            collection_inner: self.collection_inner.clone(),
+            inner: self.inner.clone(),
+        })
+    }
+
+    #[napi]
+    pub async fn filter(&self, filter: serde_json::Value) -> Result<Self> {
+        let rust_filter: bridge_kabod::types::Filter = serde_json::from_value(filter)
+            .map_err(|e| Error::from_reason(format!("Invalid filter: {}", e)))?;
+
+        let mut inner = self.inner.lock().await;
+        if let Some(builder) = inner.take() {
+            *inner = Some(builder.filter(rust_filter));
+        }
+        Ok(Self {
+            collection_inner: self.collection_inner.clone(),
+            inner: self.inner.clone(),
+        })
+    }
+
+    #[napi]
+    pub async fn aggregation(&self, agg_type: String) -> Result<Self> {
+        let agg = match agg_type.as_str() {
+            "count" => bridge_kabod::types::Aggregation::Count,
+            _ => {
+                return Err(Error::from_reason(format!(
+                    "Invalid aggregation type: {}",
+                    agg_type
+                )))
+            }
+        };
+
+        let mut inner = self.inner.lock().await;
+        if let Some(builder) = inner.take() {
+            *inner = Some(builder.aggregate(agg));
+        }
+        Ok(Self {
+            collection_inner: self.collection_inner.clone(),
+            inner: self.inner.clone(),
+        })
+    }
+
+    #[napi]
+    pub async fn execute(&self) -> Result<SearchResponse> {
+        let mut inner = self.inner.lock().await;
+        let builder = inner
+            .take()
+            .ok_or_else(|| Error::from_reason("Query already executed"))?;
+
+        let res = self
+            .collection_inner
+            .query(builder)
+            .await
+            .map_err(to_napi_err)?;
 
         Ok(SearchResponse {
             results: res
