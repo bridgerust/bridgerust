@@ -74,15 +74,15 @@ jobs:
         run: pip install maturin
 
       - name: Build and install Python bindings
-        working-directory: bindings/python/kabod
+        working-directory: bindings/python/embex
         run: maturin develop --features all
 
       - name: Install test dependencies
-        working-directory: bindings/python/kabod
+        working-directory: bindings/python/embex
         run: pip install pytest pytest-asyncio
 
       - name: Run integration tests
-        working-directory: bindings/python/kabod
+        working-directory: bindings/python/embex
         run: pytest tests/integration/ -v -m integration
         env:
           QDRANT_URL: http://localhost:6333
@@ -109,15 +109,15 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install dependencies
-        working-directory: bindings/node/@bridgerust/kabod
+        working-directory: bindings/node/@bridgerust/embex
         run: npm ci
 
       - name: Build bindings
-        working-directory: bindings/node/@bridgerust/kabod
+        working-directory: bindings/node/@bridgerust/embex
         run: npm run build
 
       - name: Run integration tests
-        working-directory: bindings/node/@bridgerust/kabod
+        working-directory: bindings/node/@bridgerust/embex
         run: npm run test:integration
         env:
           QDRANT_URL: http://localhost:6333

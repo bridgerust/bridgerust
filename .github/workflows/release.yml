@@ -80,14 +80,14 @@ jobs:
         run: pip install maturin
 
       - name: Build wheels
-        working-directory: bindings/python/kabod
+        working-directory: bindings/python/embex
         run: maturin build --features all --release
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
           name: python-wheels-${{ matrix.os }}-${{ matrix.python-version }}
-          path: bindings/python/kabod/target/wheels/*.whl
+          path: bindings/python/embex/target/wheels/*.whl
 
   # Build Node.js bindings
   build-nodejs:
@@ -109,18 +109,18 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install dependencies
-        working-directory: bindings/node/@bridgerust/kabod
+        working-directory: bindings/node/@bridgerust/embex
         run: npm ci
 
       - name: Build bindings
-        working-directory: bindings/node/@bridgerust/kabod
+        working-directory: bindings/node/@bridgerust/embex
         run: npm run build
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: nodejs-builds-${{ matrix.node-version }}
-          path: bindings/node/@bridgerust/kabod/
+          path: bindings/node/@bridgerust/embex/
 
   # Publish to crates.io (manual approval required)
   publish-crates:
@@ -198,7 +198,7 @@ jobs:
           merge-multiple: true
 
       - name: Publish to npm
-        working-directory: bindings/node/@bridgerust/kabod
+        working-directory: bindings/node/@bridgerust/embex
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

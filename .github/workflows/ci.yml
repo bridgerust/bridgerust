@@ -110,15 +110,15 @@ jobs:
         run: pip install maturin
 
       - name: Build Python bindings
-        working-directory: bindings/python/kabod
+        working-directory: bindings/python/embex
         run: maturin build --features all --release
 
       - name: Install Python bindings
-        working-directory: bindings/python/kabod
+        working-directory: bindings/python/embex
         run: maturin develop --features all
 
       - name: Run Python tests
-        working-directory: bindings/python/kabod
+        working-directory: bindings/python/embex
         run: |
           pip install pytest pytest-asyncio
           pytest tests/ -v
@@ -142,19 +142,19 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install dependencies
-        working-directory: bindings/node/@bridgerust/kabod
+        working-directory: bindings/node/@bridgerust/embex
         run: npm ci
 
       - name: Build Node.js bindings
-        working-directory: bindings/node/@bridgerust/kabod
+        working-directory: bindings/node/@bridgerust/embex
         run: npm run build
 
       - name: Run Node.js unit tests
-        working-directory: bindings/node/@bridgerust/kabod
+        working-directory: bindings/node/@bridgerust/embex
         run: npm run test:unit
 
       - name: Run Node.js integration tests (if databases available)
-        working-directory: bindings/node/@bridgerust/kabod
+        working-directory: bindings/node/@bridgerust/embex
         run: npm run test:integration || echo "Integration tests skipped (no databases)"
 
   # Multi-platform Build

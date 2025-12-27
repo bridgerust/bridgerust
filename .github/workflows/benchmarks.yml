@@ -29,24 +29,24 @@ jobs:
 
       - name: Run SIMD benchmarks
         run: |
-          cd benchmarks/kabod
+          cd benchmarks/embex
           cargo bench --bench simd_bench --features simd
 
       - name: Run comparison benchmarks
         run: |
-          cd benchmarks/kabod
+          cd benchmarks/embex
           cargo bench --bench simd_comparison --features simd
 
       - name: Run native comparison benchmarks
         run: |
-          cd benchmarks/kabod
+          cd benchmarks/embex
           cargo bench --bench native_comparison
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v4
         with:
           name: benchmark-results
-          path: benchmarks/kabod/target/criterion/
+          path: benchmarks/embex/target/criterion/
 
   # Compare with previous results (if available)
   compare:
