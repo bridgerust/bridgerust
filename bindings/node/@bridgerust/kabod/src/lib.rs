@@ -35,6 +35,13 @@ pub struct DeclarativeMigrationAdapter {
     down_ops: Vec<MigrationOp>,
 }
 
+#[napi(object)]
+pub struct MigrationInput {
+    pub version: String,
+    pub operations: Option<serde_json::Value>,
+    pub down_operations: Option<serde_json::Value>,
+}
+
 #[async_trait::async_trait]
 impl Migration for DeclarativeMigrationAdapter {
     fn version(&self) -> String {
@@ -129,23 +136,19 @@ impl KabodClient {
     ///   down_operations: [...]
     /// }
     #[napi]
-    pub async fn run_migrations(&self, migrations: Vec<serde_json::Value>) -> Result<()> {
+    pub async fn run_migrations(&self, migrations: Vec<MigrationInput>) -> Result<()> {
         let db = self.inner.db();
         let manager = MigrationManager::new(db);
 
         let mut rust_migrations: Vec<Box<dyn Migration>> = Vec::with_capacity(migrations.len());
 
         for m in migrations {
-            let version = m.get("version")
-                .and_then(|v| v.as_str())
-                .ok_or_else(|| Error::new(Status::InvalidArg, "Migration missing version".to_string()))?
-                .to_string();
+            let version = m.version;
             
- 
-            let up_ops: Vec<MigrationOp> = serde_json::from_value(m.get("operations").cloned().unwrap_or(serde_json::Value::Null))
+            let up_ops: Vec<MigrationOp> = serde_json::from_value(m.operations.unwrap_or(serde_json::Value::Null))
                 .map_err(|e| Error::new(Status::InvalidArg, format!("Invalid operations: {}", e)))?;
 
-            let down_ops: Vec<MigrationOp> = serde_json::from_value(m.get("downOperations").cloned().unwrap_or(serde_json::Value::Null))
+            let down_ops: Vec<MigrationOp> = serde_json::from_value(m.down_operations.unwrap_or(serde_json::Value::Null))
                 .map_err(|e| Error::new(Status::InvalidArg, format!("Invalid downOperations: {}", e)))?;
 
             rust_migrations.push(Box::new(DeclarativeMigrationAdapter {

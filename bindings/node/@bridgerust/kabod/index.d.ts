@@ -67,7 +67,7 @@ export declare class KabodClient {
    *   down_operations: [...]
    * }
    */
-  runMigrations(migrations: Array<any>): Promise<void>
+  runMigrations(migrations: Array<MigrationInput>): Promise<void>
 }
 
 export declare class QueryBuilder {
@@ -95,6 +95,12 @@ export interface MetadataUpdate {
   id: string
   /** Metadata updates to apply. */
   updates: Record<string, any>
+}
+
+export interface MigrationInput {
+  version: string
+  operations?: any
+  downOperations?: any
 }
 
 /** A point in the vector database. */
