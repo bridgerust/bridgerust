@@ -1,4 +1,4 @@
-use crate::types::{Aggregation, Filter, VectorQuery};
+use bridge_kabod_core::types::{Aggregation, Filter, VectorQuery};
 
 pub struct QueryBuilder {
     collection: String,
@@ -85,7 +85,7 @@ impl QueryBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::{Filter, Aggregation, Condition};
+    use bridge_kabod_core::types::{Filter, Aggregation, Condition};
     use serde_json::json;
 
     #[test]

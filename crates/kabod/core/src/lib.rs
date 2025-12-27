@@ -1,14 +1,10 @@
-pub mod config;
+// Domain layer: Pure domain types, errors, and traits
 pub mod db;
 pub mod error;
 pub mod migration;
-pub mod query;
 pub mod types;
 
-pub use config::KabodConfig;
-pub use config::ConfigError;
 pub use db::VectorDatabase;
-pub use error::{KabodError, Result};
+pub use error::{ConfigError, KabodError, Result};
 pub use migration::Migration;
-pub use query::QueryBuilder;
 pub use types::*;

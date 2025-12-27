@@ -23,6 +23,7 @@ milvus = ["dep:bridge-kabod-milvus"]
 
 [dependencies]
 bridge-kabod-core = { path = "../core" }
+bridge-kabod-infrastructure = { path = "../infrastructure", features = ["all"] }
 
 # Optional adapter crates
 bridge-kabod-qdrant = { path = "../adapters/qdrant", optional = true }

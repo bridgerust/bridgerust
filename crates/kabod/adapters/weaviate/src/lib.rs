@@ -17,16 +17,29 @@ pub struct WeaviateAdapter {
 
 impl WeaviateAdapter {
     pub fn new(url: &str, api_key: Option<&str>) -> Result<Self, KabodError> {
+        Self::new_with_pool_size(url, api_key, None)
+    }
+
+    pub fn new_with_pool_size(
+        url: &str,
+        api_key: Option<&str>,
+        pool_size: Option<u32>,
+    ) -> Result<Self, KabodError> {
         let mut headers = reqwest::header::HeaderMap::new();
         if let Some(key) = api_key {
             let mut auth_val = reqwest::header::HeaderValue::from_str(&format!("Bearer {}", key))
-                .map_err(|e| KabodError::Config(bridge_kabod_core::ConfigError::Message(e.to_string())))?;
+                .map_err(|e| KabodError::Config(e.to_string()))?;
             auth_val.set_sensitive(true);
             headers.insert(reqwest::header::AUTHORIZATION, auth_val);
         }
 
-        let client = Client::builder()
+        let builder = Client::builder()
             .default_headers(headers)
+            .timeout(std::time::Duration::from_secs(30))
+            .pool_max_idle_per_host(pool_size.unwrap_or(10) as usize)
+            .pool_idle_timeout(std::time::Duration::from_secs(90));
+
+        let client = builder
             .build()
             .map_err(|e| KabodError::Connection(e.to_string()))?;
 
@@ -232,5 +245,31 @@ impl VectorDatabase for WeaviateAdapter {
             }
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_weaviate_adapter_new() {
+        let adapter = WeaviateAdapter::new("http://localhost:8080", None);
+        assert!(adapter.is_ok());
+        
+        let adapter = adapter.unwrap();
+        assert_eq!(adapter.url, "http://localhost:8080");
+    }
+
+    #[test]
+    fn test_weaviate_adapter_new_with_api_key() {
+        let adapter = WeaviateAdapter::new("http://localhost:8080", Some("test-key"));
+        assert!(adapter.is_ok());
+    }
+
+    #[test]
+    fn test_weaviate_adapter_url_normalization() {
+        let adapter = WeaviateAdapter::new("http://localhost:8080/", None).unwrap();
+        assert_eq!(adapter.url, "http://localhost:8080");
     }
 }

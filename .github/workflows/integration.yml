@@ -1,0 +1,137 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # Start test databases
+  setup-databases:
+    name: Setup Test Databases
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start Docker Compose services
+        run: |
+          docker-compose up -d
+          docker-compose ps
+
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for databases to be ready..."
+          sleep 30
+          docker-compose ps
+
+  # Rust integration tests
+  rust-integration:
+    name: Rust Integration Tests
+    runs-on: ubuntu-latest
+    needs: setup-databases
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Run integration tests
+        run: |
+          cargo test --workspace --features all --test '*integration*'
+        env:
+          QDRANT_URL: http://localhost:6333
+          PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
+          CHROMA_URL: http://localhost:8000
+          WEAVIATE_URL: http://localhost:8080
+          MILVUS_URL: http://localhost:19530
+          POSTGRES_URL: postgresql://postgres:postgres@localhost:5432/postgres
+
+  # Python integration tests
+  python-integration:
+    name: Python Integration Tests
+    runs-on: ubuntu-latest
+    needs: setup-databases
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install maturin
+        run: pip install maturin
+
+      - name: Build and install Python bindings
+        working-directory: bindings/python/kabod
+        run: maturin develop --features all
+
+      - name: Install test dependencies
+        working-directory: bindings/python/kabod
+        run: pip install pytest pytest-asyncio
+
+      - name: Run integration tests
+        working-directory: bindings/python/kabod
+        run: pytest tests/integration/ -v -m integration
+        env:
+          QDRANT_URL: http://localhost:6333
+          PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
+          CHROMA_URL: http://localhost:8000
+
+  # Node.js integration tests
+  nodejs-integration:
+    name: Node.js Integration Tests
+    runs-on: ubuntu-latest
+    needs: setup-databases
+    strategy:
+      matrix:
+        node-version: ["18", "20"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        working-directory: bindings/node/@bridgerust/kabod
+        run: npm ci
+
+      - name: Build bindings
+        working-directory: bindings/node/@bridgerust/kabod
+        run: npm run build
+
+      - name: Run integration tests
+        working-directory: bindings/node/@bridgerust/kabod
+        run: npm run test:integration
+        env:
+          QDRANT_URL: http://localhost:6333
+          PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
+          CHROMA_URL: http://localhost:8000
+
+  # Cleanup
+  cleanup:
+    name: Cleanup
+    runs-on: ubuntu-latest
+    needs: [rust-integration, python-integration, nodejs-integration]
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Stop Docker Compose services
+        run: docker-compose down -v

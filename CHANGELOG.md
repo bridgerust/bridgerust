@@ -1,0 +1,221 @@
+# Changelog
+
+All notable changes to BridgeRust projects will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added - Kabod
+
+#### Performance Optimizations
+
+- **SIMD Optimizations**: Added SIMD-accelerated vector operations for x86_64 (AVX2, SSE4.1) and aarch64 (NEON)
+  - Dot product, L2 distance, cosine similarity, normalization, and L2 norm
+  - Feature-gated with `simd` Cargo feature
+  - Automatic scalar fallback for unsupported platforms
+  - Integrated into `Point` struct with helper methods
+  - Comprehensive benchmarks showing 2-4x performance improvements
+
+#### Connection Pooling
+
+- **Connection Pooling**: Implemented connection pooling for all adapters
+  - HTTP-based adapters (Pinecone, Milvus, Weaviate): `reqwest` client pooling
+  - PgVector: `sqlx` connection pool
+  - Qdrant and Chroma: Leverage internal client pooling
+  - Configurable via `pool_size` and `idle_timeout_secs` in `KabodConfig`
+  - Documentation and verification utilities added
+
+#### Observability
+
+- **Metrics Collection**: Comprehensive metrics for all operations
+  - Operation counts (inserts, searches, deletes, creates)
+  - Latency tracking (insert, search, delete latencies)
+  - Error tracking (errors, retries, timeouts)
+  - Helper methods for aggregated statistics (error rates, average latencies)
+- **Structured Logging**: Integrated `tracing` for structured logging
+  - Instrumentation on all major operations
+  - Collection-level context in spans
+  - Configurable via `init_tracing()`
+
+#### Migration System
+
+- **Enhanced Migration System**: Robust migration management
+  - Automatic rollback on migration failure
+  - `rollback_migrations()` and `rollback_last()` for flexible rollback
+  - `validate_migrations()` to check for duplicate versions
+  - `validate_migration_state()` for consistency checks
+  - `get_latest_migration()` to retrieve most recent applied migration
+  - Improved `ensure_migration_table()` with robust collection existence checks
+  - Comprehensive test coverage
+
+#### Node.js API Parity
+
+- **New Methods**: Complete API parity with Python bindings
+  - `updateMetadata()`: Update metadata for existing points
+  - `buildQuery()`: Filter-only query builder (no vector search)
+  - `aggregation()`: Aggregations on SearchBuilder and QueryBuilder
+  - Full TypeScript support with generated type definitions
+
+#### Query Builder Enhancements
+
+- **QueryBuilder**: Enhanced query building capabilities
+  - Filter-only queries without vector search
+  - Aggregation support (count)
+  - Method chaining for fluent API
+  - Available in Rust, Python, and Node.js
+
+### Changed - Kabod
+
+#### Architecture Refactoring
+
+- **Clean Architecture**: Improved separation of concerns
+  - Created `bridge-kabod-infrastructure` crate for cross-cutting concerns
+  - Refactored `bridge-kabod-core` to pure domain layer
+  - Moved query builder from core to client (application layer)
+  - Better dependency management and modularity
+
+#### Error Handling
+
+- **Enhanced Error Types**: More specific error handling
+  - `CollectionNotFound`, `CollectionExists`, `DimensionMismatch`
+  - `InvalidVector`, `Timeout`, `RateLimit`
+  - Helper methods: `is_retryable()`, `is_collection_error()`
+
+### Documentation
+
+#### API Documentation
+
+- **Complete API Reference**: Comprehensive documentation for all languages
+  - Rust API documentation with examples
+  - Python API documentation with examples
+  - Node.js/TypeScript API documentation with examples
+  - All new methods documented (updateMetadata, buildQuery, aggregation)
+
+#### Guides
+
+- **Migration System Guide**: Complete guide for database migrations
+  - Creating migrations
+  - Running and rolling back migrations
+  - Validation and best practices
+- **Connection Pooling Guide**: Detailed connection pooling documentation
+  - Configuration for each adapter
+  - Best practices and recommendations
+- **Observability Guide**: Metrics and tracing documentation
+  - Setting up observability
+  - Using metrics and tracing
+  - Production recommendations
+
+#### Examples
+
+- **Enhanced Examples**: Updated examples to showcase new features
+  - RAG system example with aggregations and metadata updates
+  - Semantic search example with filter-only queries
+  - Real-world usage patterns
+
+### Testing
+
+#### Test Coverage
+
+- **Comprehensive Test Suite**: Extensive test coverage
+  - Property-based testing with `proptest`
+  - Unit tests for all adapters
+  - Integration tests for Node.js bindings
+  - Migration system tests
+  - Observability tests
+
+#### Test Organization
+
+- **Reorganized Test Structure**: Better test organization
+  - Python: `tests/unit/` and `tests/integration/`
+  - Node.js: `tests/unit/` and `tests/integration/`
+  - Test configuration files and READMEs
+
+### Performance
+
+#### Benchmarks
+
+- **Performance Benchmarking**: Comprehensive benchmarks
+  - SIMD vs scalar comparisons
+  - Native client comparisons
+  - Overhead measurements
+  - Documentation in `docs/PERFORMANCE.md`
+
+## [0.1.0] - Initial Release
+
+### Added - Kabod
+
+#### Core Features
+
+- Unified API for multiple vector database providers
+- Support for Qdrant, Pinecone, Chroma, Weaviate, Milvus, PgVector, LanceDB
+- Rust, Python, and Node.js bindings
+- Query builder with filters and aggregations
+- Batch operations with parallel execution
+- Streaming support for large datasets
+
+#### Adapters
+
+- Qdrant adapter
+- Pinecone adapter
+- Chroma adapter
+- Weaviate adapter
+- Milvus adapter
+- PgVector adapter
+- LanceDB adapter
+
+#### Features
+
+- Vector similarity search
+- Metadata filtering
+- Collection management
+- Point insertion and deletion
+- Distance metrics (cosine, euclidean, dot product)
+
+---
+
+## Upgrade Guide
+
+### From 0.1.0 to Unreleased
+
+#### SIMD Optimizations
+
+- Enable SIMD feature: `bridge-kabod = { version = "0.1", features = ["simd"] }`
+- Use new `Point` helper methods: `point.cosine_similarity()`, `point.l2_distance()`, etc.
+
+#### Connection Pooling
+
+- Configure pooling via `KabodConfig`:
+  ```rust
+  let config = KabodConfig {
+      pool_size: 10,
+      idle_timeout_secs: 90,
+      ..Default::default()
+  };
+  ```
+
+#### Migration System
+
+- Use new migration methods:
+  ```rust
+  manager.rollback_last(2, &migrations).await?;
+  manager.validate_migrations(&migrations)?;
+  ```
+
+#### Node.js API
+
+- New methods available:
+  ```typescript
+  await collection.updateMetadata([...]);
+  const builder = collection.buildQuery();
+  await builder.aggregation("count").execute();
+  ```
+
+---
+
+## Notes
+
+- All changes are backward compatible unless otherwise noted
+- Performance improvements are automatic (no code changes required)
+- New features are opt-in via feature flags or explicit usage

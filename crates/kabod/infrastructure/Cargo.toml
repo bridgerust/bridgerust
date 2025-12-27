@@ -1,0 +1,59 @@
+[package]
+name = "bridge-kabod-infrastructure"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Infrastructure layer for Kabod (observability, retry, config, adapter factory)"
+
+[features]
+default = ["all"]
+all = ["qdrant", "pinecone", "chroma", "lancedb", "pgvector", "weaviate", "milvus"]
+
+# Individual adapters
+qdrant = ["dep:bridge-kabod-qdrant"]
+pinecone = ["dep:bridge-kabod-pinecone"]
+chroma = ["dep:bridge-kabod-chroma"]
+lancedb = ["dep:bridge-kabod-lancedb"]
+pgvector = ["dep:bridge-kabod-pgvector"]
+weaviate = ["dep:bridge-kabod-weaviate"]
+milvus = ["dep:bridge-kabod-milvus"]
+
+[dependencies]
+bridge-kabod-core = { path = "../core" }
+anyhow = "1.0.100"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.147"
+config = "0.15.19"
+tokio = { version = "1.48", features = ["full"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.22", features = ["env-filter", "fmt"], optional = true }
+
+# Optional adapter crates
+bridge-kabod-qdrant = { path = "../adapters/qdrant", optional = true }
+bridge-kabod-pinecone = { path = "../adapters/pinecone", optional = true }
+bridge-kabod-chroma = { path = "../adapters/chroma", optional = true }
+bridge-kabod-lancedb = { path = "../adapters/lancedb", optional = true }
+bridge-kabod-pgvector = { path = "../adapters/pgvector", optional = true }
+bridge-kabod-weaviate = { path = "../adapters/weaviate", optional = true }
+bridge-kabod-milvus = { path = "../adapters/milvus", optional = true }
+
+[dev-dependencies]
+tokio-test = "0.4.4"
+bridge-kabod = { path = "../client", features = ["all"] }
+tempfile = "3.24.0"
+
+[[test]]
+name = "pooling_test"
+path = "tests/pooling_test.rs"
+
+[[test]]
+name = "observability_test"
+path = "tests/observability_test.rs"
+
+[[test]]
+name = "integration_observability_test"
+path = "tests/integration_observability_test.rs"
+

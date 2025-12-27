@@ -302,6 +302,34 @@ impl Collection {
         inner.create(schema).await.map_err(to_napi_err)
     }
 
+    /// Create the collection with optional dimension.
+    ///
+    /// For providers like Chroma that infer dimension from the first insert,
+    /// you can pass `undefined` for dimension. For other providers, dimension is required.
+    ///
+    /// @param dimension - Optional dimension. Use `undefined` for Chroma (infers from first insert).
+    /// @param distance - Distance metric ("cosine", "euclidean", or "dot").
+    #[napi]
+    pub async fn create_auto(
+        &self,
+        dimension: Option<u32>,
+        distance: Option<String>,
+    ) -> Result<()> {
+        let inner = self.inner.clone();
+
+        let metric = match distance.as_deref().unwrap_or("cosine") {
+            "cosine" => bridge_kabod::types::DistanceMetric::Cosine,
+            "euclidean" => bridge_kabod::types::DistanceMetric::Euclidean,
+            "dot" => bridge_kabod::types::DistanceMetric::Dot,
+            _ => return Err(Error::from_reason("Invalid distance metric")),
+        };
+
+        inner
+            .create_auto(dimension.map(|d| d as usize), metric)
+            .await
+            .map_err(to_napi_err)
+    }
+
     #[napi]
     pub async fn insert_batch(
         &self,

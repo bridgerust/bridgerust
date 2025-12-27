@@ -28,7 +28,24 @@ impl PineconeAdapter {
         region: Option<&str>,
         namespace: Option<&str>,
     ) -> Result<Self> {
-        let http = Client::new();
+        Self::new_with_pool_size(api_key, cloud, region, namespace, None)
+    }
+
+    pub fn new_with_pool_size(
+        api_key: &str,
+        cloud: Option<&str>,
+        region: Option<&str>,
+        namespace: Option<&str>,
+        pool_size: Option<u32>,
+    ) -> Result<Self> {
+        let builder = Client::builder()
+            .timeout(std::time::Duration::from_secs(30))
+            .pool_max_idle_per_host(pool_size.unwrap_or(10) as usize)
+            .pool_idle_timeout(std::time::Duration::from_secs(90));
+
+        let http = builder
+            .build()
+            .map_err(|e| KabodError::Connection(format!("Failed to create HTTP client: {}", e)))?;
 
         Ok(Self {
             http,
@@ -80,6 +97,58 @@ impl PineconeAdapter {
             .map_err(|e| KabodError::Database(format!("Parse error: {}", e)))?;
 
         Ok(info.host)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_pinecone_adapter_new() {
+        let adapter = PineconeAdapter::new("test-key", None, None, None);
+        assert!(adapter.is_ok());
+        
+        let adapter = adapter.unwrap();
+        assert_eq!(adapter.api_key, "test-key");
+        assert_eq!(adapter.namespace, "");
+        assert_eq!(adapter.cloud, "aws");
+        assert_eq!(adapter.region, "us-east-1");
+    }
+
+    #[test]
+    fn test_pinecone_adapter_new_with_options() {
+        let adapter = PineconeAdapter::new(
+            "test-key",
+            Some("gcp"),
+            Some("us-west1"),
+            Some("my-namespace")
+        );
+        assert!(adapter.is_ok());
+        
+        let adapter = adapter.unwrap();
+        assert_eq!(adapter.cloud, "gcp");
+        assert_eq!(adapter.region, "us-west1");
+        assert_eq!(adapter.namespace, "my-namespace");
+    }
+
+    #[test]
+    fn test_control_headers() {
+        let adapter = PineconeAdapter::new("test-key", None, None, None).unwrap();
+        let headers = adapter.control_headers();
+        
+        assert!(headers.contains_key("Api-Key"));
+        assert!(headers.contains_key("X-Pinecone-API-Version"));
+        assert!(headers.contains_key("Content-Type"));
+    }
+
+    #[test]
+    fn test_data_headers() {
+        let adapter = PineconeAdapter::new("test-key", None, None, None).unwrap();
+        let headers = adapter.data_headers();
+        
+        assert!(headers.contains_key("Api-Key"));
+        assert!(headers.contains_key("X-Pinecone-API-Version"));
     }
 }
 
@@ -165,6 +234,7 @@ struct DeleteRequest {
 
 #[async_trait]
 impl VectorDatabase for PineconeAdapter {
+    #[tracing::instrument(skip(self, schema), fields(collection = %schema.name, dimension = schema.dimension, provider = "pinecone"))]
     async fn create_collection(&self, schema: &CollectionSchema) -> Result<()> {
         let metric = match schema.metric {
             DistanceMetric::Cosine => "cosine",
@@ -207,6 +277,7 @@ impl VectorDatabase for PineconeAdapter {
         Ok(())
     }
 
+    #[tracing::instrument(skip(self), fields(collection = %name, provider = "pinecone"))]
     async fn delete_collection(&self, name: &str) -> Result<()> {
         let url = format!("{}/indexes/{}", PINECONE_CONTROL_URL, name);
 
@@ -230,6 +301,7 @@ impl VectorDatabase for PineconeAdapter {
         Ok(())
     }
 
+    #[tracing::instrument(skip(self, points), fields(collection = %collection, count = points.len(), provider = "pinecone"))]
     async fn insert(&self, collection: &str, points: Vec<Point>) -> Result<()> {
         let host = self.get_index_host(collection).await?;
 
@@ -272,6 +344,7 @@ impl VectorDatabase for PineconeAdapter {
         Ok(())
     }
 
+    #[tracing::instrument(skip(self, query), fields(collection = %query.collection, top_k = query.top_k, provider = "pinecone"))]
     async fn search(&self, query: &VectorQuery) -> Result<SearchResponse> {
         let host = self.get_index_host(&query.collection).await?;
 
@@ -347,6 +420,7 @@ impl VectorDatabase for PineconeAdapter {
         })
     }
 
+    #[tracing::instrument(skip(self), fields(collection = %collection, count = ids.len(), provider = "pinecone"))]
     async fn delete(&self, collection: &str, ids: Vec<String>) -> Result<()> {
         let host = self.get_index_host(collection).await?;
 
@@ -378,6 +452,7 @@ impl VectorDatabase for PineconeAdapter {
         Ok(())
     }
 
+    #[tracing::instrument(skip(self, updates), fields(collection = %collection, count = updates.len(), provider = "pinecone"))]
     async fn update_metadata(&self, collection: &str, updates: Vec<MetadataUpdate>) -> Result<()> {
         let host = self.get_index_host(collection).await?;
         let url = format!("https://{}/vectors/update", host);

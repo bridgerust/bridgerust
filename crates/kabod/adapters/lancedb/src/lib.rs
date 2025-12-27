@@ -57,6 +57,7 @@ impl LanceDBAdapter {
 
 #[async_trait]
 impl VectorDatabase for LanceDBAdapter {
+    #[tracing::instrument(skip(self, schema), fields(collection = %schema.name, dimension = schema.dimension, provider = "lancedb"))]
     async fn create_collection(&self, schema: &CollectionSchema) -> Result<()> {
         let arrow_schema = Self::create_schema(schema.dimension);
 
@@ -72,6 +73,7 @@ impl VectorDatabase for LanceDBAdapter {
         Ok(())
     }
 
+    #[tracing::instrument(skip(self), fields(collection = %name, provider = "lancedb"))]
     async fn delete_collection(&self, name: &str) -> Result<()> {
         self.connection
             .drop_table(name, &[])
@@ -81,6 +83,7 @@ impl VectorDatabase for LanceDBAdapter {
         Ok(())
     }
 
+    #[tracing::instrument(skip(self, points), fields(collection = %collection, count = points.len(), provider = "lancedb"))]
     async fn insert(&self, collection: &str, points: Vec<Point>) -> Result<()> {
         let table = self
             .connection
@@ -137,6 +140,7 @@ impl VectorDatabase for LanceDBAdapter {
         Ok(())
     }
 
+    #[tracing::instrument(skip(self, query), fields(collection = %query.collection, top_k = query.top_k, provider = "lancedb"))]
     async fn search(&self, query: &VectorQuery) -> Result<SearchResponse> {
         let table = self
             .connection
@@ -220,6 +224,7 @@ impl VectorDatabase for LanceDBAdapter {
         })
     }
 
+    #[tracing::instrument(skip(self), fields(collection = %collection, count = ids.len(), provider = "lancedb"))]
     async fn delete(&self, collection: &str, ids: Vec<String>) -> Result<()> {
         let table = self
             .connection
@@ -242,6 +247,7 @@ impl VectorDatabase for LanceDBAdapter {
         Ok(())
     }
 
+    #[tracing::instrument(skip(self, updates), fields(collection = %collection, count = updates.len(), provider = "lancedb"))]
     async fn update_metadata(&self, collection: &str, updates: Vec<MetadataUpdate>) -> Result<()> {
         let table = self
             .connection
@@ -314,5 +320,128 @@ fn format_value(value: &serde_json::Value) -> String {
         serde_json::Value::Number(n) => n.to_string(),
         serde_json::Value::Bool(b) => b.to_string(),
         _ => "NULL".to_string(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bridge_kabod_core::types::{Filter, DistanceMetric};
+    use serde_json::json;
+
+    #[test]
+    fn test_to_lance_distance() {
+        assert_eq!(
+            LanceDBAdapter::_to_lance_distance(&DistanceMetric::Cosine),
+            lancedb::DistanceType::Cosine
+        );
+        assert_eq!(
+            LanceDBAdapter::_to_lance_distance(&DistanceMetric::Euclidean),
+            lancedb::DistanceType::L2
+        );
+        assert_eq!(
+            LanceDBAdapter::_to_lance_distance(&DistanceMetric::Dot),
+            lancedb::DistanceType::Dot
+        );
+    }
+
+    #[test]
+    fn test_create_schema() {
+        let schema = LanceDBAdapter::create_schema(128);
+        assert_eq!(schema.fields().len(), 3);
+        assert_eq!(schema.field(0).name(), "id");
+        assert_eq!(schema.field(1).name(), "vector");
+        assert_eq!(schema.field(2).name(), "metadata");
+    }
+
+    #[test]
+    fn test_convert_filter_eq() {
+        let filter = Filter::eq("key", "value");
+        let sql = convert_filter(&filter);
+        assert!(sql.contains("key"));
+        assert!(sql.contains("value"));
+    }
+
+    #[test]
+    fn test_convert_filter_comparison_ops() {
+        let filters = vec![
+            Filter::gt("age", 18),
+            Filter::gte("score", 100),
+            Filter::lt("price", 50.0),
+            Filter::lte("count", 10),
+        ];
+
+        for filter in filters {
+            let sql = convert_filter(&filter);
+            assert!(!sql.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_convert_filter_in() {
+        let filter = Filter::r#in("tags", vec!["a", "b", "c"]);
+        let sql = convert_filter(&filter);
+        assert!(sql.contains("tags"));
+        assert!(sql.contains("IN"));
+    }
+
+    #[test]
+    fn test_convert_filter_not_in() {
+        let filter = Filter::not_in("tags", vec!["x", "y"]);
+        let sql = convert_filter(&filter);
+        assert!(sql.contains("tags"));
+        assert!(sql.contains("NOT IN"));
+    }
+
+    #[test]
+    fn test_convert_filter_must() {
+        let filter = Filter::must(vec![
+            Filter::eq("a", 1),
+            Filter::eq("b", 2),
+        ]);
+        let sql = convert_filter(&filter);
+        assert!(sql.contains("AND"));
+    }
+
+    #[test]
+    fn test_convert_filter_should() {
+        let filter = Filter::should(vec![
+            Filter::eq("a", 1),
+            Filter::eq("b", 2),
+        ]);
+        let sql = convert_filter(&filter);
+        assert!(sql.contains("OR"));
+    }
+
+    #[test]
+    fn test_convert_filter_must_not() {
+        let filter = Filter::must_not(vec![
+            Filter::eq("a", 1),
+        ]);
+        let sql = convert_filter(&filter);
+        assert!(sql.contains("NOT"));
+    }
+
+    #[test]
+    fn test_format_value_string() {
+        assert_eq!(format_value(&json!("test")), "'test'");
+        assert_eq!(format_value(&json!("it's")), "'it''s'");
+    }
+
+    #[test]
+    fn test_format_value_number() {
+        assert_eq!(format_value(&json!(42)), "42");
+        assert_eq!(format_value(&json!(3.14)), "3.14");
+    }
+
+    #[test]
+    fn test_format_value_bool() {
+        assert_eq!(format_value(&json!(true)), "true");
+        assert_eq!(format_value(&json!(false)), "false");
+    }
+
+    #[test]
+    fn test_format_value_null() {
+        assert_eq!(format_value(&json!(null)), "NULL");
     }
 }

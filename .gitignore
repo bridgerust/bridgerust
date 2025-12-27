@@ -495,3 +495,4 @@ Thumbs.db
 *.tar.gz
 *.rar
 *.old.*
+*.node

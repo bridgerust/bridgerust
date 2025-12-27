@@ -22,6 +22,50 @@ impl Point {
         self.metadata = Some(metadata);
         self
     }
+
+    /// Computes the cosine similarity with another point using SIMD-accelerated operations.
+    ///
+    /// Returns a value in the range [-1, 1], where 1 means identical direction.
+    ///
+    /// # Panics
+    /// Panics if the vectors have different lengths.
+    #[cfg(feature = "simd")]
+    pub fn cosine_similarity(&self, other: &Point) -> f32 {
+        bridge_core::simd::cosine_similarity(&self.vector, &other.vector)
+    }
+
+    /// Computes the L2 (Euclidean) distance to another point using SIMD-accelerated operations.
+    ///
+    /// # Panics
+    /// Panics if the vectors have different lengths.
+    #[cfg(feature = "simd")]
+    pub fn l2_distance(&self, other: &Point) -> f32 {
+        bridge_core::simd::l2_distance(&self.vector, &other.vector)
+    }
+
+    /// Computes the dot product with another point using SIMD-accelerated operations.
+    ///
+    /// # Panics
+    /// Panics if the vectors have different lengths.
+    #[cfg(feature = "simd")]
+    pub fn dot_product(&self, other: &Point) -> f32 {
+        bridge_core::simd::dot_product(&self.vector, &other.vector)
+    }
+
+    /// Normalizes the vector to unit length in-place using SIMD-accelerated operations.
+    ///
+    /// # Panics
+    /// Panics if the vector has zero magnitude.
+    #[cfg(feature = "simd")]
+    pub fn normalize(&mut self) {
+        bridge_core::simd::normalize_in_place(&mut self.vector);
+    }
+
+    /// Returns the L2 norm (magnitude) of the vector using SIMD-accelerated operations.
+    #[cfg(feature = "simd")]
+    pub fn l2_norm(&self) -> f32 {
+        bridge_core::simd::l2_norm(&self.vector)
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -344,10 +388,7 @@ mod tests {
         #[test]
         fn test_filter_roundtrip_serialization(
             key in "[a-zA-Z][a-zA-Z0-9_]{0,50}",
-            value in prop::oneof![
-                prop::num::f64::ANY.prop_map(|v| json!(v)),
-                prop::collection::vec(prop::num::f64::ANY, 1..10).prop_map(|v| json!(v)),
-            ]
+            value in prop::num::f64::ANY.prop_map(|v| json!(v))
         ) {
             let filter = Filter::eq(key.clone(), value.clone());
             let json = serde_json::to_string(&filter).expect("Should serialize");

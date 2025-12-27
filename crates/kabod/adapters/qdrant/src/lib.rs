@@ -20,7 +20,26 @@ pub struct QdrantAdapter {
 }
 
 impl QdrantAdapter {
+    /// Creates a new Qdrant adapter.
+    ///
+    /// Note: The Qdrant client uses its own internal connection pooling.
+    /// The `pool_size` parameter is accepted for API consistency but is not directly
+    /// configurable in the qdrant-client crate.
     pub fn new(url: &str, api_key: Option<&str>) -> Result<Self> {
+        Self::new_with_pool_size(url, api_key, None)
+    }
+
+    /// Creates a new Qdrant adapter with pool size hint.
+    ///
+    /// Note: The Qdrant client uses its own internal connection pooling.
+    /// The `pool_size` parameter is accepted for API consistency but is not directly
+    /// configurable in the qdrant-client crate. The qdrant-client manages its own
+    /// HTTP client with default pooling settings.
+    pub fn new_with_pool_size(
+        url: &str,
+        api_key: Option<&str>,
+        _pool_size: Option<u32>,
+    ) -> Result<Self> {
         let mut config = QdrantConfig::from_url(url);
 
         if let Some(key) = api_key {
@@ -35,6 +54,7 @@ impl QdrantAdapter {
 
 #[async_trait]
 impl VectorDatabase for QdrantAdapter {
+    #[tracing::instrument(skip(self, schema), fields(collection = %schema.name, dimension = schema.dimension, provider = "qdrant"))]
     async fn create_collection(&self, schema: &CollectionSchema) -> Result<()> {
         let distance = match schema.metric {
             DistanceMetric::Cosine => Distance::Cosine,
@@ -59,6 +79,7 @@ impl VectorDatabase for QdrantAdapter {
         Ok(())
     }
 
+    #[tracing::instrument(skip(self), fields(collection = %name, provider = "qdrant"))]
     async fn delete_collection(&self, name: &str) -> Result<()> {
         self.client
             .delete_collection(name)
@@ -67,6 +88,7 @@ impl VectorDatabase for QdrantAdapter {
         Ok(())
     }
 
+    #[tracing::instrument(skip(self, points), fields(collection = %collection, count = points.len(), provider = "qdrant"))]
     async fn insert(&self, collection: &str, points: Vec<Point>) -> Result<()> {
         let points: Vec<PointStruct> = points
             .into_iter()
@@ -89,6 +111,7 @@ impl VectorDatabase for QdrantAdapter {
         Ok(())
     }
 
+    #[tracing::instrument(skip(self, query), fields(collection = %query.collection, limit = query.top_k, provider = "qdrant"))]
     async fn search(&self, query: &VectorQuery) -> Result<SearchResponse> {
         // If vector is present, use SearchPoints (KNN)
         // If vector is absent, use ScrollPoints (Filter only)
@@ -209,6 +232,7 @@ impl VectorDatabase for QdrantAdapter {
         })
     }
 
+    #[tracing::instrument(skip(self), fields(collection = %collection, count = ids.len(), provider = "qdrant"))]
     async fn delete(&self, collection: &str, ids: Vec<String>) -> Result<()> {
         let points = qdrant_client::qdrant::PointsIdsList {
             ids: ids.into_iter().map(|id| id.into()).collect(),
@@ -222,6 +246,7 @@ impl VectorDatabase for QdrantAdapter {
         Ok(())
     }
 
+    #[tracing::instrument(skip(self, updates), fields(collection = %collection, count = updates.len(), provider = "qdrant"))]
     async fn update_metadata(&self, collection: &str, updates: Vec<MetadataUpdate>) -> Result<()> {
         for update in updates {
             let payload: Payload = update.updates.into();
@@ -425,8 +450,7 @@ fn convert_scored_point(point: ScoredPoint) -> SearchResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bridge_kabod_core::types::{Filter, Condition};
-    use serde_json::json;
+    use bridge_kabod_core::types::Filter;
 
     #[test]
     fn test_qdrant_adapter_new() {

@@ -1,13 +1,10 @@
-use crate::adapters::*;
-#[cfg(feature = "weaviate")]
-use bridge_kabod_weaviate::WeaviateAdapter;
-#[cfg(feature = "milvus")]
-use bridge_kabod_milvus::MilvusAdapter;
-use bridge_kabod_core::config::KabodConfig;
 use bridge_kabod_core::db::VectorDatabase;
 use bridge_kabod_core::error::Result;
-use bridge_kabod_core::query::QueryBuilder;
 use bridge_kabod_core::types::{Aggregation, CollectionSchema, Filter, Point, SearchResponse};
+use bridge_kabod_infrastructure::adapter_factory::AdapterFactory;
+use bridge_kabod_infrastructure::config::KabodConfig;
+use bridge_kabod_infrastructure::observability::KabodMetrics;
+use crate::query::QueryBuilder;
 use std::sync::Arc;
 
 /// Main client for interacting with the Kabod vector database.
@@ -35,6 +32,7 @@ use std::sync::Arc;
 #[derive(Clone)]
 pub struct KabodClient {
     db: Arc<dyn VectorDatabase>,
+    metrics: Arc<KabodMetrics>,
 }
 
 impl KabodClient {
@@ -45,7 +43,15 @@ impl KabodClient {
 
     /// Creates a new `KabodClient` from an existing database adapter.
     pub fn from_db(db: Arc<dyn VectorDatabase>) -> Self {
-        Self { db }
+        Self {
+            db,
+            metrics: Arc::new(KabodMetrics::new()),
+        }
+    }
+
+    /// Returns a snapshot of current metrics.
+    pub fn metrics(&self) -> bridge_kabod_infrastructure::observability::MetricsSnapshot {
+        self.metrics.snapshot()
     }
 
     /// Creates a new `KabodClient` from the provided configuration.
@@ -53,135 +59,33 @@ impl KabodClient {
     /// This method initializes the appropriate database adapter based on the `provider` field
     /// in the configuration.
     ///
-    /// # Synchonous Initialization
+    /// # Synchronous Initialization
     /// This method is intended for providers that can be initialized synchronously.
     /// For providers requiring async initialization (like LanceDB or PgVector), use `new_async`.
     pub fn new(config: KabodConfig) -> Result<Self> {
-        #[cfg(feature = "qdrant")]
-        if config.provider == "qdrant" {
-            return Ok(Self {
-                db: Arc::new(QdrantAdapter::new(&config.url, config.api_key.as_deref())?),
-            });
-        }
-
-        #[cfg(feature = "pinecone")]
-        if config.provider == "pinecone" {
-            let api_key = config.api_key.as_ref().ok_or_else(|| {
-                bridge_kabod_core::error::KabodError::Config(config::ConfigError::Message(
-                    "Pinecone requires API key".to_string(),
-                ))
-            })?;
-            let cloud = config.options.get("cloud").map(|s| s.as_str());
-            let region = config.options.get("region").map(|s| s.as_str());
-            let namespace = config.options.get("namespace").map(|s| s.as_str());
-            return Ok(Self {
-                db: Arc::new(PineconeAdapter::new(api_key, cloud, region, namespace)?),
-            });
-        }
-
-        #[cfg(feature = "chroma")]
-        if config.provider == "chroma" {
-            let db = if let Some(api_key) = config.api_key.as_ref() {
-                let database = config
-                    .options
-                    .get("database")
-                    .map(|s| s.as_str())
-                    .unwrap_or("default_database");
-                Arc::new(ChromaAdapter::cloud(api_key, database)?)
-            } else {
-                Arc::new(ChromaAdapter::from_env()?)
-            };
-            return Ok(Self { db });
-        }
-
-        #[cfg(feature = "lancedb")]
-        if config.provider == "lancedb" {
-            return Err(bridge_kabod_core::error::KabodError::Config(
-                config::ConfigError::Message(
-                    "LanceDB requires async initialization. Use KabodClient::new_async()"
-                        .to_string(),
-                ),
-            ));
-        }
-
-        #[cfg(feature = "pgvector")]
-        if config.provider == "pgvector" {
-            return Err(bridge_kabod_core::error::KabodError::Config(
-                config::ConfigError::Message(
-                    "PgVector requires async initialization. Use KabodClient::new_async()"
-                        .to_string(),
-                ),
-            ));
-        }
-
-        #[cfg(feature = "milvus")]
-        if config.provider == "milvus" {
-            return Err(bridge_kabod_core::error::KabodError::Config(
-                config::ConfigError::Message(
-                    "Milvus requires async initialization. Use KabodClient::new_async()"
-                        .to_string(),
-                ),
-            ));
-        }
-
-        #[cfg(feature = "weaviate")]
-        if config.provider == "weaviate" {
-            return Ok(Self {
-                db: Arc::new(WeaviateAdapter::new(
-                    &config.url,
-                    config.api_key.as_deref(),
-                )?),
-            });
-        }
-
-        Err(bridge_kabod_core::error::KabodError::Config(
-            config::ConfigError::Message(format!(
-                "Provider '{}' not available. Enable it via Cargo features or check spelling.",
-                config.provider
-            )),
-        ))
+        let db = AdapterFactory::create(&config)?;
+        Ok(Self {
+            db,
+            metrics: Arc::new(KabodMetrics::new()),
+        })
     }
 
     /// Creates a new `KabodClient` asynchronously.
     ///
     /// Required for providers that need asynchronous initialization, such as LanceDB or PgVector.
     pub async fn new_async(config: KabodConfig) -> Result<Self> {
-        #[cfg(feature = "lancedb")]
-        if config.provider == "lancedb" {
-            return Ok(Self {
-                db: Arc::new(LanceDBAdapter::new(&config.url).await?),
-            });
-        }
-
-        #[cfg(feature = "pgvector")]
-        if config.provider == "pgvector" {
-            let pool_size = config.options.get("pool_size").and_then(|s| s.parse().ok());
-            return Ok(Self {
-                db: Arc::new(PgVectorAdapter::new(&config.url, pool_size).await?),
-            });
-        }
-
-        #[cfg(feature = "milvus")]
-        if config.provider == "milvus" {
-            return Ok(Self {
-                db: Arc::new(MilvusAdapter::new(&config.url).await?),
-            });
-        }
-
-        // fallback to sync init for Weaviate
-        #[cfg(feature = "weaviate")]
-        if config.provider == "weaviate" {
-             return Self::new(config);
-        }
-
-        Self::new(config)
+        let db = AdapterFactory::create_async(&config).await?;
+        Ok(Self {
+            db,
+            metrics: Arc::new(KabodMetrics::new()),
+        })
     }
 
-    /// Returns a handle to a specific collection.
     pub fn collection(&self, name: &str) -> Collection {
         Collection {
             name: name.to_string(),
             db: self.db.clone(),
+            metrics: self.metrics.clone(),
         }
     }
 }
@@ -190,6 +94,7 @@ impl KabodClient {
 pub struct Collection {
     name: String,
     db: Arc<dyn VectorDatabase>,
+    metrics: Arc<KabodMetrics>,
 }
 
 impl Collection {
@@ -200,19 +105,88 @@ impl Collection {
     /// Creates a new collection with the given schema.
     #[tracing::instrument(skip(self, schema), fields(collection = %self.name, dimension = schema.dimension))]
     pub async fn create(&self, schema: CollectionSchema) -> Result<()> {
-        self.db.create_collection(&schema).await
+       let _timer = bridge_kabod_infrastructure::observability::Timer::start();
+        let result = self.db.create_collection(&schema).await;
+        if result.is_ok() {
+            self.metrics.record_create();
+        } else {
+            self.metrics.record_error();
+        }
+        result
+    }
+
+    /// Creates a new collection with optional dimension.
+    ///
+    /// For providers like Chroma that infer dimension from the first insert,
+    /// you can pass `None` for dimension. For other providers, dimension is required.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// use bridge_kabod::client::KabodClient;
+    /// use bridge_kabod_core::types::DistanceMetric;
+    ///
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = KabodClient::new(/* config */)?;
+    /// let collection = client.collection("my_collection");
+    ///
+    /// // For Chroma: dimension will be inferred from first insert
+    /// collection.create_auto(None, DistanceMetric::Cosine).await?;
+    ///
+    /// // For other providers: dimension is required
+    /// collection.create_auto(Some(768), DistanceMetric::Cosine).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[tracing::instrument(skip(self), fields(collection = %self.name, dimension = ?dimension))]
+    pub async fn create_auto(
+        &self,
+        dimension: Option<usize>,
+        metric: bridge_kabod_core::types::DistanceMetric,
+    ) -> Result<()> {
+        let _timer = bridge_kabod_infrastructure::observability::Timer::start();
+        
+        let dimension = dimension.unwrap_or(0);
+        
+        let schema = CollectionSchema {
+            name: self.name.clone(),
+            dimension,
+            metric,
+        };
+        
+        let result = self.db.create_collection(&schema).await;
+        if result.is_ok() {
+            self.metrics.record_create();
+        } else {
+            self.metrics.record_error();
+        }
+        result
     }
 
     /// Deletes the collection.
     #[tracing::instrument(skip(self), fields(collection = %self.name))]
     pub async fn delete_collection(&self) -> Result<()> {
-        self.db.delete_collection(&self.name).await
+        let _timer = bridge_kabod_infrastructure::observability::Timer::start();
+        let result = self.db.delete_collection(&self.name).await;
+        if result.is_ok() {
+            self.metrics.record_delete_collection();
+        } else {
+            self.metrics.record_error();
+        }
+        result
     }
 
     /// Inserts a list of points into the collection.
     #[tracing::instrument(skip(self, points), fields(collection = %self.name, count = points.len()))]
     pub async fn insert(&self, points: Vec<Point>) -> Result<()> {
-        self.db.insert(&self.name, points).await
+        let timer = bridge_kabod_infrastructure::observability::Timer::start();
+        let result = self.db.insert(&self.name, points).await;
+        if result.is_ok() {
+            self.metrics.record_insert(timer.elapsed_ms());
+        } else {
+            self.metrics.record_error();
+        }
+        result
     }
 
     /// Creates a search builder for querying the collection.
@@ -223,13 +197,46 @@ impl Collection {
     /// Executes a search query using a `QueryBuilder`.
     #[tracing::instrument(skip(self, builder), fields(collection = %self.name))]
     pub async fn query(&self, builder: QueryBuilder) -> Result<SearchResponse> {
-        self.db.search(&builder.build()).await
+        let timer = bridge_kabod_infrastructure::observability::Timer::start();
+        let result = self.db.search(&builder.build()).await;
+        if result.is_ok() {
+            self.metrics.record_search(timer.elapsed_ms());
+        } else {
+            self.metrics.record_error();
+        }
+        result
     }
 
     /// Deletes points from the collection by their IDs.
     #[tracing::instrument(skip(self), fields(collection = %self.name, count = ids.len()))]
     pub async fn delete(&self, ids: Vec<String>) -> Result<()> {
-        self.db.delete(&self.name, ids).await
+        let timer = bridge_kabod_infrastructure::observability::Timer::start();
+        let result = self.db.delete(&self.name, ids).await;
+        if result.is_ok() {
+            self.metrics.record_delete(timer.elapsed_ms());
+        } else {
+            self.metrics.record_error();
+        }
+        result
+    }
+
+    /// Updates metadata for points in the collection.
+    #[tracing::instrument(skip(self), fields(collection = %self.name, count = updates.len()))]
+    pub async fn update_metadata(&self, updates: Vec<bridge_kabod_core::types::MetadataUpdate>) -> Result<()> {
+        let timer = bridge_kabod_infrastructure::observability::Timer::start();
+        let result = self.db.update_metadata(&self.name, updates).await;
+        if result.is_ok() {
+            // Note: We could add a specific metric for metadata updates if needed
+            self.metrics.record_insert(timer.elapsed_ms());
+        } else {
+            self.metrics.record_error();
+        }
+        result
+    }
+
+    /// Creates a query builder for filter-only queries (no vector search).
+    pub fn build_query(&self) -> QueryBuilder {
+        QueryBuilder::new_filter_only(self.name.clone())
     }
 
     /// Inserts points in parallel batches.

@@ -1,0 +1,69 @@
+name: Benchmarks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run benchmarks weekly on Sunday
+    - cron: "0 0 * * 0"
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # Run benchmarks and compare
+  benchmark:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install criterion
+        run: cargo install cargo-criterion
+
+      - name: Run SIMD benchmarks
+        run: |
+          cd benchmarks/kabod
+          cargo bench --bench simd_bench --features simd
+
+      - name: Run comparison benchmarks
+        run: |
+          cd benchmarks/kabod
+          cargo bench --bench simd_comparison --features simd
+
+      - name: Run native comparison benchmarks
+        run: |
+          cd benchmarks/kabod
+          cargo bench --bench native_comparison
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: benchmarks/kabod/target/criterion/
+
+  # Compare with previous results (if available)
+  compare:
+    name: Compare Benchmarks
+    runs-on: ubuntu-latest
+    needs: benchmark
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download previous results
+        uses: actions/download-artifact@v4
+        with:
+          name: benchmark-results
+          path: previous-results/
+
+      - name: Compare results
+        run: |
+          echo "Benchmark comparison would go here"
+          # Add comparison logic if needed

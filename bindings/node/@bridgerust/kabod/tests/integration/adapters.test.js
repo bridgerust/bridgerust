@@ -237,6 +237,27 @@ describe("Chroma Adapter", () => {
     const results = await collection.search(randomVector(), 1);
     expect(results.results.length).toBeGreaterThanOrEqual(1);
   });
+
+  it("should create collection with auto dimension inference", async () => {
+    try {
+      await collection.deleteCollection();
+    } catch (e) {}
+
+    // Create collection without specifying dimension (Chroma will infer)
+    await collection.createAuto(undefined, "cosine");
+
+    const points = [
+      { id: "c4", vector: randomVector(), metadata: { type: "auto" } },
+      { id: "c5", vector: randomVector(), metadata: { type: "auto" } },
+    ];
+    await collection.insert(points);
+
+    // Verify search works
+    const results = await collection.query(randomVector(), { limit: 2 });
+    expect(results.results.length).toBe(2);
+
+    await collection.deleteCollection();
+  });
 });
 
 describe("Weaviate Adapter", () => {

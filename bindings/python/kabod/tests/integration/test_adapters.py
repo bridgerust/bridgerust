@@ -126,6 +126,32 @@ class TestChromaAdapter:
         assert len(results.results) == 2
         
         await collection.delete_collection()
+    
+    @pytest.mark.asyncio
+    async def test_create_auto_dimension_inference(self, client, collection):
+        """Test that Chroma can infer dimension from first insert."""
+        from kabod import Point
+        
+        try:
+            await collection.delete_collection()
+        except Exception:
+            pass
+        
+        # Create collection without specifying dimension (Chroma will infer)
+        await collection.create_auto(dimension=None, distance="cosine")
+        
+        # Insert points - Chroma will infer dimension from first insert
+        points = [
+            Point(id="c1", vector=random_vector(), metadata={"type": "test"}),
+            Point(id="c2", vector=random_vector(), metadata={"type": "test"}),
+        ]
+        await collection.insert(points)
+        
+        # Verify search works
+        results = await collection.search(vector=random_vector(), top_k=2)
+        assert len(results.results) == 2
+        
+        await collection.delete_collection()
 
 
 class TestWeaviateAdapter:

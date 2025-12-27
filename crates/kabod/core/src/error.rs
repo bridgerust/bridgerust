@@ -2,10 +2,25 @@ use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, KabodError>;
 
+/// Configuration error type that can be used by infrastructure layer
+#[derive(Error, Debug)]
+#[error("Configuration error: {0}")]
+pub struct ConfigError(String);
+
+impl ConfigError {
+    pub fn new(msg: String) -> Self {
+        Self(msg)
+    }
+    
+    pub fn message(msg: impl Into<String>) -> Self {
+        Self(msg.into())
+    }
+}
+
 #[derive(Error, Debug)]
 pub enum KabodError {
     #[error("Configuration error: {0}")]
-    Config(#[from] config::ConfigError),
+    Config(String),
 
     #[error("Database error: {0}")]
     Database(String),

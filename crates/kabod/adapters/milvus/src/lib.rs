@@ -15,26 +15,31 @@ pub struct MilvusAdapter {
 
 impl MilvusAdapter {
     pub async fn new(url: &str) -> Result<Self, KabodError> {
-        let client = Client::builder()
-            .build()
-            .map_err(|e| KabodError::Connection(e.to_string()))?;
-
-        Ok(Self {
-            client,
-            url: url.trim_end_matches('/').to_string(),
-            token: None,
-        })
+        Self::new_with_pool_size(url, None, None).await
     }
 
     pub async fn new_with_token(url: &str, token: &str) -> Result<Self, KabodError> {
-        let client = Client::builder()
+        Self::new_with_pool_size(url, Some(token), None).await
+    }
+
+    pub async fn new_with_pool_size(
+        url: &str,
+        token: Option<&str>,
+        pool_size: Option<u32>,
+    ) -> Result<Self, KabodError> {
+        let builder = Client::builder()
+            .timeout(std::time::Duration::from_secs(30))
+            .pool_max_idle_per_host(pool_size.unwrap_or(10) as usize)
+            .pool_idle_timeout(std::time::Duration::from_secs(90));
+
+        let client = builder
             .build()
             .map_err(|e| KabodError::Connection(e.to_string()))?;
 
         Ok(Self {
             client,
             url: url.trim_end_matches('/').to_string(),
-            token: Some(token.to_string()),
+            token: token.map(|t| t.to_string()),
         })
     }
 }
@@ -260,5 +265,36 @@ impl VectorDatabase for MilvusAdapter {
             return Err(KabodError::Database(format!("Update metadata failed: {}", text)));
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_milvus_adapter_new() {
+        let adapter = MilvusAdapter::new("http://localhost:19530").await;
+        assert!(adapter.is_ok());
+        
+        let adapter = adapter.unwrap();
+        assert_eq!(adapter.url, "http://localhost:19530");
+        assert!(adapter.token.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_milvus_adapter_new_with_token() {
+        let adapter = MilvusAdapter::new_with_token("http://localhost:19530", "test-token").await;
+        assert!(adapter.is_ok());
+        
+        let adapter = adapter.unwrap();
+        assert_eq!(adapter.url, "http://localhost:19530");
+        assert_eq!(adapter.token, Some("test-token".to_string()));
+    }
+
+    #[tokio::test]
+    async fn test_milvus_adapter_url_normalization() {
+        let adapter = MilvusAdapter::new("http://localhost:19530/").await.unwrap();
+        assert_eq!(adapter.url, "http://localhost:19530");
     }
 }

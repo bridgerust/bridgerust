@@ -5,6 +5,7 @@ members = [
     "crates/schema",
     "crates/kabod/client",
     "crates/kabod/core",
+    "crates/kabod/infrastructure",
     "crates/kabod/adapters/qdrant",
     "crates/kabod/adapters/pinecone",
     "crates/kabod/adapters/chroma",
@@ -13,8 +14,10 @@ members = [
     "bindings/python/bridge-schema",
     "bindings/python/kabod",
     "bindings/node/@bridgerust/kabod",
-    "benchmarks/kabod"
-, "crates/kabod/adapters/weaviate", "crates/kabod/adapters/milvus"]
+    "benchmarks/kabod",
+    "crates/kabod/adapters/weaviate",
+    "crates/kabod/adapters/milvus"
+]
 
 [workspace.package]
 version = "0.1.0"

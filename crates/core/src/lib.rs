@@ -5,6 +5,8 @@
 pub mod buffer;
 pub mod error;
 pub mod io;
+#[cfg(feature = "simd")]
+pub mod simd;
 
 pub use error::{BridgeError, Result};
 

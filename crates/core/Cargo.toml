@@ -8,6 +8,10 @@ repository.workspace = true
 authors.workspace = true
 description = "Core utilities for BridgeRust engines"
 
+[features]
+default = []
+simd = []
+
 [dependencies]
 anyhow = "1.0.100"
 serde = { version = "1.0.228", features = ["derive"] }

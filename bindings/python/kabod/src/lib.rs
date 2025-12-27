@@ -110,6 +110,8 @@ impl KabodClient {
             api_key,
             timeout_ms: None,
             options: Default::default(),
+            idle_timeout_secs: 90,
+            pool_size: 10,
         };
 
         let client = RustClient::new(config).map_err(to_py_err)?;
@@ -147,6 +149,8 @@ impl KabodClient {
                 api_key,
                 timeout_ms: None,
                 options: Default::default(),
+                idle_timeout_secs: 90,
+                pool_size: 10,
             };
 
             let client = RustClient::new_async(config).await.map_err(to_py_err)?;
@@ -545,6 +549,39 @@ impl Collection {
 
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
             inner.create(schema).await.map_err(to_py_err)
+        })
+    }
+
+    /// Create the collection with optional dimension.
+    ///
+    /// For providers like Chroma that infer dimension from the first insert,
+    /// you can pass `None` for dimension. For other providers, dimension is required.
+    ///
+    /// Args:
+    ///     dimension: Optional dimension. Use `None` for Chroma (infers from first insert).
+    ///     distance: Distance metric ("cosine", "euclidean", or "dot").
+    #[pyo3(signature = (dimension=None, distance=None))]
+    fn create_auto<'p>(
+        &self,
+        py: Python<'p>,
+        dimension: Option<usize>,
+        distance: Option<String>,
+    ) -> PyResult<Bound<'p, PyAny>> {
+        let inner = self.inner.clone();
+
+        let metric = match distance.as_deref().unwrap_or("cosine") {
+            "cosine" => bridge_kabod::types::DistanceMetric::Cosine,
+            "euclidean" => bridge_kabod::types::DistanceMetric::Euclidean,
+            "dot" => bridge_kabod::types::DistanceMetric::Dot,
+            _ => {
+                return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                    "Invalid distance metric",
+                ));
+            }
+        };
+
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            inner.create_auto(dimension, metric).await.map_err(to_py_err)
         })
     }
 

@@ -65,22 +65,63 @@ async function main() {
 
   const queryVector = getEmbedding(question);
 
-  // Retrieve relevant context
-  const searchResults = await collection.search(queryVector);
+  // Retrieve relevant context using search builder with aggregations
+  const searchBuilder = collection.buildSearch(queryVector);
+  const data = await searchBuilder
+    .limit(3)
+    .includeMetadata(true)
+    .aggregation("count")
+    .execute();
 
-  const data = await searchResults.execute();
+  console.log(
+    `\nTotal documents in knowledge base: ${data.aggregations.count}`
+  );
 
   if (data.results.length > 0) {
     const topResult = data.results[0];
     const context = topResult.metadata?.content as string;
 
-    console.log(`Retrieved Context: "${context}" (Score: ${topResult.score})`);
+    console.log(
+      `Retrieved Context: "${context}" (Score: ${topResult.score.toFixed(4)})`
+    );
 
     // Generate Answer
     const answer = await generateAnswer(context, question);
     console.log(`Answer: ${answer}`);
+
+    // 5. Update metadata to track access
+    await collection.updateMetadata([
+      {
+        id: topResult.id,
+        updates: {
+          last_accessed: new Date().toISOString(),
+          access_count: ((topResult.metadata?.access_count as number) || 0) + 1,
+        },
+      },
+    ]);
+    console.log(`\nUpdated access metadata for document ${topResult.id}`);
   } else {
     console.log("No relevant context found.");
+  }
+
+  // 6. Query without vector search (filter-only)
+  console.log("\nQuerying documents by source using buildQuery:");
+  const queryResults = await collection
+    .buildQuery()
+    .filter({
+      op: "key",
+      args: ["source", { op: "eq", args: "bridgerust.dev" }],
+    })
+    .limit(10)
+    .includeMetadata(true)
+    .aggregation("count")
+    .execute();
+
+  console.log(
+    `Found ${queryResults.aggregations.count} documents from bridgerust.dev`
+  );
+  for (const result of queryResults.results) {
+    console.log(`  - ${result.id}: ${result.metadata?.content}`);
   }
 }
 
