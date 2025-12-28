@@ -99,12 +99,12 @@ def publish(dry_run=False):
         print(f"   - Checking {crate} ({name} v{version})...")
         
         if is_version_published(name, version):
-            print(f"     ✅ {name} v{version} is already published. Skipping.")
+            print(f"✅ {name} v{version} is already published. Skipping.")
             continue
             
         # print(f"     🚀 Publishing {name} v{version}...")
         # run(f"cargo publish {flags} --allow-dirty", cwd=ROOT_DIR / crate)
-        print(f"     ⏩ Skipping publish for {name} (CLI distribution via Python/Node.js)")
+        print(f"⏩ Skipping publish for {name} (CLI distribution via Python/Node.js)")
 
 def main():
     parser = argparse.ArgumentParser(description="Release Script for Rust Crates")
