@@ -41,6 +41,6 @@ async-trait = "0.1.89"
 config = "0.15.19"
 futures = "0.3.31"
 chrono = { version = "0.4.42", features = ["serde"] }
-serde_json = "1.0.147"
+serde_json = "1.0.148"
 tracing = "0.1.44"
 uuid = { version = "1.19", features = ["v5", "serde"] }

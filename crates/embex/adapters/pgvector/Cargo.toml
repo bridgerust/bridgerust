@@ -15,7 +15,7 @@ sqlx = { version = "0.8.6", default-features = false, features = ["runtime-tokio
 pgvector = { version = "0.4.1", features = ["sqlx"] }
 async-trait = "0.1.89"
 serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.147"
+serde_json = "1.0.148"
 tracing = "0.1.44"
 
 [dev-dependencies]
