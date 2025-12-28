@@ -1,11 +1,8 @@
 name: Benchmarks
 
 on:
-  # Benchmarks are expensive - only run manually or on schedule
-  # Removed push/PR triggers to save minutes
   schedule:
-    # Run benchmarks monthly on first Sunday to save minutes
-    - cron: "0 0 1 * 0" # Changed from weekly to monthly
+    - cron: "0 0 1 * *" # First day of every month at midnight UTC
   workflow_dispatch:
 
 env:

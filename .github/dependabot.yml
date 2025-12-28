@@ -1,8 +1,5 @@
 version: 2
 updates:
-  # Rust dependencies
-  # Note: Reduced frequency to monthly to save GitHub Actions minutes
-  # Dependabot PRs trigger CI workflows, which can be expensive
   - package-ecosystem: "cargo"
     directory: "/"
     schedule:

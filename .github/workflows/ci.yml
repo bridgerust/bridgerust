@@ -5,6 +5,12 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+    # Skip CI for dependency-only changes from dependabot to save minutes
+    paths-ignore:
+      - "Cargo.lock"
+      - "package-lock.json"
+      - "**/Cargo.toml"
+      - ".github/workflows/**"
 
 env:
   CARGO_TERM_COLOR: always
@@ -14,6 +20,8 @@ jobs:
   # Rust Core Tests
   rust-test:
     name: Rust Tests
+    # Skip CI for dependabot PRs to save minutes (dependabot runs monthly anyway)
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -61,6 +69,7 @@ jobs:
   # Format Check
   fmt:
     name: Format Check
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -76,6 +85,7 @@ jobs:
   # Clippy Lint
   clippy:
     name: Clippy
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -102,6 +112,7 @@ jobs:
   # Reduced matrix to save minutes - can expand later
   python:
     name: Python Bindings
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -142,6 +153,7 @@ jobs:
   # Reduced matrix to save minutes - can expand later
   nodejs:
     name: Node.js Bindings
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -178,7 +190,7 @@ jobs:
   build-platforms:
     name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    if: (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') && github.actor != 'dependabot[bot]'
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -204,6 +216,7 @@ jobs:
   # Documentation Check
   docs:
     name: Documentation
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -222,6 +235,7 @@ jobs:
   # Security Audit
   security:
     name: Security Audit
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

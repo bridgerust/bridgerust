@@ -5,6 +5,11 @@ on:
   # Integration tests are expensive (Docker, multiple databases)
   push:
     branches: [main]
+    # Skip for dependency-only changes
+    paths-ignore:
+      - "Cargo.lock"
+      - "package-lock.json"
+      - "**/Cargo.toml"
   # Skip on PRs unless manually triggered (use workflow_dispatch)
   workflow_dispatch:
 
