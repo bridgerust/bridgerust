@@ -74,7 +74,6 @@ A high-performance JSON Schema validator.
 
 ```bash
 pip install embex      # For Embex
-pip install bridge-schema # For Schema
 ```
 
 ### Node.js

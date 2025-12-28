@@ -164,7 +164,6 @@ impl Collection {
         result
     }
 
-    /// Deletes the collection.
     #[tracing::instrument(skip(self), fields(collection = %self.name))]
     pub async fn delete_collection(&self) -> Result<()> {
         let _timer = bridge_embex_infrastructure::observability::Timer::start();
@@ -177,7 +176,6 @@ impl Collection {
         result
     }
 
-    /// Inserts a list of points into the collection.
     #[tracing::instrument(skip(self, points), fields(collection = %self.name, count = points.len()))]
     pub async fn insert(&self, points: Vec<Point>) -> Result<()> {
         let timer = bridge_embex_infrastructure::observability::Timer::start();
@@ -190,12 +188,10 @@ impl Collection {
         result
     }
 
-    /// Creates a search builder for querying the collection.
     pub fn search(&self, vector: Vec<f32>) -> SearchBuilder {
         SearchBuilder::new(self.name.clone(), vector, self.db.clone(), self.metrics.clone())
     }
 
-    /// Executes a search query using a `QueryBuilder`.
     #[tracing::instrument(skip(self, builder), fields(collection = %self.name))]
     pub async fn query(&self, builder: QueryBuilder) -> Result<SearchResponse> {
         let timer = bridge_embex_infrastructure::observability::Timer::start();
@@ -208,7 +204,6 @@ impl Collection {
         result
     }
 
-    /// Deletes points from the collection by their IDs.
     #[tracing::instrument(skip(self), fields(collection = %self.name, count = ids.len()))]
     pub async fn delete(&self, ids: Vec<String>) -> Result<()> {
         let timer = bridge_embex_infrastructure::observability::Timer::start();
@@ -221,7 +216,6 @@ impl Collection {
         result
     }
 
-    /// Updates metadata for points in the collection.
     #[tracing::instrument(skip(self), fields(collection = %self.name, count = updates.len()))]
     pub async fn update_metadata(&self, updates: Vec<bridge_embex_core::types::MetadataUpdate>) -> Result<()> {
         let timer = bridge_embex_infrastructure::observability::Timer::start();
@@ -235,7 +229,6 @@ impl Collection {
         result
     }
 
-    /// Creates a query builder for filter-only queries (no vector search).
     pub fn build_query(&self) -> QueryBuilder {
         QueryBuilder::new_filter_only(self.name.clone())
     }

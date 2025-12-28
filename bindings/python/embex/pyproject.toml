@@ -4,13 +4,17 @@ build-backend = "maturin"
 
 [project]
 name = "embex"
+description = "Embex: A Universal Vector Database ORM"
+readme = "README.md"
+version = "0.1.1"
+authors = [{name = "BridgeRust", email = "hello@bridgerust.com"}]
+urls = { Homepage = "https://github.com/bridgerust/bridgerust/embex", Repository = "https://github.com/bridgerust/bridgerust/embex", Issues = "https://github.com/bridgerust/bridgerust/issues" }
 requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
-dynamic = ["version"]
 dependencies = [
     "pydantic>=2.0",
 ]
