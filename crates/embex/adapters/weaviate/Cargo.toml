@@ -13,7 +13,7 @@ bridge-embex-infrastructure = { path = "../../infrastructure", version = "0.1.5"
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
 async-trait = "0.1.89"
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0.147"
+serde_json = "1.0.148"
 tracing = "0.1.44"
 uuid = { version = "1.19", features = ["v4"] }
 anyhow = "1.0.100"

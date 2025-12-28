@@ -13,7 +13,7 @@ bridge-embex-core = { path = "../../core", version = "0.1.5" }
 bridge-embex-infrastructure = { path = "../../infrastructure", version = "0.1.5" }
 qdrant-client = "1.16"
 async-trait = "0.1.89"
-serde_json = "1.0.147"
+serde_json = "1.0.148"
 tracing = "0.1.44"
 
 [dev-dependencies]
