@@ -2,8 +2,8 @@
   "name": "@bridgerust/embex",
   "version": "0.1.0",
   "description": "Embex Vector Database ORM Node.js Bindings",
-  "main": "index.js",
-  "types": "index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "bin": {
     "embex": "./bin/embex.js"
   },
@@ -19,8 +19,8 @@
     ]
   },
   "scripts": {
-    "build": "napi build --platform --release",
-    "build:debug": "napi build --platform",
+    "build": "napi build --platform --release --js native.js --dts native.d.ts && tsc",
+    "build:debug": "napi build --platform --js native.js --dts native.d.ts && tsc",
     "prepublishOnly": "napi prepublish -t npm",
     "artifacts": "napi artifacts",
     "test": "vitest run",

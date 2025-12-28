@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { EmbexClient } from "../../index.js";
+import { Collection, EmbexClient } from "../../index";
 import { randomUUID } from "crypto";
 
 const TEST_DIMENSION = 128;
@@ -16,7 +16,7 @@ function randomVector(dim = TEST_DIMENSION) {
 
 describe("Aggregations", () => {
   let client: EmbexClient;
-  let collection: any;
+  let collection: Collection;
 
   beforeAll(() => {
     client = new EmbexClient("qdrant", "http://localhost:6334");
@@ -58,15 +58,15 @@ describe("Aggregations", () => {
     await collection.create(TEST_DIMENSION, "cosine");
 
     const points = [
-      { id: "a1", vector: randomVector(), metadata: { type: "A" } },
-      { id: "a2", vector: randomVector(), metadata: { type: "A" } },
-      { id: "b1", vector: randomVector(), metadata: { type: "B" } },
+      { id: randomUUID(), vector: randomVector(), metadata: { type: "A" } },
+      { id: randomUUID(), vector: randomVector(), metadata: { type: "A" } },
+      { id: randomUUID(), vector: randomVector(), metadata: { type: "B" } },
     ];
     await collection.insert(points);
 
     const filter = {
       op: "key",
-      args: ["type", { op: "eq", args: "A" }],
+      args: ["type", { eq: "A" }],
     };
 
     const builder = collection.buildSearch(randomVector());
@@ -94,7 +94,7 @@ describe("Aggregations", () => {
 
     const filter = {
       op: "key",
-      args: ["status", { op: "eq", args: "active" }],
+      args: ["status", { eq: "active" }],
     };
 
     const builder = collection.buildQuery();

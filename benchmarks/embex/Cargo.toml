@@ -6,14 +6,14 @@ publish = false
 
 [features]
 default = []
-lancedb = ["bridge-embex/lancedb", "bridge-embex-infrastructure/lancedb"]
-qdrant = ["bridge-embex/qdrant", "bridge-embex-infrastructure/qdrant"]
-weaviate = ["bridge-embex/weaviate", "bridge-embex-infrastructure/weaviate"]
+lancedb = ["bridge-embex/lancedb"]
+qdrant = ["bridge-embex/qdrant"]
+weaviate = ["bridge-embex/weaviate"]
 
 [dependencies]
 bridge-embex = { path = "../../crates/embex/client", features = ["all"] }
 bridge-embex-core = { path = "../../crates/embex/core" }
-bridge-embex-infrastructure = { path = "../../crates/embex/infrastructure", features = ["all"] }
+bridge-embex-infrastructure = { path = "../../crates/embex/infrastructure" }
 bridge-core = { path = "../../crates/core", features = ["simd"] }
 tokio = { version = "1.48", features = ["full", "rt-multi-thread"] }
 criterion = { version = "0.8.1", features = ["async_tokio"] }

@@ -4,7 +4,8 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { EmbexClient } from "../../index.js";
+import { EmbexClient } from "../../index";
+import { randomUUID } from "crypto";
 
 describe("Connection Pooling", () => {
   it("should create client successfully", async () => {
@@ -24,14 +25,11 @@ describe("Connection Pooling", () => {
     } catch (e) {}
     await collection.create(128, "cosine");
 
-    // Perform multiple operations to test connection reuse
     const operations = Array.from({ length: 10 }, async () => {
       const vector = Array.from({ length: 128 }, () => Math.random());
       try {
         await collection.query(vector, { limit: 1 });
-      } catch (e) {
-        // Ignore errors if DB not available
-      }
+      } catch (e) {}
     });
 
     await Promise.all(operations);
@@ -46,21 +44,17 @@ describe("Connection Pooling", () => {
     } catch (e) {}
     await collection.create(128, "cosine");
 
-    // Insert some test data
     const points = Array.from({ length: 5 }, () => ({
-      id: `p${Math.random()}`,
+      id: randomUUID(),
       vector: Array.from({ length: 128 }, () => Math.random()),
     }));
     await collection.insert(points);
 
-    // Make concurrent queries
     const queries = Array.from({ length: 20 }, async () => {
       const vector = Array.from({ length: 128 }, () => Math.random());
       try {
         await collection.query(vector, { limit: 5 });
-      } catch (e) {
-        // Ignore errors if DB not available
-      }
+      } catch (e) {}
     });
 
     await Promise.all(queries);

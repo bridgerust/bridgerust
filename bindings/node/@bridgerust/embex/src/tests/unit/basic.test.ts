@@ -2,7 +2,7 @@
  * Unit tests for basic EmbexClient functionality
  */
 import { describe, it, expect } from "vitest";
-import { EmbexClient } from "../../index";
+import { EmbexClient } from "../../../index";
 
 describe("EmbexClient - Basic", () => {
   it("should be instantiable with valid config", () => {

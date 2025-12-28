@@ -2,13 +2,13 @@
  * Integration tests for batch operations
  */
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { EmbexClient, Point } from "../../index";
+import { Collection, EmbexClient, Point } from "../../index";
 import { randomUUID } from "crypto";
 
 describe("Batch Operations", () => {
   const client = new EmbexClient("qdrant", "http://localhost:6334");
   const collectionName = `batch_test_${randomUUID()}`;
-  let collection;
+  let collection: Collection;
 
   beforeAll(async () => {
     collection = client.collection(collectionName);

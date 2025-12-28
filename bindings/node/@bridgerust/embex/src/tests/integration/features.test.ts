@@ -1,4 +1,4 @@
-import { EmbexClient, Point } from "../index";
+import { EmbexClient, Point } from "../../index";
 import { describe, it } from "vitest";
 
 describe("EmbexClient Features", () => {

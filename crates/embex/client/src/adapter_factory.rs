@@ -17,7 +17,7 @@ use bridge_embex_weaviate::WeaviateAdapter;
 #[cfg(feature = "milvus")]
 use bridge_embex_milvus::MilvusAdapter;
 
-use crate::config::EmbexConfig;
+use bridge_embex_infrastructure::config::EmbexConfig;
 
 /// Factory for creating database adapters from configuration.
 ///
@@ -151,4 +151,3 @@ impl AdapterFactory {
         Self::create(config)
     }
 }
-

@@ -9,20 +9,12 @@ authors.workspace = true
 description = "Infrastructure layer for Embex (observability, retry, config, adapter factory)"
 
 [features]
-default = ["all"]
-all = ["qdrant", "pinecone", "chroma", "lancedb", "pgvector", "weaviate", "milvus"]
-
-# Individual adapters
-qdrant = ["dep:bridge-embex-qdrant"]
-pinecone = ["dep:bridge-embex-pinecone"]
-chroma = ["dep:bridge-embex-chroma"]
-lancedb = ["dep:bridge-embex-lancedb"]
-pgvector = ["dep:bridge-embex-pgvector"]
-weaviate = ["dep:bridge-embex-weaviate"]
-milvus = ["dep:bridge-embex-milvus"]
+default = []
+all = ["lancedb"]
+lancedb = []
 
 [dependencies]
-bridge-embex-core = { path = "../core" }
+bridge-embex-core = { path = "../core", version = "0.1.0" }
 anyhow = "1.0.100"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.147"
@@ -31,14 +23,7 @@ tokio = { version = "1.48", features = ["full"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.22", features = ["env-filter", "fmt"], optional = true }
 
-# Optional adapter crates
-bridge-embex-qdrant = { path = "../adapters/qdrant", optional = true }
-bridge-embex-pinecone = { path = "../adapters/pinecone", optional = true }
-bridge-embex-chroma = { path = "../adapters/chroma", optional = true }
-bridge-embex-lancedb = { path = "../adapters/lancedb", optional = true }
-bridge-embex-pgvector = { path = "../adapters/pgvector", optional = true }
-bridge-embex-weaviate = { path = "../adapters/weaviate", optional = true }
-bridge-embex-milvus = { path = "../adapters/milvus", optional = true }
+# Optional adapter crates removed to break cyclic dependency
 
 [dev-dependencies]
 tokio-test = "0.4.4"

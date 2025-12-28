@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { EmbexClient } from "../../index.js";
+import { EmbexClient } from "../../index";
 import { randomUUID } from "crypto";
 
 const TEST_DIMENSION = 128;
@@ -37,12 +37,12 @@ describe("Metadata Operations", () => {
 
     const points = [
       {
-        id: "m1",
+        id: randomUUID(),
         vector: randomVector(),
         metadata: { name: "test1", value: 42, active: true },
       },
       {
-        id: "m2",
+        id: randomUUID(),
         vector: randomVector(),
         metadata: { name: "test2", value: 100, active: false },
       },
@@ -121,17 +121,17 @@ describe("Metadata Operations", () => {
 
     await collection.insert([
       {
-        id: "q1",
+        id: randomUUID(),
         vector: randomVector(),
         metadata: { category: "tech", rating: 5 },
       },
       {
-        id: "q2",
+        id: randomUUID(),
         vector: randomVector(),
         metadata: { category: "tech", rating: 3 },
       },
       {
-        id: "q3",
+        id: randomUUID(),
         vector: randomVector(),
         metadata: { category: "science", rating: 5 },
       },
@@ -140,8 +140,8 @@ describe("Metadata Operations", () => {
     const filter = {
       op: "must",
       args: [
-        { op: "key", args: ["category", { op: "eq", args: "tech" }] },
-        { op: "key", args: ["rating", { op: "gte", args: 4 }] },
+        { op: "key", args: ["category", { eq: "tech" }] },
+        { op: "key", args: ["rating", { gte: 4 }] },
       ],
     };
 
@@ -164,7 +164,7 @@ describe("Metadata Operations", () => {
 
     await collection.insert([
       {
-        id: "inc1",
+        id: randomUUID(),
         vector: randomVector(),
         metadata: { secret: "data" },
       },

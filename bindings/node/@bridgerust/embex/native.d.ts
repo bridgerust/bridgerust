@@ -71,22 +71,22 @@ export declare class EmbexClient {
 }
 
 export declare class QueryBuilder {
-  limit(limit: number): Promise<QueryBuilder>
-  offset(offset: number): Promise<QueryBuilder>
-  includeVector(include: boolean): Promise<QueryBuilder>
-  includeMetadata(include: boolean): Promise<QueryBuilder>
-  filter(filter: any): Promise<QueryBuilder>
-  aggregation(aggType: string): Promise<QueryBuilder>
+  limit(limit: number): QueryBuilder
+  offset(offset: number): QueryBuilder
+  includeVector(include: boolean): QueryBuilder
+  includeMetadata(include: boolean): QueryBuilder
+  filter(filter: any): QueryBuilder
+  aggregation(aggType: string): QueryBuilder
   execute(): Promise<SearchResponse>
 }
 
 export declare class SearchBuilder {
-  limit(limit: number): Promise<SearchBuilder>
-  offset(offset: number): Promise<SearchBuilder>
-  includeVector(include: boolean): Promise<SearchBuilder>
-  includeMetadata(include: boolean): Promise<SearchBuilder>
-  filter(filter: any): Promise<SearchBuilder>
-  aggregation(aggType: string): Promise<SearchBuilder>
+  limit(limit: number): SearchBuilder
+  offset(offset: number): SearchBuilder
+  includeVector(include: boolean): SearchBuilder
+  includeMetadata(include: boolean): SearchBuilder
+  filter(filter: any): SearchBuilder
+  aggregation(aggType: string): SearchBuilder
   execute(): Promise<SearchResponse>
 }
 

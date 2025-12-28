@@ -1,7 +1,7 @@
 use bridge_embex_core::db::VectorDatabase;
 use bridge_embex_core::error::Result;
 use bridge_embex_core::types::{Aggregation, CollectionSchema, Filter, Point, SearchResponse};
-use bridge_embex_infrastructure::adapter_factory::AdapterFactory;
+use crate::adapter_factory::AdapterFactory;
 use bridge_embex_infrastructure::config::EmbexConfig;
 use bridge_embex_infrastructure::observability::EmbexMetrics;
 use crate::query::QueryBuilder;

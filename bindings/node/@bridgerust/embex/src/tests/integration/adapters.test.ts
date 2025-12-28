@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { EmbexClient } from "../../index.js";
+import { Collection, EmbexClient } from "../../index";
 import { randomUUID } from "crypto";
 import { tmpdir } from "os";
 import { join } from "path";
@@ -25,7 +25,7 @@ function randomVector(dim = TEST_DIMENSION) {
 
 describe("Qdrant Adapter", () => {
   let client;
-  let collection;
+  let collection: Collection;
 
   beforeAll(() => {
     client = new EmbexClient("qdrant", "http://localhost:6334");
@@ -96,17 +96,17 @@ describe("Qdrant Adapter", () => {
 
     const points = [
       {
-        id: "f1",
+        id: randomUUID(),
         vector: randomVector(),
         metadata: { status: "active", score: 10 },
       },
       {
-        id: "f2",
+        id: randomUUID(),
         vector: randomVector(),
         metadata: { status: "inactive", score: 20 },
       },
       {
-        id: "f3",
+        id: randomUUID(),
         vector: randomVector(),
         metadata: { status: "active", score: 30 },
       },
@@ -116,7 +116,7 @@ describe("Qdrant Adapter", () => {
 
     const filter = {
       op: "key",
-      args: ["status", { op: "eq", args: "active" }],
+      args: ["status", { eq: "active" }],
     };
 
     const results = await collection.search(
@@ -193,7 +193,7 @@ describe("Qdrant Adapter", () => {
 
 describe("Chroma Adapter", () => {
   let client;
-  let collection;
+  let collection: Collection;
 
   beforeAll(() => {
     client = new EmbexClient("chroma", "http://localhost:8000");
@@ -243,7 +243,6 @@ describe("Chroma Adapter", () => {
       await collection.deleteCollection();
     } catch (e) {}
 
-    // Create collection without specifying dimension (Chroma will infer)
     await collection.createAuto(undefined, "cosine");
 
     const points = [
@@ -252,7 +251,6 @@ describe("Chroma Adapter", () => {
     ];
     await collection.insert(points);
 
-    // Verify search works
     const results = await collection.query(randomVector(), { limit: 2 });
     expect(results.results.length).toBe(2);
 
@@ -262,7 +260,7 @@ describe("Chroma Adapter", () => {
 
 describe("Weaviate Adapter", () => {
   let client;
-  let collection;
+  let collection: Collection;
 
   beforeAll(() => {
     client = new EmbexClient("weaviate", "http://localhost:8080");
@@ -295,7 +293,7 @@ describe("Weaviate Adapter", () => {
 
 describe("Milvus Adapter", () => {
   let client;
-  let collection;
+  let collection: Collection;
 
   beforeAll(async () => {
     // Milvus requires async initialization
@@ -344,7 +342,7 @@ describe("Milvus Adapter", () => {
 
 describe("pgvector Adapter", () => {
   let client;
-  let collection;
+  let collection: Collection;
 
   beforeAll(async () => {
     // pgvector requires async initialization
@@ -391,7 +389,7 @@ describe("pgvector Adapter", () => {
 
     const filter = {
       op: "key",
-      args: ["status", { op: "eq", args: "active" }],
+      args: ["status", { eq: "active" }],
     };
 
     const results = await collection.search(
@@ -407,11 +405,10 @@ describe("pgvector Adapter", () => {
 
 describe("LanceDB Adapter", () => {
   let client;
-  let collection;
+  let collection: Collection;
   const dbPath = join(tmpdir(), `lancedb_node_test_${Date.now()}`);
 
   beforeAll(async () => {
-    // LanceDB requires async initialization
     client = await EmbexClient.newAsync("lancedb", dbPath);
     collection = client.collection(TEST_COLLECTION);
   });

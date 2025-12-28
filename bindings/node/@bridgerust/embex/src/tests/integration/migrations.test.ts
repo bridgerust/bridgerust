@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { EmbexClient } from "../../index.js";
+import { EmbexClient } from "../../index";
 import { randomUUID } from "crypto";
 
 const TEST_COLLECTION = "embex_migration_test_node";
 const MIGRATION_VERSION = randomUUID();
 
 describe("Migration Adapter", () => {
-  let client;
+  let client: EmbexClient;
 
   beforeAll(() => {
     // Using Qdrant for migration tests as it's reliable

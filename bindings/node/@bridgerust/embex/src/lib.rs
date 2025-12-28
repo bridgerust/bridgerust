@@ -1,6 +1,6 @@
 use napi::bindgen_prelude::*;
 use napi::{Result, Status};
-use tokio::sync::Mutex;
+use std::sync::Mutex;
 use std::sync::Arc;
 use std::collections::HashMap;
 
@@ -220,6 +220,14 @@ impl Collection {
     #[napi]
     pub async fn insert(&self, points: Vec<Point>) -> Result<()> {
         let inner = self.inner.clone();
+        
+        // Validate points
+        for p in &points {
+            if p.vector.is_empty() {
+                return Err(Error::new(Status::InvalidArg, "Vector cannot be empty".to_string()));
+            }
+        }
+
         let rust_points: Vec<RustPoint> = points
             .into_iter()
             .map(|p| RustPoint {
@@ -244,6 +252,12 @@ impl Collection {
 
         if let Some(opts) = options {
             if let Some(l) = opts.limit {
+                if l == 0 {
+                    return Ok(SearchResponse {
+                        results: vec![],
+                        aggregations: HashMap::new(),
+                    });
+                }
                 builder = builder.limit(l as usize);
             }
             if let Some(o) = opts.offset {
@@ -296,6 +310,15 @@ impl Collection {
         include_vector: Option<bool>,
     ) -> Result<SearchResponse> {
         let vec_f32: Vec<f32> = vector.into_iter().map(|v| v as f32).collect();
+        if let Some(k) = top_k {
+            if k == 0 {
+                return Ok(SearchResponse {
+                    results: vec![],
+                    aggregations: HashMap::new(),
+                });
+            }
+        }
+
         let mut builder = self
             .inner
             .search(vec_f32)
@@ -434,6 +457,13 @@ impl Collection {
         let size = batch_size.unwrap_or(1000) as usize;
         let concurrency = parallel.map(|p| p as usize);
 
+        // Validate points
+        for p in &points {
+            if p.vector.is_empty() {
+                return Err(Error::new(Status::InvalidArg, "Vector cannot be empty".to_string()));
+            }
+        }
+
         let rust_points: Vec<RustPoint> = points
             .into_iter()
             .map(|p| RustPoint {
@@ -456,14 +486,14 @@ impl Collection {
 
 #[napi]
 pub struct SearchBuilder {
-    inner: Arc<Mutex<Option<bridge_embex::client::SearchBuilder>>>,
+    inner: Arc<std::sync::Mutex<Option<bridge_embex::client::SearchBuilder>>>,
 }
 
 #[napi]
 impl SearchBuilder {
     #[napi]
-    pub async fn limit(&self, limit: u32) -> Result<Self> {
-        let mut inner = self.inner.lock().await;
+    pub fn limit(&self, limit: u32) -> Result<Self> {
+        let mut inner = self.inner.lock().unwrap();
         if let Some(builder) = inner.take() {
             *inner = Some(builder.limit(limit as usize));
         }
@@ -473,8 +503,8 @@ impl SearchBuilder {
     }
 
     #[napi]
-    pub async fn offset(&self, offset: u32) -> Result<Self> {
-        let mut inner = self.inner.lock().await;
+    pub fn offset(&self, offset: u32) -> Result<Self> {
+        let mut inner = self.inner.lock().unwrap();
         if let Some(builder) = inner.take() {
             *inner = Some(builder.offset(offset as usize));
         }
@@ -484,8 +514,8 @@ impl SearchBuilder {
     }
 
     #[napi]
-    pub async fn include_vector(&self, include: bool) -> Result<Self> {
-        let mut inner = self.inner.lock().await;
+    pub fn include_vector(&self, include: bool) -> Result<Self> {
+        let mut inner = self.inner.lock().unwrap();
         if let Some(builder) = inner.take() {
             *inner = Some(builder.include_vector(include));
         }
@@ -495,8 +525,8 @@ impl SearchBuilder {
     }
 
     #[napi]
-    pub async fn include_metadata(&self, include: bool) -> Result<Self> {
-        let mut inner = self.inner.lock().await;
+    pub fn include_metadata(&self, include: bool) -> Result<Self> {
+        let mut inner = self.inner.lock().unwrap();
         if let Some(builder) = inner.take() {
             *inner = Some(builder.include_metadata(include));
         }
@@ -506,11 +536,11 @@ impl SearchBuilder {
     }
 
     #[napi]
-    pub async fn filter(&self, filter: serde_json::Value) -> Result<Self> {
+    pub fn filter(&self, filter: serde_json::Value) -> Result<Self> {
         let rust_filter: bridge_embex::types::Filter = serde_json::from_value(filter)
             .map_err(|e| Error::from_reason(format!("Invalid filter: {}", e)))?;
 
-        let mut inner = self.inner.lock().await;
+        let mut inner = self.inner.lock().unwrap();
         if let Some(builder) = inner.take() {
             *inner = Some(builder.filter(rust_filter));
         }
@@ -520,7 +550,7 @@ impl SearchBuilder {
     }
 
     #[napi]
-    pub async fn aggregation(&self, agg_type: String) -> Result<Self> {
+    pub fn aggregation(&self, agg_type: String) -> Result<Self> {
         let agg = match agg_type.as_str() {
             "count" => bridge_embex::types::Aggregation::Count,
             _ => {
@@ -531,7 +561,7 @@ impl SearchBuilder {
             }
         };
 
-        let mut inner = self.inner.lock().await;
+        let mut inner = self.inner.lock().unwrap();
         if let Some(builder) = inner.take() {
             *inner = Some(builder.aggregate(agg));
         }
@@ -542,10 +572,13 @@ impl SearchBuilder {
 
     #[napi]
     pub async fn execute(&self) -> Result<SearchResponse> {
-        let mut inner = self.inner.lock().await;
-        let builder = inner
-            .take()
-            .ok_or_else(|| Error::from_reason("Search already executed"))?;
+        // Clone the builder out of the mutex so we don't hold the lock across the await
+        let builder = {
+            let mut inner = self.inner.lock().unwrap();
+            inner
+                .take()
+                .ok_or_else(|| Error::from_reason("Search already executed"))?
+        };
 
         let res = builder.execute().await.map_err(to_napi_err)?;
 
@@ -568,14 +601,14 @@ impl SearchBuilder {
 #[napi]
 pub struct QueryBuilder {
     collection_inner: bridge_embex::client::Collection,
-    inner: Arc<Mutex<Option<RustQueryBuilder>>>,
+    inner: Arc<std::sync::Mutex<Option<RustQueryBuilder>>>,
 }
 
 #[napi]
 impl QueryBuilder {
     #[napi]
-    pub async fn limit(&self, limit: u32) -> Result<Self> {
-        let mut inner = self.inner.lock().await;
+    pub fn limit(&self, limit: u32) -> Result<Self> {
+        let mut inner = self.inner.lock().unwrap();
         if let Some(builder) = inner.take() {
             *inner = Some(builder.limit(limit as usize));
         }
@@ -586,8 +619,8 @@ impl QueryBuilder {
     }
 
     #[napi]
-    pub async fn offset(&self, offset: u32) -> Result<Self> {
-        let mut inner = self.inner.lock().await;
+    pub fn offset(&self, offset: u32) -> Result<Self> {
+        let mut inner = self.inner.lock().unwrap();
         if let Some(builder) = inner.take() {
             *inner = Some(builder.offset(offset as usize));
         }
@@ -598,8 +631,8 @@ impl QueryBuilder {
     }
 
     #[napi]
-    pub async fn include_vector(&self, include: bool) -> Result<Self> {
-        let mut inner = self.inner.lock().await;
+    pub fn include_vector(&self, include: bool) -> Result<Self> {
+        let mut inner = self.inner.lock().unwrap();
         if let Some(builder) = inner.take() {
             *inner = Some(builder.include_vector(include));
         }
@@ -610,8 +643,8 @@ impl QueryBuilder {
     }
 
     #[napi]
-    pub async fn include_metadata(&self, include: bool) -> Result<Self> {
-        let mut inner = self.inner.lock().await;
+    pub fn include_metadata(&self, include: bool) -> Result<Self> {
+        let mut inner = self.inner.lock().unwrap();
         if let Some(builder) = inner.take() {
             *inner = Some(builder.include_metadata(include));
         }
@@ -622,11 +655,11 @@ impl QueryBuilder {
     }
 
     #[napi]
-    pub async fn filter(&self, filter: serde_json::Value) -> Result<Self> {
+    pub fn filter(&self, filter: serde_json::Value) -> Result<Self> {
         let rust_filter: bridge_embex::types::Filter = serde_json::from_value(filter)
             .map_err(|e| Error::from_reason(format!("Invalid filter: {}", e)))?;
 
-        let mut inner = self.inner.lock().await;
+        let mut inner = self.inner.lock().unwrap();
         if let Some(builder) = inner.take() {
             *inner = Some(builder.filter(rust_filter));
         }
@@ -637,7 +670,7 @@ impl QueryBuilder {
     }
 
     #[napi]
-    pub async fn aggregation(&self, agg_type: String) -> Result<Self> {
+    pub fn aggregation(&self, agg_type: String) -> Result<Self> {
         let agg = match agg_type.as_str() {
             "count" => bridge_embex::types::Aggregation::Count,
             _ => {
@@ -648,7 +681,7 @@ impl QueryBuilder {
             }
         };
 
-        let mut inner = self.inner.lock().await;
+        let mut inner = self.inner.lock().unwrap();
         if let Some(builder) = inner.take() {
             *inner = Some(builder.aggregate(agg));
         }
@@ -660,10 +693,13 @@ impl QueryBuilder {
 
     #[napi]
     pub async fn execute(&self) -> Result<SearchResponse> {
-        let mut inner = self.inner.lock().await;
-        let builder = inner
-            .take()
-            .ok_or_else(|| Error::from_reason("Query already executed"))?;
+        // Clone the data we need so we don't hold the lock across the await
+        let builder = {
+            let mut inner = self.inner.lock().unwrap();
+            inner
+                .take()
+                .ok_or_else(|| Error::from_reason("Query already executed"))?
+        };
 
         let res = self
             .collection_inner

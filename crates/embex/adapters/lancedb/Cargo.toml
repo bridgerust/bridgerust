@@ -9,7 +9,8 @@ authors.workspace = true
 description = "LanceDB adapter for Embex Vector ORM"
 
 [dependencies]
-bridge-embex-core = { path = "../../core" }
+bridge-embex-core = { path = "../../core", version = "0.1.0" }
+bridge-embex-infrastructure = { path = "../../infrastructure", version = "0.1.0" }
 lancedb = "0.23"
 arrow-array = "56"
 arrow-schema = "56"

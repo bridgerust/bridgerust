@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { EmbexClient } from "../../index.js";
+import { EmbexClient } from "../../index";
 
 describe("API Parity with Python", () => {
   it("should support all core methods", () => {
