@@ -5,7 +5,6 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
-    # Skip CI for dependency-only changes to save minutes
     paths-ignore:
       - "Cargo.lock"
       - "package-lock.json"
@@ -17,7 +16,6 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
-  # Rust Core Tests
   rust-test:
     name: Rust Tests
     runs-on: ubuntu-latest
@@ -31,6 +29,10 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
+
+      - name: Install protobuf compiler
+        # LanceDB requires protoc for building
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
 
       - name: Cache Cargo registry
         uses: actions/cache@v4
@@ -64,7 +66,6 @@ jobs:
         if: matrix.features == 'simd' || matrix.features == 'all'
         run: cargo test --workspace --features ${{ matrix.features }} --lib
 
-  # Format Check
   fmt:
     name: Format Check
     runs-on: ubuntu-latest
@@ -79,7 +80,6 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
 
-  # Clippy Lint
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
@@ -90,6 +90,10 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
+
+      - name: Install protobuf compiler
+        # LanceDB requires protoc for building
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
 
       - name: Cache Cargo registry
         uses: actions/cache@v4
@@ -104,14 +108,12 @@ jobs:
       - name: Clippy check
         run: cargo clippy --workspace --all-features -- -D warnings
 
-  # Python Bindings
-  # Reduced matrix to save minutes - can expand later
   python:
     name: Python Bindings
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.12"] # Reduced from 4 to 2 versions
+        python-version: ["3.10", "3.12"]
     steps:
       - uses: actions/checkout@v4
 
@@ -124,7 +126,6 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install protobuf compiler
-        # LanceDB requires protoc for building
         run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
 
       - name: Install maturin
@@ -144,14 +145,12 @@ jobs:
           pip install pytest pytest-asyncio
           pytest tests/ -v
 
-  # Node.js Bindings
-  # Reduced matrix to save minutes - can expand later
   nodejs:
     name: Node.js Bindings
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ["20", "22"] # Reduced from 3 to 2 versions
+        node-version: ["20", "22"]
     steps:
       - uses: actions/checkout@v4
 
@@ -162,6 +161,10 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+
+      - name: Install protobuf compiler
+        # LanceDB requires protoc for building
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
 
       - name: Install dependencies
         working-directory: bindings/node/@bridgerust/embex
@@ -179,8 +182,6 @@ jobs:
         working-directory: bindings/node/@bridgerust/embex
         run: npm run test:integration || echo "Integration tests skipped (no databases)"
 
-  # Multi-platform Build
-  # Only run on main branch to save minutes
   build-platforms:
     name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -193,6 +194,17 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+
+      - name: Install protobuf compiler
+        # LanceDB requires protoc for building
+        run: |
+          if [ "${{ runner.os }}" = "Linux" ]; then
+            sudo apt-get update && sudo apt-get install -y protobuf-compiler
+          elif [ "${{ runner.os }}" = "macOS" ]; then
+            brew install protobuf || echo "protobuf may already be installed"
+          elif [ "${{ runner.os }}" = "Windows" ]; then
+            choco install protoc -y || echo "protoc may already be installed"
+          fi
 
       - name: Cache Cargo registry
         uses: actions/cache@v4
@@ -207,7 +219,6 @@ jobs:
       - name: Build all crates
         run: cargo build --workspace --features all --release
 
-  # Documentation Check
   docs:
     name: Documentation
     runs-on: ubuntu-latest
@@ -217,15 +228,17 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Install protobuf compiler
+        # LanceDB requires protoc for building
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+
       - name: Build documentation
         run: cargo doc --workspace --features all --no-deps
 
       - name: Check for broken links (if linkchecker available)
         run: |
           echo "Documentation built successfully"
-          # Add link checking if needed
 
-  # Security Audit
   security:
     name: Security Audit
     runs-on: ubuntu-latest
@@ -240,4 +253,4 @@ jobs:
 
       - name: Run security audit
         run: cargo audit
-        continue-on-error: true # Don't fail on warnings
+        continue-on-error: true

@@ -19,6 +19,10 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Install protobuf compiler
+        # LanceDB requires protoc for building
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+
       - name: Install criterion
         run: cargo install cargo-criterion
 
