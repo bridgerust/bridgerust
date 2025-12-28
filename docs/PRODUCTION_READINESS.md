@@ -42,7 +42,7 @@
 1. **Version Numbers**
 
    - [ ] Verify npm version matches PyPI version
-   - [ ] Ensure version > 0.1.0 (currently 0.1.4)
+   - [ ] Ensure version is ok
    - [ ] Update CHANGELOG.md with recent changes
 
 2. **Examples Verification**
