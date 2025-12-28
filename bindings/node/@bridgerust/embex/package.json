@@ -1,6 +1,6 @@
 {
   "name": "@bridgerust/embex",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Embex Vector Database ORM Node.js Bindings",
   "homepage": "https://github.com/bridgerust/bridgerust/embex",
   "repository": {

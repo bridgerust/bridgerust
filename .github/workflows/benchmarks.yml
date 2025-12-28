@@ -1,13 +1,11 @@
 name: Benchmarks
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  # Benchmarks are expensive - only run manually or on schedule
+  # Removed push/PR triggers to save minutes
   schedule:
-    # Run benchmarks weekly on Sunday
-    - cron: "0 0 * * 0"
+    # Run benchmarks monthly on first Sunday to save minutes
+    - cron: "0 0 1 * 0" # Changed from weekly to monthly
   workflow_dispatch:
 
 env:

@@ -89,12 +89,13 @@ jobs:
         run: cargo clippy --workspace --all-features -- -D warnings
 
   # Python Bindings
+  # Reduced matrix to save minutes - can expand later
   python:
     name: Python Bindings
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.12"] # Reduced from 4 to 2 versions
     steps:
       - uses: actions/checkout@v4
 
@@ -124,12 +125,13 @@ jobs:
           pytest tests/ -v
 
   # Node.js Bindings
+  # Reduced matrix to save minutes - can expand later
   nodejs:
     name: Node.js Bindings
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ["18", "20", "22"]
+        node-version: ["20", "22"] # Reduced from 3 to 2 versions
     steps:
       - uses: actions/checkout@v4
 
@@ -158,9 +160,11 @@ jobs:
         run: npm run test:integration || echo "Integration tests skipped (no databases)"
 
   # Multi-platform Build
+  # Only run on main branch to save minutes
   build-platforms:
     name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]

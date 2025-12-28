@@ -1,11 +1,13 @@
 version: 2
 updates:
   # Rust dependencies
+  # Note: Reduced frequency to monthly to save GitHub Actions minutes
+  # Dependabot PRs trigger CI workflows, which can be expensive
   - package-ecosystem: "cargo"
     directory: "/"
     schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 10
+      interval: "monthly" # Changed from weekly to monthly
+    open-pull-requests-limit: 5 # Reduced from 10
     labels:
       - "dependencies"
       - "rust"
@@ -15,10 +17,10 @@ updates:
 
   # Python dependencies
   - package-ecosystem: "pip"
-    directory: "/bindings/python/kabod"
+    directory: "/bindings/python/embex"
     schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
+      interval: "monthly" # Changed from weekly to monthly
+    open-pull-requests-limit: 3 # Reduced from 5
     labels:
       - "dependencies"
       - "python"
@@ -28,10 +30,10 @@ updates:
 
   # Node.js dependencies
   - package-ecosystem: "npm"
-    directory: "/bindings/node/@bridgerust/kabod"
+    directory: "/bindings/node/@bridgerust/embex"
     schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
+      interval: "monthly" # Changed from weekly to monthly
+    open-pull-requests-limit: 3 # Reduced from 5
     labels:
       - "dependencies"
       - "nodejs"
@@ -40,11 +42,12 @@ updates:
       include: "scope"
 
   # GitHub Actions
+  # Keep weekly for security updates to CI/CD tools
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3 # Reduced from 5
     labels:
       - "dependencies"
       - "ci/cd"
