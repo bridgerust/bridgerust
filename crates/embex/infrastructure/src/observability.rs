@@ -1,5 +1,5 @@
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
 /// Metrics for Embex operations
@@ -45,17 +45,20 @@ impl EmbexMetrics {
 
     pub fn record_insert(&self, latency_ms: u64) {
         self.inserts.fetch_add(1, Ordering::Relaxed);
-        self.insert_latency_ms.fetch_add(latency_ms, Ordering::Relaxed);
+        self.insert_latency_ms
+            .fetch_add(latency_ms, Ordering::Relaxed);
     }
 
     pub fn record_search(&self, latency_ms: u64) {
         self.searches.fetch_add(1, Ordering::Relaxed);
-        self.search_latency_ms.fetch_add(latency_ms, Ordering::Relaxed);
+        self.search_latency_ms
+            .fetch_add(latency_ms, Ordering::Relaxed);
     }
 
     pub fn record_delete(&self, latency_ms: u64) {
         self.deletes.fetch_add(1, Ordering::Relaxed);
-        self.delete_latency_ms.fetch_add(latency_ms, Ordering::Relaxed);
+        self.delete_latency_ms
+            .fetch_add(latency_ms, Ordering::Relaxed);
     }
 
     pub fn record_create(&self) {
@@ -156,7 +159,8 @@ impl MetricsSnapshot {
         if total_ops == 0 {
             return 0.0;
         }
-        let total_latency = self.insert_latency_ms + self.search_latency_ms + self.delete_latency_ms;
+        let total_latency =
+            self.insert_latency_ms + self.search_latency_ms + self.delete_latency_ms;
         total_latency as f64 / total_ops as f64
     }
 }
@@ -184,11 +188,10 @@ impl Timer {
 #[cfg(feature = "tracing-subscriber")]
 pub fn init_tracing() {
     use tracing_subscriber::{
-        fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Registry,
+        EnvFilter, Registry, fmt, layer::SubscriberExt, util::SubscriberInitExt,
     };
 
-    let filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| EnvFilter::new("info"));
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
 
     Registry::default()
         .with(filter)
@@ -209,11 +212,11 @@ mod tests {
     #[test]
     fn test_metrics_recording() {
         let metrics = EmbexMetrics::new();
-        
+
         metrics.record_insert(10);
         metrics.record_search(20);
         metrics.record_error();
-        
+
         let snapshot = metrics.snapshot();
         assert_eq!(snapshot.inserts, 1);
         assert_eq!(snapshot.searches, 1);
@@ -230,4 +233,3 @@ mod tests {
         assert!(elapsed >= 10);
     }
 }
-

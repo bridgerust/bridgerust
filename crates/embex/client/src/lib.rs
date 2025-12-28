@@ -10,8 +10,10 @@ pub use bridge_embex_core::types::{self, *};
 
 // Re-export infrastructure types
 pub use bridge_embex_infrastructure::config::{self, ConfigError, EmbexConfig};
-pub use bridge_embex_infrastructure::observability::{init_tracing, EmbexMetrics, MetricsSnapshot, Timer};
-pub use bridge_embex_infrastructure::retry::{retry_with_backoff, RetryConfig};
+pub use bridge_embex_infrastructure::observability::{
+    EmbexMetrics, MetricsSnapshot, Timer, init_tracing,
+};
+pub use bridge_embex_infrastructure::retry::{RetryConfig, retry_with_backoff};
 
 // Re-export application layer
 pub use client::EmbexClient;

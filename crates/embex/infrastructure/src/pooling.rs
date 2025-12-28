@@ -63,7 +63,7 @@ pub fn get_pooling_status(provider: &str) -> PoolingStatus {
             idle_timeout_secs: 90,
         },
         "qdrant" => PoolingStatus::Default, // Uses qdrant-client's internal pooling
-        "chroma" => PoolingStatus::Default,  // Uses chroma crate's internal pooling
+        "chroma" => PoolingStatus::Default, // Uses chroma crate's internal pooling
         "lancedb" => PoolingStatus::NotApplicable, // Embedded, no pooling needed
         _ => PoolingStatus::Default,
     }
@@ -84,8 +84,11 @@ mod tests {
         let providers = vec!["pinecone", "milvus", "weaviate"];
         for provider in providers {
             let status = get_pooling_status(provider);
-            assert!(matches!(status, PoolingStatus::Configurable { .. }), 
-                "Provider {} should have configurable pooling", provider);
+            assert!(
+                matches!(status, PoolingStatus::Configurable { .. }),
+                "Provider {} should have configurable pooling",
+                provider
+            );
         }
     }
 
@@ -93,7 +96,7 @@ mod tests {
     fn test_pooling_status_internal_clients() {
         let status_qdrant = get_pooling_status("qdrant");
         assert_eq!(status_qdrant, PoolingStatus::Default);
-        
+
         let status_chroma = get_pooling_status("chroma");
         assert_eq!(status_chroma, PoolingStatus::Default);
     }
@@ -104,4 +107,3 @@ mod tests {
         assert_eq!(status, PoolingStatus::NotApplicable);
     }
 }
-

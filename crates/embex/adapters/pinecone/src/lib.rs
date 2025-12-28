@@ -108,7 +108,7 @@ mod tests {
     fn test_pinecone_adapter_new() {
         let adapter = PineconeAdapter::new("test-key", None, None, None);
         assert!(adapter.is_ok());
-        
+
         let adapter = adapter.unwrap();
         assert_eq!(adapter.api_key, "test-key");
         assert_eq!(adapter.namespace, "");
@@ -122,10 +122,10 @@ mod tests {
             "test-key",
             Some("gcp"),
             Some("us-west1"),
-            Some("my-namespace")
+            Some("my-namespace"),
         );
         assert!(adapter.is_ok());
-        
+
         let adapter = adapter.unwrap();
         assert_eq!(adapter.cloud, "gcp");
         assert_eq!(adapter.region, "us-west1");
@@ -136,7 +136,7 @@ mod tests {
     fn test_control_headers() {
         let adapter = PineconeAdapter::new("test-key", None, None, None).unwrap();
         let headers = adapter.control_headers();
-        
+
         assert!(headers.contains_key("Api-Key"));
         assert!(headers.contains_key("X-Pinecone-API-Version"));
         assert!(headers.contains_key("Content-Type"));
@@ -146,7 +146,7 @@ mod tests {
     fn test_data_headers() {
         let adapter = PineconeAdapter::new("test-key", None, None, None).unwrap();
         let headers = adapter.data_headers();
-        
+
         assert!(headers.contains_key("Api-Key"));
         assert!(headers.contains_key("X-Pinecone-API-Version"));
     }

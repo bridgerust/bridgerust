@@ -1,10 +1,10 @@
+use crate::adapter_factory::AdapterFactory;
+use crate::query::QueryBuilder;
 use bridge_embex_core::db::VectorDatabase;
 use bridge_embex_core::error::Result;
 use bridge_embex_core::types::{Aggregation, CollectionSchema, Filter, Point, SearchResponse};
-use crate::adapter_factory::AdapterFactory;
 use bridge_embex_infrastructure::config::EmbexConfig;
 use bridge_embex_infrastructure::observability::EmbexMetrics;
-use crate::query::QueryBuilder;
 use std::sync::Arc;
 
 /// Main client for interacting with the Embex vector database.
@@ -105,7 +105,7 @@ impl Collection {
     /// Creates a new collection with the given schema.
     #[tracing::instrument(skip(self, schema), fields(collection = %self.name, dimension = schema.dimension))]
     pub async fn create(&self, schema: CollectionSchema) -> Result<()> {
-       let _timer = bridge_embex_infrastructure::observability::Timer::start();
+        let _timer = bridge_embex_infrastructure::observability::Timer::start();
         let result = self.db.create_collection(&schema).await;
         if result.is_ok() {
             self.metrics.record_create();
@@ -146,15 +146,15 @@ impl Collection {
         metric: bridge_embex_core::types::DistanceMetric,
     ) -> Result<()> {
         let _timer = bridge_embex_infrastructure::observability::Timer::start();
-        
+
         let dimension = dimension.unwrap_or(0);
-        
+
         let schema = CollectionSchema {
             name: self.name.clone(),
             dimension,
             metric,
         };
-        
+
         let result = self.db.create_collection(&schema).await;
         if result.is_ok() {
             self.metrics.record_create();
@@ -189,7 +189,12 @@ impl Collection {
     }
 
     pub fn search(&self, vector: Vec<f32>) -> SearchBuilder {
-        SearchBuilder::new(self.name.clone(), vector, self.db.clone(), self.metrics.clone())
+        SearchBuilder::new(
+            self.name.clone(),
+            vector,
+            self.db.clone(),
+            self.metrics.clone(),
+        )
     }
 
     #[tracing::instrument(skip(self, builder), fields(collection = %self.name))]
@@ -217,7 +222,10 @@ impl Collection {
     }
 
     #[tracing::instrument(skip(self), fields(collection = %self.name, count = updates.len()))]
-    pub async fn update_metadata(&self, updates: Vec<bridge_embex_core::types::MetadataUpdate>) -> Result<()> {
+    pub async fn update_metadata(
+        &self,
+        updates: Vec<bridge_embex_core::types::MetadataUpdate>,
+    ) -> Result<()> {
         let timer = bridge_embex_infrastructure::observability::Timer::start();
         let result = self.db.update_metadata(&self.name, updates).await;
         if result.is_ok() {
@@ -307,7 +315,12 @@ pub struct SearchBuilder {
 }
 
 impl SearchBuilder {
-    pub fn new(collection: String, vector: Vec<f32>, db: Arc<dyn VectorDatabase>, metrics: Arc<EmbexMetrics>) -> Self {
+    pub fn new(
+        collection: String,
+        vector: Vec<f32>,
+        db: Arc<dyn VectorDatabase>,
+        metrics: Arc<EmbexMetrics>,
+    ) -> Self {
         Self {
             inner: QueryBuilder::new(collection, vector),
             db,

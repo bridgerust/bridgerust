@@ -2,20 +2,20 @@ use bridge_embex_core::db::VectorDatabase;
 use bridge_embex_core::error::Result;
 use std::sync::Arc;
 
-#[cfg(feature = "qdrant")]
-use bridge_embex_qdrant::QdrantAdapter;
-#[cfg(feature = "pinecone")]
-use bridge_embex_pinecone::PineconeAdapter;
 #[cfg(feature = "chroma")]
 use bridge_embex_chroma::ChromaAdapter;
 #[cfg(feature = "lancedb")]
 use bridge_embex_lancedb::LanceDBAdapter;
-#[cfg(feature = "pgvector")]
-use bridge_embex_pgvector::PgVectorAdapter;
-#[cfg(feature = "weaviate")]
-use bridge_embex_weaviate::WeaviateAdapter;
 #[cfg(feature = "milvus")]
 use bridge_embex_milvus::MilvusAdapter;
+#[cfg(feature = "pgvector")]
+use bridge_embex_pgvector::PgVectorAdapter;
+#[cfg(feature = "pinecone")]
+use bridge_embex_pinecone::PineconeAdapter;
+#[cfg(feature = "qdrant")]
+use bridge_embex_qdrant::QdrantAdapter;
+#[cfg(feature = "weaviate")]
+use bridge_embex_weaviate::WeaviateAdapter;
 
 use bridge_embex_infrastructure::config::EmbexConfig;
 
@@ -73,7 +73,9 @@ impl AdapterFactory {
                     Some(config.pool_size),
                 )?)
             } else {
-                Arc::new(ChromaAdapter::from_env_with_pool_size(Some(config.pool_size))?)
+                Arc::new(ChromaAdapter::from_env_with_pool_size(Some(
+                    config.pool_size,
+                ))?)
             };
             return Ok(db);
         }
@@ -133,18 +135,18 @@ impl AdapterFactory {
                 .get("pool_size")
                 .and_then(|s| s.parse().ok())
                 .or(Some(config.pool_size));
-            return Ok(Arc::new(PgVectorAdapter::new(&config.url, pool_size).await?));
+            return Ok(Arc::new(
+                PgVectorAdapter::new(&config.url, pool_size).await?,
+            ));
         }
 
         #[cfg(feature = "milvus")]
         if config.provider == "milvus" {
             let token = config.api_key.as_deref();
-            return Ok(Arc::new(MilvusAdapter::new_with_pool_size(
-                &config.url,
-                token,
-                Some(config.pool_size),
-            )
-            .await?));
+            return Ok(Arc::new(
+                MilvusAdapter::new_with_pool_size(&config.url, token, Some(config.pool_size))
+                    .await?,
+            ));
         }
 
         // Fallback to sync init for other providers

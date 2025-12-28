@@ -11,7 +11,7 @@ impl ConfigError {
     pub fn new(msg: String) -> Self {
         Self(msg)
     }
-    
+
     pub fn message(msg: impl Into<String>) -> Self {
         Self(msg.into())
     }

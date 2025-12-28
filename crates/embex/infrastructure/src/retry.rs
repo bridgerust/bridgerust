@@ -57,7 +57,7 @@ where
             Err(e) => {
                 let is_retryable = e.is_retryable();
                 let error_msg = e.to_string();
-                
+
                 if !is_retryable {
                     return Err(e);
                 }
@@ -67,9 +67,7 @@ where
                 if attempt < config.max_retries {
                     sleep(delay).await;
                     delay = std::cmp::min(
-                        Duration::from_secs_f64(
-                            delay.as_secs_f64() * config.backoff_multiplier,
-                        ),
+                        Duration::from_secs_f64(delay.as_secs_f64() * config.backoff_multiplier),
                         config.max_delay,
                     );
                 }
@@ -77,9 +75,8 @@ where
         }
     }
 
-    Err(last_error.unwrap_or_else(|| {
-        EmbexError::Other(anyhow::anyhow!("Retry exhausted without error"))
-    }))
+    Err(last_error
+        .unwrap_or_else(|| EmbexError::Other(anyhow::anyhow!("Retry exhausted without error"))))
 }
 
 #[cfg(test)]
@@ -175,4 +172,3 @@ mod tests {
         assert_eq!(call_count.load(Ordering::SeqCst), 3);
     }
 }
-

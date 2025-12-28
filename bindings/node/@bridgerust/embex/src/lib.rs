@@ -1,12 +1,12 @@
 use napi::bindgen_prelude::*;
 use napi::{Result, Status};
-use std::sync::Mutex;
-use std::sync::Arc;
 use std::collections::HashMap;
+use std::sync::Arc;
+use std::sync::Mutex;
 
 use bridge_embex::{
-    config::EmbexConfig, types::Point as RustPoint, EmbexClient as RustClient,
-    QueryBuilder as RustQueryBuilder, Migration, MigrationManager, VectorDatabase,
+    config::EmbexConfig, types::Point as RustPoint, EmbexClient as RustClient, Migration,
+    MigrationManager, QueryBuilder as RustQueryBuilder, VectorDatabase,
 };
 
 use napi_derive::napi;
@@ -25,8 +25,12 @@ fn to_napi_err(err: bridge_embex::error::EmbexError) -> Error {
 #[derive(serde::Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum MigrationOp {
-    CreateCollection { schema: bridge_embex::types::CollectionSchema },
-    DeleteCollection { name: String },
+    CreateCollection {
+        schema: bridge_embex::types::CollectionSchema,
+    },
+    DeleteCollection {
+        name: String,
+    },
 }
 
 pub struct DeclarativeMigrationAdapter {
@@ -92,10 +96,12 @@ impl EmbexClient {
     /// @param apiKey - Optional API key.
     #[napi(constructor)]
     pub fn new(provider: String, url: String, api_key: Option<String>) -> Result<Self> {
-        let mut config = EmbexConfig::default();
-        config.provider = provider;
-        config.url = url;
-        config.api_key = api_key;
+        let config = EmbexConfig {
+            provider,
+            url,
+            api_key,
+            ..Default::default()
+        };
 
         let client = RustClient::new(config).map_err(to_napi_err)?;
 
@@ -110,10 +116,12 @@ impl EmbexClient {
     /// @param apiKey - Optional API key.
     #[napi(factory)]
     pub async fn new_async(provider: String, url: String, api_key: Option<String>) -> Result<Self> {
-        let mut config = EmbexConfig::default();
-        config.provider = provider;
-        config.url = url;
-        config.api_key = api_key;
+        let config = EmbexConfig {
+            provider,
+            url,
+            api_key,
+            ..Default::default()
+        };
 
         let client = RustClient::new_async(config).await.map_err(to_napi_err)?;
 
@@ -144,12 +152,17 @@ impl EmbexClient {
 
         for m in migrations {
             let version = m.version;
-            
-            let up_ops: Vec<MigrationOp> = serde_json::from_value(m.operations.unwrap_or(serde_json::Value::Null))
-                .map_err(|e| Error::new(Status::InvalidArg, format!("Invalid operations: {}", e)))?;
 
-            let down_ops: Vec<MigrationOp> = serde_json::from_value(m.down_operations.unwrap_or(serde_json::Value::Null))
-                .map_err(|e| Error::new(Status::InvalidArg, format!("Invalid downOperations: {}", e)))?;
+            let up_ops: Vec<MigrationOp> = serde_json::from_value(
+                m.operations.unwrap_or(serde_json::Value::Null),
+            )
+            .map_err(|e| Error::new(Status::InvalidArg, format!("Invalid operations: {}", e)))?;
+
+            let down_ops: Vec<MigrationOp> =
+                serde_json::from_value(m.down_operations.unwrap_or(serde_json::Value::Null))
+                    .map_err(|e| {
+                        Error::new(Status::InvalidArg, format!("Invalid downOperations: {}", e))
+                    })?;
 
             rust_migrations.push(Box::new(DeclarativeMigrationAdapter {
                 version,
@@ -220,11 +233,14 @@ impl Collection {
     #[napi]
     pub async fn insert(&self, points: Vec<Point>) -> Result<()> {
         let inner = self.inner.clone();
-        
+
         // Validate points
         for p in &points {
             if p.vector.is_empty() {
-                return Err(Error::new(Status::InvalidArg, "Vector cannot be empty".to_string()));
+                return Err(Error::new(
+                    Status::InvalidArg,
+                    "Vector cannot be empty".to_string(),
+                ));
             }
         }
 
@@ -460,7 +476,10 @@ impl Collection {
         // Validate points
         for p in &points {
             if p.vector.is_empty() {
-                return Err(Error::new(Status::InvalidArg, "Vector cannot be empty".to_string()));
+                return Err(Error::new(
+                    Status::InvalidArg,
+                    "Vector cannot be empty".to_string(),
+                ));
             }
         }
 
@@ -725,5 +744,7 @@ impl QueryBuilder {
 
 #[napi]
 pub async fn cli(args: Vec<String>) -> Result<()> {
-    embex_cli::run(args).await.map_err(|e| Error::from_reason(e.to_string()))
+    embex_cli::run(args)
+        .await
+        .map_err(|e| Error::from_reason(e.to_string()))
 }

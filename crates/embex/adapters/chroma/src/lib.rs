@@ -61,7 +61,7 @@ impl VectorDatabase for ChromaAdapter {
         // If dimension is 0, it means "infer from first insert" (used by create_auto with None).
         // Otherwise, we still ignore it since Chroma doesn't require it at creation time.
         let _dimension = schema.dimension;
-        
+
         // Note: Chroma doesn't expose distance metric at collection creation time,
         // it's configured via metadata or inferred. We store it for reference but don't use it.
         let _distance = match schema.metric {
@@ -366,10 +366,8 @@ fn convert_to_update_metadata_value(value: serde_json::Value) -> Option<UpdateMe
         serde_json::Value::Number(n) => {
             if let Some(i) = n.as_i64() {
                 Some(chroma::types::UpdateMetadataValue::Int(i))
-            } else if let Some(f) = n.as_f64() {
-                Some(chroma::types::UpdateMetadataValue::Float(f))
             } else {
-                None
+                n.as_f64().map(chroma::types::UpdateMetadataValue::Float)
             }
         }
         serde_json::Value::Bool(b) => Some(chroma::types::UpdateMetadataValue::Bool(b)),
@@ -379,6 +377,8 @@ fn convert_to_update_metadata_value(value: serde_json::Value) -> Option<UpdateMe
 
 #[cfg(test)]
 mod tests {
+    use std::f64::consts::PI;
+
     use super::*;
     use bridge_embex_core::types::Filter;
     use serde_json::json;
@@ -439,10 +439,7 @@ mod tests {
 
     #[test]
     fn test_convert_filter_must() {
-        let filter = Filter::must(vec![
-            Filter::eq("a", 1),
-            Filter::eq("b", 2),
-        ]);
+        let filter = Filter::must(vec![Filter::eq("a", 1), Filter::eq("b", 2)]);
         let chroma_filter = convert_filter(&filter);
         match chroma_filter {
             chroma::types::Where::Composite(expr) => {
@@ -455,10 +452,7 @@ mod tests {
 
     #[test]
     fn test_convert_filter_should() {
-        let filter = Filter::should(vec![
-            Filter::eq("a", 1),
-            Filter::eq("b", 2),
-        ]);
+        let filter = Filter::should(vec![Filter::eq("a", 1), Filter::eq("b", 2)]);
         let chroma_filter = convert_filter(&filter);
         match chroma_filter {
             chroma::types::Where::Composite(expr) => {
@@ -488,10 +482,10 @@ mod tests {
             _ => panic!("Expected Int value"),
         }
 
-        let float_value = json!(3.14);
+        let float_value = json!(PI);
         let chroma_float = convert_value(&float_value);
         match chroma_float {
-            chroma::types::MetadataValue::Float(f) => assert!((f - 3.14).abs() < 0.001),
+            chroma::types::MetadataValue::Float(f) => assert!((f - PI).abs() < 0.001),
             _ => panic!("Expected Float value"),
         }
     }
@@ -546,7 +540,7 @@ mod tests {
     fn test_convert_to_update_metadata_value() {
         assert!(convert_to_update_metadata_value(json!("test")).is_some());
         assert!(convert_to_update_metadata_value(json!(42)).is_some());
-        assert!(convert_to_update_metadata_value(json!(3.14)).is_some());
+        assert!(convert_to_update_metadata_value(json!(PI)).is_some());
         assert!(convert_to_update_metadata_value(json!(true)).is_some());
         assert!(convert_to_update_metadata_value(json!(null)).is_none());
         assert!(convert_to_update_metadata_value(json!([1, 2, 3])).is_none());

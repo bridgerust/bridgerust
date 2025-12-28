@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use bridge_embex_core::db::VectorDatabase;
-use bridge_embex_core::error::{Result, EmbexError};
+use bridge_embex_core::error::{EmbexError, Result};
 use bridge_embex_core::migration::Migration;
 use bridge_embex_core::types::CollectionSchema;
 use serde::Deserialize;
@@ -38,18 +38,18 @@ impl Migration for DeclarativeMigration {
 }
 
 async fn execute_op(op: &Value, db: Arc<dyn VectorDatabase>) -> Result<()> {
-    let type_ = op.get("type").and_then(|v| v.as_str()).ok_or_else(|| {
-        EmbexError::Validation("Operation missing type".to_string())
-    })?;
+    let type_ = op
+        .get("type")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| EmbexError::Validation("Operation missing type".to_string()))?;
 
     match type_ {
         "create_collection" => {
             let schema_val = op.get("schema").ok_or_else(|| {
                 EmbexError::Validation("create_collection missing schema".to_string())
             })?;
-            let schema: CollectionSchema = serde_json::from_value(schema_val.clone()).map_err(|e| {
-                EmbexError::Validation(format!("Invalid schema: {}", e))
-            })?;
+            let schema: CollectionSchema = serde_json::from_value(schema_val.clone())
+                .map_err(|e| EmbexError::Validation(format!("Invalid schema: {}", e)))?;
             db.create_collection(&schema).await
         }
         "delete_collection" => {

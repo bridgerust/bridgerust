@@ -340,15 +340,26 @@ fn format_value(value: &serde_json::Value) -> String {
 
 #[cfg(test)]
 mod tests {
+    use std::f32::consts::PI;
+
     use super::*;
     use bridge_embex_core::types::Filter;
     use serde_json::json;
 
     #[test]
     fn test_distance_operator() {
-        assert_eq!(PgVectorAdapter::distance_operator(&DistanceMetric::Cosine), "<=>");
-        assert_eq!(PgVectorAdapter::distance_operator(&DistanceMetric::Euclidean), "<->");
-        assert_eq!(PgVectorAdapter::distance_operator(&DistanceMetric::Dot), "<#>");
+        assert_eq!(
+            PgVectorAdapter::distance_operator(&DistanceMetric::Cosine),
+            "<=>"
+        );
+        assert_eq!(
+            PgVectorAdapter::distance_operator(&DistanceMetric::Euclidean),
+            "<->"
+        );
+        assert_eq!(
+            PgVectorAdapter::distance_operator(&DistanceMetric::Dot),
+            "<#>"
+        );
     }
 
     #[test]
@@ -393,29 +404,21 @@ mod tests {
 
     #[test]
     fn test_convert_filter_must() {
-        let filter = Filter::must(vec![
-            Filter::eq("a", 1),
-            Filter::eq("b", 2),
-        ]);
+        let filter = Filter::must(vec![Filter::eq("a", 1), Filter::eq("b", 2)]);
         let sql = convert_filter(&filter);
         assert!(sql.contains("AND"));
     }
 
     #[test]
     fn test_convert_filter_should() {
-        let filter = Filter::should(vec![
-            Filter::eq("a", 1),
-            Filter::eq("b", 2),
-        ]);
+        let filter = Filter::should(vec![Filter::eq("a", 1), Filter::eq("b", 2)]);
         let sql = convert_filter(&filter);
         assert!(sql.contains("OR"));
     }
 
     #[test]
     fn test_convert_filter_must_not() {
-        let filter = Filter::must_not(vec![
-            Filter::eq("a", 1),
-        ]);
+        let filter = Filter::must_not(vec![Filter::eq("a", 1)]);
         let sql = convert_filter(&filter);
         assert!(sql.contains("NOT"));
     }
@@ -424,10 +427,7 @@ mod tests {
     fn test_convert_filter_complex_nested() {
         let filter = Filter::must(vec![
             Filter::eq("status", "active"),
-            Filter::should(vec![
-                Filter::gt("age", 18),
-                Filter::lt("age", 65),
-            ]),
+            Filter::should(vec![Filter::gt("age", 18), Filter::lt("age", 65)]),
         ]);
         let sql = convert_filter(&filter);
         assert!(sql.contains("AND"));
@@ -443,7 +443,7 @@ mod tests {
     #[test]
     fn test_format_value_number() {
         assert_eq!(format_value(&json!(42)), "42");
-        assert_eq!(format_value(&json!(3.14)), "3.14");
+        assert_eq!(format_value(&json!(PI)), PI.to_string());
     }
 
     #[test]

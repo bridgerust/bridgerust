@@ -18,12 +18,6 @@ if [ ! -f "Cargo.toml" ]; then
     exit 0
 fi
 
-# Check if rustfmt is available
-if ! command -v rustfmt &> /dev/null; then
-    echo -e "${YELLOW}⚠️  rustfmt not found, installing...${NC}"
-    rustup component add rustfmt
-fi
-
 # Check if clippy is available
 if ! command -v cargo-clippy &> /dev/null; then
     echo -e "${YELLOW}⚠️  clippy not found, installing...${NC}"
@@ -40,19 +34,17 @@ fi
 
 echo -e "${GREEN}📝 Formatting Rust files...${NC}"
 
-# Format staged Rust files
-for file in $STAGED_FILES; do
-    if [ -f "$file" ]; then
-        echo "  Formatting: $file"
-        rustfmt "$file" || {
-            echo -e "${RED}❌ rustfmt failed on $file${NC}"
-            echo -e "${YELLOW}💡 Run: cargo fmt${NC}"
-            exit 1
-        }
-        # Re-stage the formatted file
-        git add "$file"
-    fi
-done
+# Use cargo fmt instead of rustfmt directly to respect workspace settings
+# This ensures the correct edition and other Cargo.toml settings are used
+if ! cargo fmt --all; then
+    echo -e "${RED}❌ cargo fmt failed${NC}"
+    echo -e "${YELLOW}💡 Fix formatting issues and try again${NC}"
+    exit 1
+fi
+
+# Re-stage all formatted files (cargo fmt may format more than just staged files)
+# This is safer than trying to track individual files
+git add -u
 
 echo -e "${GREEN}✅ Formatting complete${NC}"
 

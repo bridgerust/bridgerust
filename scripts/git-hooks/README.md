@@ -12,6 +12,7 @@ Automatically runs before each commit:
 2. **clippy**: Runs clippy linting on the workspace
 
 The hook will:
+
 - ✅ Format staged `.rs` files automatically
 - ✅ Re-stage formatted files
 - ✅ Run `cargo clippy` to check for linting issues
@@ -49,6 +50,7 @@ git commit --no-verify -m "your message"
 ### Hook not running
 
 1. Check if the hook is executable:
+
    ```bash
    ls -la .git/hooks/pre-commit
    ```
@@ -61,12 +63,14 @@ git commit --no-verify -m "your message"
 ### rustfmt/clippy not found
 
 The hook will automatically install missing components:
+
 - `rustup component add rustfmt`
 - `rustup component add clippy`
 
 ### Clippy errors
 
 Fix the issues shown by clippy, or run:
+
 ```bash
 cargo clippy --fix
 ```
@@ -74,4 +78,3 @@ cargo clippy --fix
 ## Customization
 
 To modify the hook behavior, edit `scripts/git-hooks/pre-commit` and re-run the setup script.
-

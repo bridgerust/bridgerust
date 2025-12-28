@@ -5,7 +5,7 @@ use bridge_embex_core::{
     types::{CollectionSchema, Point, SearchResponse, SearchResult, VectorQuery},
 };
 use reqwest::Client;
-use serde::{Serialize};
+use serde::Serialize;
 use serde_json::json;
 use tracing::instrument;
 use uuid::Uuid;
@@ -63,7 +63,7 @@ impl VectorDatabase for WeaviateAdapter {
     #[instrument(skip(self))]
     async fn create_collection(&self, schema: &CollectionSchema) -> Result<(), EmbexError> {
         let url = format!("{}/v1/schema", self.url);
-        
+
         let payload = json!({
             "class": schema.name,
             "description": "Created by Embex",
@@ -73,7 +73,9 @@ impl VectorDatabase for WeaviateAdapter {
             ]
         });
 
-        let res = self.client.post(&url)
+        let res = self
+            .client
+            .post(&url)
             .json(&payload)
             .send()
             .await
@@ -83,7 +85,10 @@ impl VectorDatabase for WeaviateAdapter {
             let error_text = res.text().await.unwrap_or_default();
             // 422 implies already exists usually
             if !error_text.contains("already exists") {
-                return Err(EmbexError::Database(format!("Failed to create collection: {}", error_text)));
+                return Err(EmbexError::Database(format!(
+                    "Failed to create collection: {}",
+                    error_text
+                )));
             }
         }
 
@@ -92,43 +97,53 @@ impl VectorDatabase for WeaviateAdapter {
 
     async fn delete_collection(&self, name: &str) -> Result<(), EmbexError> {
         let url = format!("{}/v1/schema/{}", self.url, name);
-        let res = self.client.delete(&url)
+        let res = self
+            .client
+            .delete(&url)
             .send()
             .await
             .map_err(|e| EmbexError::Connection(e.to_string()))?;
 
         if !res.status().is_success() && res.status() != reqwest::StatusCode::NOT_FOUND {
             let text = res.text().await.unwrap_or_default();
-            return Err(EmbexError::Database(format!("Failed to delete collection: {}", text)));
+            return Err(EmbexError::Database(format!(
+                "Failed to delete collection: {}",
+                text
+            )));
         }
         Ok(())
     }
 
     async fn insert(&self, collection: &str, points: Vec<Point>) -> Result<(), EmbexError> {
         let url = format!("{}/v1/batch/objects", self.url);
-        
-        let objects: Vec<WeaviateObject> = points.into_iter().map(|p| {
-            let id = Uuid::new_v4();
 
-            let props = if let Some(meta) = p.metadata {
-                serde_json::to_value(meta).unwrap_or(json!({}))
-            } else {
-                json!({})
-            };
+        let objects: Vec<WeaviateObject> = points
+            .into_iter()
+            .map(|p| {
+                let id = Uuid::new_v4();
 
-            WeaviateObject {
-                class: collection.to_string(),
-                id: id.to_string(),
-                properties: props,
-                vector: p.vector,
-            }
-        }).collect();
+                let props = if let Some(meta) = p.metadata {
+                    serde_json::to_value(meta).unwrap_or(json!({}))
+                } else {
+                    json!({})
+                };
+
+                WeaviateObject {
+                    class: collection.to_string(),
+                    id: id.to_string(),
+                    properties: props,
+                    vector: p.vector,
+                }
+            })
+            .collect();
 
         let payload = json!({
             "objects": objects
         });
 
-        let res = self.client.post(&url)
+        let res = self
+            .client
+            .post(&url)
             .json(&payload)
             .send()
             .await
@@ -136,20 +151,23 @@ impl VectorDatabase for WeaviateAdapter {
 
         if !res.status().is_success() {
             let text = res.text().await.unwrap_or_default();
-            return Err(EmbexError::Database(format!("Batch insert failed: {}", text)));
+            return Err(EmbexError::Database(format!(
+                "Batch insert failed: {}",
+                text
+            )));
         }
-        
+
         // Weaviate returns detailed results. We should check for error keys in specific items?
         // For performance we might skip unless user asks for strict mode.
         // But users expect errors if insert fails.
         // Ref: https://weaviate.io/developers/weaviate/api/rest/batch
-        
+
         Ok(())
     }
 
     async fn search(&self, query: &VectorQuery) -> Result<SearchResponse, EmbexError> {
         let url = format!("{}/v1/graphql", self.url);
-        
+
         // Construct GraphQL Query
         // { Get { ClassName ( nearVector: { vector: [...] } limit: N ) { _additional { id certainty } [properties...] } } }
         // We don't verify properties. We'll ask for `_additional { id certainty vector }` and maybe nothing else?
@@ -161,9 +179,9 @@ impl VectorDatabase for WeaviateAdapter {
         // Let's query schema first? That's slow.
         // Better: Expect user to provide 'return_attributes'? Embex `VectorQuery` doesn't have it explicitly yet (maybe in future).
         // For now, let's just fetch `_additional { id distance }`.
-        
+
         let vec_str = serde_json::to_string(&query.vector).unwrap();
-        
+
         let query_str = format!(
             "{{ Get {{ {} ( nearVector: {{ vector: {} }} limit: {} ) {{ _additional {{ id distance }} }} }} }}",
             query.collection, vec_str, query.top_k
@@ -171,39 +189,42 @@ impl VectorDatabase for WeaviateAdapter {
 
         let payload = json!({ "query": query_str });
 
-        let res = self.client.post(&url)
+        let res = self
+            .client
+            .post(&url)
             .json(&payload)
             .send()
             .await
             .map_err(|e| EmbexError::Connection(e.to_string()))?;
-            
-        let body: serde_json::Value = res.json().await.map_err(|e| EmbexError::Database(e.to_string()))?;
-        
+
+        let body: serde_json::Value = res
+            .json()
+            .await
+            .map_err(|e| EmbexError::Database(e.to_string()))?;
+
         if let Some(errors) = body.get("errors") {
             return Err(EmbexError::Database(format!("GraphQL Error: {:?}", errors)));
         }
 
         let mut search_results = Vec::new();
 
-        if let Some(data) = body.get("data") {
-            if let Some(get) = data.get("Get") {
-                if let Some(items) = get.get(&query.collection) {
-                    if let Some(arr) = items.as_array() {
-                        for item in arr {
-                            if let Some(additional) = item.get("_additional") {
-                                let id = additional["id"].as_str().unwrap_or("").to_string();
-                                let dist = additional["distance"].as_f64().unwrap_or(0.0) as f32;
-                                let score = 1.0 - dist; 
-                                
-                                search_results.push(SearchResult {
-                                    id,
-                                    score,
-                                    metadata: None,
-                                    vector: None,
-                                });
-                            }
-                        }
-                    }
+        if let Some(data) = body.get("data")
+            && let Some(get) = data.get("Get")
+            && let Some(items) = get.get(&query.collection)
+            && let Some(arr) = items.as_array()
+        {
+            for item in arr {
+                if let Some(additional) = item.get("_additional") {
+                    let id = additional["id"].as_str().unwrap_or("").to_string();
+                    let dist = additional["distance"].as_f64().unwrap_or(0.0) as f32;
+                    let score = 1.0 - dist;
+
+                    search_results.push(SearchResult {
+                        id,
+                        score,
+                        metadata: None,
+                        vector: None,
+                    });
                 }
             }
         }
@@ -215,25 +236,30 @@ impl VectorDatabase for WeaviateAdapter {
     }
 
     async fn delete(&self, collection: &str, ids: Vec<String>) -> Result<(), EmbexError> {
-         for id in ids {
-            
+        for id in ids {
             let uuid = Uuid::try_parse(&id).unwrap().to_string();
-            
+
             let url = format!("{}/v1/objects/{}/{}", self.url, collection, uuid);
             let _ = self.client.delete(&url).send().await;
-         }
-         Ok(())
+        }
+        Ok(())
     }
 
-    async fn update_metadata(&self, collection: &str, updates: Vec<bridge_embex_core::types::MetadataUpdate>) -> Result<(), EmbexError> {
+    async fn update_metadata(
+        &self,
+        collection: &str,
+        updates: Vec<bridge_embex_core::types::MetadataUpdate>,
+    ) -> Result<(), EmbexError> {
         for update in updates {
             let url = format!("{}/v1/objects/{}/{}", self.url, collection, update.id);
-            
+
             let payload = json!({
                 "properties": update.updates
             });
 
-            let res = self.client.patch(&url)
+            let res = self
+                .client
+                .patch(&url)
                 .json(&payload)
                 .send()
                 .await
@@ -241,7 +267,10 @@ impl VectorDatabase for WeaviateAdapter {
 
             if !res.status().is_success() && res.status() != reqwest::StatusCode::NOT_FOUND {
                 let text = res.text().await.unwrap_or_default();
-                return Err(EmbexError::Database(format!("Update metadata failed for {}: {}", update.id, text)));
+                return Err(EmbexError::Database(format!(
+                    "Update metadata failed for {}: {}",
+                    update.id, text
+                )));
             }
         }
         Ok(())
@@ -256,7 +285,7 @@ mod tests {
     fn test_weaviate_adapter_new() {
         let adapter = WeaviateAdapter::new("http://localhost:8080", None);
         assert!(adapter.is_ok());
-        
+
         let adapter = adapter.unwrap();
         assert_eq!(adapter.url, "http://localhost:8080");
     }

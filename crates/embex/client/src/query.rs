@@ -85,7 +85,7 @@ impl QueryBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bridge_embex_core::types::{Filter, Aggregation, Condition};
+    use bridge_embex_core::types::{Aggregation, Condition, Filter};
     use serde_json::json;
 
     #[test]
@@ -98,17 +98,17 @@ mod tests {
         assert_eq!(q.collection, "test_collection");
         assert_eq!(q.vector, Some(vec![1.0, 2.0, 3.0]));
         assert_eq!(q.top_k, 5);
-        assert_eq!(q.include_metadata, false);
-        assert_eq!(q.include_vector, false);
+        assert!(!q.include_metadata);
+        assert!(!q.include_vector);
     }
 
     #[test]
     fn test_query_builder_defaults() {
         let q = QueryBuilder::new("test", vec![1.0, 2.0]).build();
-        
+
         assert_eq!(q.top_k, 10);
-        assert_eq!(q.include_metadata, true);
-        assert_eq!(q.include_vector, false);
+        assert!(q.include_metadata);
+        assert!(!q.include_vector);
         assert!(q.filter.is_none());
         assert!(q.offset.is_none());
         assert!(q.aggregations.is_empty());
@@ -146,7 +146,7 @@ mod tests {
             .include_vector(true)
             .build();
 
-        assert_eq!(q.include_vector, true);
+        assert!(q.include_vector);
     }
 
     #[test]
@@ -173,9 +173,7 @@ mod tests {
 
     #[test]
     fn test_query_builder_filter_only() {
-        let q = QueryBuilder::new_filter_only("test")
-            .limit(20)
-            .build();
+        let q = QueryBuilder::new_filter_only("test").limit(20).build();
 
         assert_eq!(q.collection, "test");
         assert_eq!(q.vector, None);
@@ -198,8 +196,8 @@ mod tests {
         assert_eq!(q.vector, Some(vec![1.0, 2.0, 3.0]));
         assert_eq!(q.top_k, 15);
         assert_eq!(q.offset, Some(50));
-        assert_eq!(q.include_vector, true);
-        assert_eq!(q.include_metadata, false);
+        assert!(q.include_vector);
+        assert!(!q.include_metadata);
         assert_eq!(q.aggregations.len(), 1);
         assert!(q.filter.is_some());
     }

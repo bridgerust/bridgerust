@@ -1,2 +1,2 @@
-pub mod migrate;
 pub mod generate;
+pub mod migrate;

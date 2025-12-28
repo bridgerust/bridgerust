@@ -1,7 +1,7 @@
+use anyhow::Result;
 use bridge_embex::client::EmbexClient;
 use bridge_embex::EmbexConfig;
 use bridge_embex_core::types::{CollectionSchema, DistanceMetric, Point};
-use anyhow::Result;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -36,7 +36,7 @@ async fn main() -> Result<()> {
             metadata: None,
         },
     ];
-    
+
     let collection = client.collection(collection_name);
     collection.insert(points).await?;
 

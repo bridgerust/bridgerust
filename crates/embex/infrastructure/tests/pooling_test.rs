@@ -1,4 +1,4 @@
-use bridge_embex_infrastructure::pooling::{get_pooling_status, PoolConfig, PoolingStatus};
+use bridge_embex_infrastructure::pooling::{PoolConfig, PoolingStatus, get_pooling_status};
 
 #[test]
 fn test_pool_config_default() {
@@ -54,4 +54,3 @@ fn test_pooling_status_configurable_values() {
         panic!("PgVector should return Configurable status");
     }
 }
-

@@ -1,21 +1,20 @@
+use bridge_embex::client::EmbexClient;
 use bridge_embex::types::Point;
+use bridge_embex_core::types::{CollectionSchema, DistanceMetric};
+use bridge_embex_infrastructure::config::EmbexConfig;
 use bridge_embex_infrastructure::observability::EmbexMetrics;
 use criterion::{criterion_group, criterion_main, Criterion};
-use bridge_embex_core::types::{CollectionSchema, DistanceMetric};
-use std::time::Duration;
 use std::hint::black_box;
-use bridge_embex::client::EmbexClient;
-use bridge_embex_infrastructure::config::EmbexConfig;
-
+use std::time::Duration;
 
 fn generate_vector(dim: usize) -> Vec<f32> {
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
-    
+
     let mut hasher = DefaultHasher::new();
     dim.hash(&mut hasher);
     let mut rng = hasher.finish();
-    
+
     (0..dim)
         .map(|_| {
             rng = rng.wrapping_mul(1103515245).wrapping_add(12345);
@@ -23,7 +22,6 @@ fn generate_vector(dim: usize) -> Vec<f32> {
         })
         .collect()
 }
-
 
 /// Benchmark filter conversion overhead
 fn bench_filter_conversion(c: &mut Criterion) {
@@ -74,13 +72,13 @@ fn bench_filter_conversion(c: &mut Criterion) {
 /// Benchmark serialization/deserialization overhead
 fn bench_serialization(c: &mut Criterion) {
     let mut group = c.benchmark_group("serialization");
-    let metadata: std::collections::HashMap<String, serde_json::Value> = serde_json::from_value(
-        serde_json::json!({
+    let metadata: std::collections::HashMap<String, serde_json::Value> =
+        serde_json::from_value(serde_json::json!({
             "field1": "value1",
             "field2": 42,
             "field3": true
-        })
-    ).unwrap();
+        }))
+        .unwrap();
     let point = Point {
         id: "test_id".to_string(),
         vector: generate_vector(768),
@@ -108,7 +106,7 @@ fn bench_serialization(c: &mut Criterion) {
 /// Benchmark query builder overhead
 fn bench_query_builder_overhead(c: &mut Criterion) {
     use bridge_embex::query::QueryBuilder;
-    
+
     let vector = generate_vector(768);
     let mut group = c.benchmark_group("query_builder");
 
@@ -163,8 +161,7 @@ fn bench_metrics_overhead(c: &mut Criterion) {
 
 /// Benchmark client initialization overhead
 fn bench_client_init(c: &mut Criterion) {
-    
-    let group = c.benchmark_group("client_init");
+    let mut group = c.benchmark_group("client_init");
 
     #[cfg(feature = "qdrant")]
     {
@@ -211,14 +208,13 @@ fn bench_client_init(c: &mut Criterion) {
 
 /// Benchmark collection operations overhead
 fn bench_collection_operations(c: &mut Criterion) {
-    
     let _rt = tokio::runtime::Runtime::new().unwrap();
-    
+
     #[cfg(feature = "lancedb")]
     {
         let temp_dir = tempfile::tempdir().unwrap();
         let db_path = temp_dir.path().to_str().unwrap();
-        
+
         let config = EmbexConfig {
             provider: "lancedb".to_string(),
             url: db_path.to_string(),
@@ -229,9 +225,7 @@ fn bench_collection_operations(c: &mut Criterion) {
             options: Default::default(),
         };
 
-        let client = _rt.block_on(async {
-            EmbexClient::new_async(config).await.unwrap()
-        });
+        let client = _rt.block_on(async { EmbexClient::new_async(config).await.unwrap() });
 
         let schema = CollectionSchema {
             name: "bench_collection".to_string(),
@@ -257,12 +251,7 @@ fn bench_collection_operations(c: &mut Criterion) {
 
         // Benchmark insert with metrics
         let points: Vec<Point> = (0..100)
-            .map(|i| {
-                Point::new(
-                    format!("point_{}", i),
-                    generate_vector(768),
-                )
-            })
+            .map(|i| Point::new(format!("point_{}", i), generate_vector(768)))
             .collect();
         group.bench_function("insert_with_metrics", |b| {
             b.to_async(&_rt).iter(|| async {
@@ -285,4 +274,3 @@ criterion_group!(
     bench_collection_operations
 );
 criterion_main!(benches);
-

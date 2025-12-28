@@ -297,21 +297,23 @@ fn convert_filter(filter: &types::Filter) -> qdrant_client::qdrant::Filter {
         types::Filter::Should(filters) => {
             qdrant_filter.should = filters.iter().map(convert_condition_to_qdrant).collect();
         }
-        types::Filter::Key(key, condition) => {
-            match condition {
-                types::Condition::Ne(val) => {
-                    qdrant_filter.must_not =
-                        vec![convert_key_condition(key, &types::Condition::Eq(val.clone()))];
-                }
-                types::Condition::NotIn(vals) => {
-                    qdrant_filter.must_not =
-                        vec![convert_key_condition(key, &types::Condition::In(vals.clone()))];
-                }
-                _ => {
-                    qdrant_filter.must = vec![convert_key_condition(key, condition)];
-                }
+        types::Filter::Key(key, condition) => match condition {
+            types::Condition::Ne(val) => {
+                qdrant_filter.must_not = vec![convert_key_condition(
+                    key,
+                    &types::Condition::Eq(val.clone()),
+                )];
             }
-        }
+            types::Condition::NotIn(vals) => {
+                qdrant_filter.must_not = vec![convert_key_condition(
+                    key,
+                    &types::Condition::In(vals.clone()),
+                )];
+            }
+            _ => {
+                qdrant_filter.must = vec![convert_key_condition(key, condition)];
+            }
+        },
     }
     qdrant_filter
 }
@@ -341,13 +343,7 @@ fn convert_key_condition(
         EmbexCondition::Eq(value) => {
             let match_value = match value {
                 serde_json::Value::String(s) => Some(MatchValue::Keyword(s.clone())),
-                serde_json::Value::Number(n) => {
-                    if let Some(i) = n.as_i64() {
-                        Some(MatchValue::Integer(i))
-                    } else {
-                        None
-                    }
-                }
+                serde_json::Value::Number(n) => n.as_i64().map(MatchValue::Integer),
                 serde_json::Value::Bool(b) => Some(MatchValue::Boolean(*b)),
                 _ => None,
             };
@@ -408,14 +404,12 @@ fn convert_key_condition(
                             .collect(),
                     },
                 ))
-            } else if let Some(_i) = values[0].as_i64() {
-                Some(MatchValue::Integers(
-                    qdrant_client::qdrant::RepeatedIntegers {
-                        integers: values.iter().filter_map(|v| v.as_i64()).collect(),
-                    },
-                ))
             } else {
-                None
+                values[0].as_i64().map(|_i| {
+                    MatchValue::Integers(qdrant_client::qdrant::RepeatedIntegers {
+                        integers: values.iter().filter_map(|v| v.as_i64()).collect(),
+                    })
+                })
             };
 
             if let Some(mv) = match_value {
@@ -543,29 +537,21 @@ mod tests {
 
     #[test]
     fn test_convert_filter_must() {
-        let filter = Filter::must(vec![
-            Filter::eq("a", 1),
-            Filter::eq("b", 2),
-        ]);
+        let filter = Filter::must(vec![Filter::eq("a", 1), Filter::eq("b", 2)]);
         let qdrant_filter = convert_filter(&filter);
         assert!(!qdrant_filter.must.is_empty());
     }
 
     #[test]
     fn test_convert_filter_must_not() {
-        let filter = Filter::must_not(vec![
-            Filter::eq("a", 1),
-        ]);
+        let filter = Filter::must_not(vec![Filter::eq("a", 1)]);
         let qdrant_filter = convert_filter(&filter);
         assert!(!qdrant_filter.must_not.is_empty());
     }
 
     #[test]
     fn test_convert_filter_should() {
-        let filter = Filter::should(vec![
-            Filter::eq("a", 1),
-            Filter::eq("b", 2),
-        ]);
+        let filter = Filter::should(vec![Filter::eq("a", 1), Filter::eq("b", 2)]);
         let qdrant_filter = convert_filter(&filter);
         assert!(!qdrant_filter.should.is_empty());
     }
@@ -574,10 +560,7 @@ mod tests {
     fn test_convert_filter_complex_nested() {
         let filter = Filter::must(vec![
             Filter::eq("status", "active"),
-            Filter::should(vec![
-                Filter::gt("age", 18),
-                Filter::lt("age", 65),
-            ]),
+            Filter::should(vec![Filter::gt("age", 18), Filter::lt("age", 65)]),
         ]);
         let qdrant_filter = convert_filter(&filter);
         assert!(!qdrant_filter.must.is_empty());

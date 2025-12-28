@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use chrono::Utc;
-use dialoguer::{Select};
+use dialoguer::Select;
 use serde_json::json;
 use std::fs;
 use std::path::PathBuf;

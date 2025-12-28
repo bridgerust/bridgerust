@@ -581,7 +581,10 @@ impl Collection {
         };
 
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            inner.create_auto(dimension, metric).await.map_err(to_py_err)
+            inner
+                .create_auto(dimension, metric)
+                .await
+                .map_err(to_py_err)
         })
     }
 
@@ -666,10 +669,10 @@ fn py_to_json<'py>(py: Python<'py>, obj: &Py<PyAny>) -> PyResult<Value> {
         return Ok(Value::Number(serde_json::Number::from(i)));
     }
 
-    if let Ok(f) = bound.extract::<f64>() {
-        if let Some(n) = serde_json::Number::from_f64(f) {
-            return Ok(Value::Number(n));
-        }
+    if let Ok(f) = bound.extract::<f64>()
+        && let Some(n) = serde_json::Number::from_f64(f)
+    {
+        return Ok(Value::Number(n));
     }
 
     if let Ok(dict) = bound.cast::<PyDict>() {
@@ -753,7 +756,9 @@ fn convert_search_response(py: Python, res: RustSearchResponse) -> PyResult<Sear
 #[pyfunction]
 fn cli_main<'p>(py: Python<'p>, args: Vec<String>) -> PyResult<Bound<'p, PyAny>> {
     pyo3_async_runtimes::tokio::future_into_py(py, async move {
-        embex_cli::run(args).await.map_err(|e| EmbexError::new_err(e.to_string()))
+        embex_cli::run(args)
+            .await
+            .map_err(|e| EmbexError::new_err(e.to_string()))
     })
 }
 

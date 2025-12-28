@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
+use std::ops::Not;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Point {
@@ -216,8 +217,12 @@ impl Filter {
             (l, r) => Filter::Should(vec![l, r]),
         }
     }
+}
 
-    pub fn not(self) -> Self {
+impl Not for Filter {
+    type Output = Self;
+
+    fn not(self) -> Self::Output {
         Filter::MustNot(vec![self])
     }
 }
@@ -259,10 +264,9 @@ mod tests {
     fn test_point_with_metadata() {
         let mut metadata = HashMap::new();
         metadata.insert("key".to_string(), json!("value"));
-        
-        let point = Point::new("test_id", vec![1.0, 2.0])
-            .with_metadata(metadata.clone());
-        
+
+        let point = Point::new("test_id", vec![1.0, 2.0]).with_metadata(metadata.clone());
+
         assert_eq!(point.metadata, Some(metadata));
     }
 
@@ -344,10 +348,7 @@ mod tests {
 
     #[test]
     fn test_filter_must() {
-        let filters = vec![
-            Filter::eq("a", 1),
-            Filter::eq("b", 2),
-        ];
+        let filters = vec![Filter::eq("a", 1), Filter::eq("b", 2)];
         let must = Filter::must(filters.clone());
 
         match must {
@@ -361,7 +362,7 @@ mod tests {
         let filter = Filter::eq("key", "value");
         let json = serde_json::to_string(&filter).expect("Should serialize");
         let deserialized: Filter = serde_json::from_str(&json).expect("Should deserialize");
-        
+
         match (filter, deserialized) {
             (Filter::Key(k1, Condition::Eq(v1)), Filter::Key(k2, Condition::Eq(v2))) => {
                 assert_eq!(k1, k2);
@@ -380,7 +381,7 @@ mod tests {
             let point = Point::new(id.clone(), vector.clone());
             let json = serde_json::to_string(&point).expect("Should serialize");
             let deserialized: Point = serde_json::from_str(&json).expect("Should deserialize");
-            
+
             assert_eq!(point.id, deserialized.id);
             assert_eq!(point.vector, deserialized.vector);
         }
@@ -394,11 +395,11 @@ mod tests {
             let filter = Filter::eq(key.clone(), value.clone());
             let json = serde_json::to_string(&filter).expect("Should serialize");
             let deserialized: Filter = serde_json::from_str(&json).expect("Should deserialize");
-            
+
             match (filter, deserialized) {
                 (Filter::Key(k1, Condition::Eq(v1)), Filter::Key(k2, Condition::Eq(v2))) => {
                     prop_assert_eq!(k1, k2);
-                    
+
                     match (v1.as_f64(), v2.as_f64()) {
                         (Some(n1), Some(n2)) => {
                             let diff = (n1 - n2).abs();
@@ -423,10 +424,10 @@ mod tests {
                 dimension,
                 metric: DistanceMetric::Cosine,
             };
-            
+
             let json = serde_json::to_string(&schema).expect("Should serialize");
             let deserialized: CollectionSchema = serde_json::from_str(&json).expect("Should deserialize");
-            
+
             prop_assert_eq!(schema.name, deserialized.name);
             prop_assert_eq!(schema.dimension, deserialized.dimension);
             prop_assert_eq!(schema.metric, deserialized.metric);
