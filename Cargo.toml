@@ -2,7 +2,7 @@
 resolver = "3"
 members = [
     "crates/core",
-    "crates/schema",
+    # "crates/schema",  # Temporarily disabled - not ready yet
     "crates/embex/client",
     "crates/embex/core",
     "crates/embex/infrastructure",
@@ -11,7 +11,7 @@ members = [
     "crates/embex/adapters/chroma",
     "crates/embex/adapters/lancedb",
     "crates/embex/adapters/pgvector",
-    "bindings/python/bridge-schema",
+    # "bindings/python/bridge-schema",  # Temporarily disabled - not ready yet
     "bindings/python/embex",
     "bindings/node/@bridgerust/embex",
     "benchmarks/embex",

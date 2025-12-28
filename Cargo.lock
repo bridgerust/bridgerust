@@ -1305,25 +1305,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bridge-schema"
-version = "0.1.5"
-dependencies = [
- "anyhow",
- "bridge-core",
- "serde",
- "serde_json",
- "thiserror 2.0.17",
-]
-
-[[package]]
-name = "bridge-schema-py"
-version = "0.1.5"
-dependencies = [
- "bridge-schema",
- "pyo3",
-]
-
-[[package]]
 name = "brotli"
 version = "8.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"

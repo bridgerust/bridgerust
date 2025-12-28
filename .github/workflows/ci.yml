@@ -39,10 +39,20 @@ jobs:
             ${{ runner.os }}-cargo-
 
       - name: Build
-        run: cargo build --workspace --features ${{ matrix.features }}
+        run: |
+          if [ -z "${{ matrix.features }}" ]; then
+            cargo build --workspace
+          else
+            cargo build --workspace --features ${{ matrix.features }}
+          fi
 
       - name: Test
-        run: cargo test --workspace --features ${{ matrix.features }} --lib
+        run: |
+          if [ -z "${{ matrix.features }}" ]; then
+            cargo test --workspace --lib
+          else
+            cargo test --workspace --features ${{ matrix.features }} --lib
+          fi
 
       - name: Test with SIMD (if enabled)
         if: matrix.features == 'simd' || matrix.features == 'all'
@@ -106,6 +116,10 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+
+      - name: Install protobuf compiler
+        # LanceDB requires protoc for building
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
 
       - name: Install maturin
         run: pip install maturin
