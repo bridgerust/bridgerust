@@ -26,49 +26,50 @@ bun add embex
 
 ## ⚡ Quick Start
 
-### 1. Connect to a Provider
+**Try Embex in 30 seconds - No setup required!** Uses LanceDB embedded mode (no server needed).
 
 ```typescript
-import { EmbexClient } from "embex";
+import { EmbexClient } from "@bridgerust/embex";
 
-// Connect to Qdrant
-const client = new EmbexClient("qdrant", "http://localhost:6333");
+async function main() {
+  // LanceDB embedded - zero setup, just a local path
+  const client = await EmbexClient.newAsync("lancedb", "./data");
+  const collection = client.collection("documents");
 
-// Or use async initialization (required for some providers like LanceDB/Milvus)
-const client = await EmbexClient.newAsync("lancedb", "./data/lancedb");
+  // Create collection
+  await collection.create(768, "cosine");
+
+  // Insert data
+  await collection.insert([
+    {
+      id: "1",
+      vector: Array(768).fill(0.1),
+      metadata: { text: "Hello World" },
+    },
+  ]);
+
+  // Search
+  const results = await collection.search(Array(768).fill(0.1), 5);
+  console.log(results.results);
+}
+
+main();
 ```
 
-### 2. Create a Collection
+**Run it:** `npx tsx examples/lancedb/node/quickstart.ts`
 
-```typescript
-const collection = client.collection("my_collection");
+### All Provider Quick Starts
 
-// Create with specific dimension and metric
-await collection.create(768, "cosine");
-```
+Try Embex with any provider! Same API, different backend:
 
-### 3. Insert Vectors
+| Provider     | Setup           | Quick Start                                    |
+| ------------ | --------------- | ---------------------------------------------- |
+| **LanceDB**  | None (embedded) | `npx tsx examples/lancedb/node/quickstart.ts`  |
+| **Qdrant**   | Docker server   | `npx tsx examples/qdrant/node/quickstart.ts`   |
+| **Pinecone** | API key         | `npx tsx examples/pinecone/node/quickstart.ts` |
+| **Chroma**   | Optional server | `npx tsx examples/chroma/node/quickstart.ts`   |
 
-```typescript
-await collection.insert([
-  {
-    id: "1",
-    vector: [0.1, 0.2, ...], // 768 dimensions
-    metadata: { title: "Hello World", category: "greeting" }
-  }
-]);
-```
-
-### 4. Search
-
-```typescript
-const results = await collection.search(
-  [0.1, 0.2, ...], // Query vector
-  5                // Limit
-);
-
-console.log(results.results);
-```
+> 💡 **Same API everywhere!** Just change the provider name - all code stays the same. See [examples/README.md](../../../../examples/README.md) for setup instructions.
 
 ### 5. Filtered Search (Builder Pattern)
 

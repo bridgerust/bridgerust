@@ -6,10 +6,11 @@
 
 **One API. Any Database. Maximum Performance.**
 
+[![CI](https://github.com/bridgerust/bridgerust/workflows/Release/badge.svg)](https://github.com/bridgerust/bridgerust/actions)
 [![PyPI](https://img.shields.io/pypi/v/embex?color=blue)](https://pypi.org/project/embex/)
 [![NPM](https://img.shields.io/npm/v/@bridgerust/embex?color=red)](https://www.npmjs.com/package/@bridgerust/embex)
-[![Crates.io](https://img.shields.io/crates/v/bridge-embex.svg)](https://crates.io/crates/bridge-embex)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Downloads](https://pepy.tech/badge/embex)](https://pepy.tech/project/embex)
+[![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-green)](LICENSE)
 
 ---
 
@@ -139,52 +140,93 @@ Revert the last batch of migrations.
 embex migrate down
 ```
 
-### Rust
+### Rust (Development)
+
+For development or using from source:
 
 ```toml
 [dependencies]
-bridge-embex = "0.1"
+bridge-embex = { path = "../bridgerust/crates/embex/client" }
+# Or from git:
+# bridge-embex = { git = "https://github.com/bridgerust/bridgerust", path = "crates/embex/client" }
 ```
 
 ## 🛠️ Quick Start
 
+**Try Embex in 30 seconds - No setup required!** Uses LanceDB embedded mode (no server needed).
+
 ### Python Quick Start
 
 ```python
-from embex import EmbexClient
+import asyncio
+from embex import EmbexClient, Point
 
-# Initialize (Switch "qdrant" to "pinecone", "chroma", etc.)
-client = EmbexClient("qdrant", "http://localhost:6333")
+async def main():
+    # LanceDB embedded - zero setup, just a local path
+    client = await EmbexClient.new_async("lancedb", "./data")
+    collection = client.collection("documents")
 
-# Create Collection
-client.collection("documents").create(dimension=768, distance="cosine")
+    # Create collection
+    await collection.create(dimension=768, distance="cosine")
 
-# Insert Data
-client.collection("documents").insert([
-    {"id": "1", "vector": [0.1, ...], "metadata": {"text": "hello world"}}
-])
+    # Insert data
+    await collection.insert([
+        Point(id="1", vector=[0.1] * 768, metadata={"text": "Hello World"})
+    ])
 
-# Search
-results = client.collection("documents").search(
-    vector=[0.1, ...],
-    top_k=5
-)
+    # Search
+    results = await collection.search(vector=[0.1] * 768, top_k=5)
+    print(results.results)
+
+asyncio.run(main())
 ```
 
-### Node.js
+**Run it:** `python examples/lancedb/python/quickstart.py`
+
+### Node.js Quick Start
 
 ```typescript
-import { EmbexClient } from '@bridgerust/embex';
+import { EmbexClient } from "@bridgerust/embex";
 
-// Initialize
-const client = new EmbexClient('qdrant', 'http://localhost:6333');
+async function main() {
+  // LanceDB embedded - zero setup, just a local path
+  const client = await EmbexClient.newAsync("lancedb", "./data");
+  const collection = client.collection("documents");
 
-// Search
-const results = await client.collection('documents').search({
-    vector: [0.1, ...],
-    topK: 5
-});
+  // Create collection
+  await collection.create(768, "cosine");
+
+  // Insert data
+  await collection.insert([
+    {
+      id: "1",
+      vector: Array(768).fill(0.1),
+      metadata: { text: "Hello World" },
+    },
+  ]);
+
+  // Search
+  const results = await collection.search(Array(768).fill(0.1), 5);
+  console.log(results.results);
+}
+
+main();
 ```
+
+**Run it:** `npx tsx examples/lancedb/node/quickstart.ts`
+
+### All Provider Quick Starts
+
+Try Embex with any provider! Same API, different backend:
+
+| Provider     | Setup           | Python                                          | Node.js                                        |
+| ------------ | --------------- | ----------------------------------------------- | ---------------------------------------------- |
+| **LanceDB**  | None (embedded) | `python examples/lancedb/python/quickstart.py`  | `npx tsx examples/lancedb/node/quickstart.ts`  |
+| **Qdrant**   | Docker server   | `python examples/qdrant/python/quickstart.py`   | `npx tsx examples/qdrant/node/quickstart.ts`   |
+| **Pinecone** | API key         | `python examples/pinecone/python/quickstart.py` | `npx tsx examples/pinecone/node/quickstart.ts` |
+| **Chroma**   | Optional server | `python examples/chroma/python/quickstart.py`   | `npx tsx examples/chroma/node/quickstart.ts`   |
+
+> 💡 **Same API everywhere!** Just change the provider name - all code stays the same. See [examples/README.md](../../examples/README.md) for setup instructions.
 
 ## 📊 Benchmarks
 

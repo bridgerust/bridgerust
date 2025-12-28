@@ -22,52 +22,46 @@ pip install embex
 
 ## ⚡ Quick Start
 
-### 1. Connect to a Provider
+**Try Embex in 30 seconds - No setup required!** Uses LanceDB embedded mode (no server needed).
 
 ```python
-from embex import EmbexClient
+import asyncio
+from embex import EmbexClient, Point
 
-# Connect to Qdrant
-client = EmbexClient("qdrant", "http://localhost:6333")
+async def main():
+    # LanceDB embedded - zero setup, just a local path
+    client = await EmbexClient.new_async("lancedb", "./data")
+    collection = client.collection("documents")
 
-# Or use async initialization (required for some providers like LanceDB/Milvus)
-# Note: Python client handles async init internally via await if needed,
-# or use the async factory if exposed.
-# For standard usage, EmbexClient constructor handles most sync/async bridging.
+    # Create collection
+    await collection.create(dimension=768, distance="cosine")
+
+    # Insert data
+    await collection.insert([
+        Point(id="1", vector=[0.1] * 768, metadata={"text": "Hello World"})
+    ])
+
+    # Search
+    results = await collection.search(vector=[0.1] * 768, top_k=5)
+    print(results.results)
+
+asyncio.run(main())
 ```
 
-### 2. Create a Collection
+**Run it:** `python examples/lancedb/python/quickstart.py`
 
-```python
-collection = client.collection("my_collection")
+### All Provider Quick Starts
 
-# Create with specific dimension and metric
-collection.create(768, "cosine")
-```
+Try Embex with any provider! Same API, different backend:
 
-### 3. Insert Vectors
+| Provider     | Setup           | Quick Start                                     |
+| ------------ | --------------- | ----------------------------------------------- |
+| **LanceDB**  | None (embedded) | `python examples/lancedb/python/quickstart.py`  |
+| **Qdrant**   | Docker server   | `python examples/qdrant/python/quickstart.py`   |
+| **Pinecone** | API key         | `python examples/pinecone/python/quickstart.py` |
+| **Chroma**   | Optional server | `python examples/chroma/python/quickstart.py`   |
 
-```python
-collection.insert([
-  {
-    "id": "1",
-    "vector": [0.1, 0.2, ...], # 768 dimensions
-    "metadata": {"title": "Hello World", "category": "greeting"}
-  }
-])
-```
-
-### 4. Search
-
-```python
-results = collection.search(
-  vector=[0.1, 0.2, ...], # Query vector
-  limit=5
-)
-
-for result in results.results:
-    print(result.id, result.score, result.metadata)
-```
+> 💡 **Same API everywhere!** Just change the provider name - all code stays the same. See [examples/README.md](../../../examples/README.md) for setup instructions.
 
 ### 5. Filtered Search (Builder Pattern)
 

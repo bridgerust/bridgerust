@@ -1,0 +1,13 @@
+{
+  "name": "embex-pinecone-example",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@bridgerust/embex": "file:../../../../bindings/node/@bridgerust/embex"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.3",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}

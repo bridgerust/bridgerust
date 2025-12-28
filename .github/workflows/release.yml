@@ -227,28 +227,7 @@ jobs:
           path: bindings/node/@bridgerust/embex/npm/${{ matrix.name }}/
           retention-days: 7
 
-  publish-crates:
-    name: Publish to crates.io
-    runs-on: ubuntu-latest
-    if: false
-    environment:
-      name: crates-io
-      url: https://crates.io
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Publish to crates.io
-        run: |
-          echo "Publishing to crates.io..."
-          # Add actual publish commands for each crate
-          # cargo publish --package bridge-core
-          # cargo publish --package bridge-kabod-core
-          # etc.
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+  # Note: Not publishing to crates.io - only publishing Python (PyPI) and Node.js (npm) packages
 
   publish-pypi:
     name: Publish to PyPI

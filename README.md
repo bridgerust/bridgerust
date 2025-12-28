@@ -2,6 +2,12 @@
 
 **BridgeRust** builds high-performance infrastructure libraries for Python, Node.js, and other ecosystems, powered by a shared Rust core.
 
+[![CI](https://github.com/bridgerust/bridgerust/workflows/Release/badge.svg)](https://github.com/bridgerust/bridgerust/actions)
+[![PyPI](https://img.shields.io/pypi/v/embex?color=blue)](https://pypi.org/project/embex/)
+[![NPM](https://img.shields.io/npm/v/@bridgerust/embex?color=red)](https://www.npmjs.com/package/@bridgerust/embex)
+[![Downloads](https://pepy.tech/badge/embex)](https://pepy.tech/project/embex)
+[![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-green)](LICENSE)
+
 ![Embex Logo](images/logo.png)
 
 ## 🚀 Active Projects
@@ -82,15 +88,38 @@ pip install embex      # For Embex
 npm install @bridgerust/embex
 ```
 
-### Rust
+### Rust (Development)
+
+For development or using from source:
 
 ```toml
 [dependencies]
-bridge-embex = "0.1"
+bridge-embex = { path = "../bridgerust/crates/embex/client" }
+# Or from git:
+# bridge-embex = { git = "https://github.com/bridgerust/bridgerust", path = "crates/embex/client" }
+```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) (coming soon).
+See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for development setup.
+
+## Quick Start Examples
+
+Try Embex with any provider! Same API, different backend:
+
+| Provider     | Setup           | Python                                          | Node.js                                        |
+| ------------ | --------------- | ----------------------------------------------- | ---------------------------------------------- |
+| **LanceDB**  | None (embedded) | `python examples/lancedb/python/quickstart.py`  | `npx tsx examples/lancedb/node/quickstart.ts`  |
+| **Qdrant**   | Docker server   | `python examples/qdrant/python/quickstart.py`   | `npx tsx examples/qdrant/node/quickstart.ts`   |
+| **Pinecone** | API key         | `python examples/pinecone/python/quickstart.py` | `npx tsx examples/pinecone/node/quickstart.ts` |
+| **Chroma**   | Optional server | `python examples/chroma/python/quickstart.py`   | `npx tsx examples/chroma/node/quickstart.ts`   |
+
+> 💡 **Start with LanceDB** - Zero setup required! No server, no Docker, no API keys needed.
+
+See [examples/README.md](examples/README.md) for detailed setup instructions and more examples.
 
 ## License
 
 MIT OR Apache-2.0
+
+```
+
 ```
