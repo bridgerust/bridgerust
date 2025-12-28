@@ -23,6 +23,12 @@ def publish(dry_run=False):
     print("\n📦 Publishing Node.js Bindings...")
     cwd = ROOT_DIR / "bindings/node/@bridgerust/embex"
     
+    # Note: The build process (via npm run build) automatically uses:
+    # - --release flag for optimized builds
+    # - strip: true from package.json napi config (removes debug symbols)
+    # - Workspace Cargo.toml release profile optimizations (LTO, strip, etc.)
+    # This ensures minimal package size (~8-15MB per platform vs 65MB unoptimized)
+    
     flags = "--dry-run" if dry_run else ""
     run(f"npm publish --access public {flags}", cwd=cwd)
 

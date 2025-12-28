@@ -21,9 +21,23 @@ members = [
 ]
 
 [workspace.package]
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 rust-version = "1.92"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/bridgerust/bridgerust"
 authors = ["KOLOGO B Josias Yannick <hello@kologojosias.com>"]
+
+# Optimize release builds for size
+[profile.release]
+opt-level = 3           # Maximum optimizations
+lto = true              # Link-time optimization
+codegen-units = 1       # Better optimization, slower compile
+strip = true            # CRITICAL: Strip debug symbols
+panic = 'abort'         # Smaller binaries
+debug = false           # No debug info
+
+# Apply to all workspace packages
+[profile.release.package."*"]
+opt-level = 3
+strip = true

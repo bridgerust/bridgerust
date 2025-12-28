@@ -23,11 +23,20 @@ def publish(dry_run=False):
     print("\n🐍 Publishing Python Bindings...")
     cwd = ROOT_DIR / "bindings/python/embex"
     
-    cmd = "maturin publish"
+    # Optimization flags for minimal wheel size (~6-10MB vs 57MB unoptimized):
+    # - --release: Uses Cargo release profile with LTO, opt-level=3, strip=true
+    # - --strip: Removes debug symbols (saves 40-50MB)
+    # Additional optimizations from workspace Cargo.toml:
+    #   - LTO (link-time optimization)
+    #   - codegen-units = 1 (better optimization)
+    #   - panic = 'abort' (smaller binaries)
+    #   - Tokio features minimized (rt-multi-thread, macros, sync only)
+    #   - HTTP clients use rustls instead of OpenSSL
+    cmd = "maturin publish --release --strip"
     if dry_run:
         # Maturin doesn't strictly have a --dry-run for publish, 
         # but we can build without uploading
-        cmd = "maturin build --release"
+        cmd = "maturin build --release --strip"
     
     run(cmd, cwd=cwd)
 

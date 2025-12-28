@@ -1,6 +1,6 @@
 {
   "name": "@bridgerust/embex",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Embex Vector Database ORM Node.js Bindings",
   "homepage": "https://github.com/bridgerust/bridgerust/embex",
   "repository": {
@@ -37,7 +37,13 @@
       "aarch64-unknown-linux-musl",
       "i686-pc-windows-msvc",
       "armv7-unknown-linux-gnueabihf"
-    ]
+    ],
+    "package": {
+      "name": "@bridgerust/embex",
+      "binary": {
+        "strip": true
+      }
+    }
   },
   "scripts": {
     "build": "napi build --platform --release --js native.js --dts native.d.ts && tsc",

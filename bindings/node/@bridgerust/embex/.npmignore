@@ -1,0 +1,68 @@
+# Rust source (not needed in npm package)
+src/
+Cargo.lock
+Cargo.toml
+build.rs
+
+# Build artifacts
+*.rs
+*.toml
+target/
+
+# TypeScript source (only dist/ is needed)
+*.ts
+!dist/**/*.d.ts
+tsconfig.json
+vitest.config.ts
+
+# Tests
+tests/
+__tests__/
+*.test.js
+*.test.ts
+dist/tests/
+
+# Development files
+.github/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# CI/CD
+.gitlab-ci.yml
+azure-pipelines.yml
+.travis.yml
+
+# Examples (unless you want them)
+examples/
+benchmarks/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Development dependencies
+node_modules/
+package-lock.json
+bun.lockb
+
+# Build scripts
+embed.js
+native.js
+native.d.ts
+
+# Development binaries (only platform-specific packages should have binaries)
+*.node
+!*-darwin-*.node
+!*-linux-*.node
+!*-win32-*.node
+
+# Documentation (keep README.md)
+docs/
+*.md
+!README.md
+

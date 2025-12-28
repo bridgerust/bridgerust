@@ -8,9 +8,9 @@ authors.workspace = true
 description = "Milvus adapter for Embex Vector ORM"
 
 [dependencies]
-bridge-embex-core = { path = "../../core", version = "0.1.1" }
-bridge-embex-infrastructure = { path = "../../infrastructure", version = "0.1.1" }
-reqwest = { version = "0.12", features = ["json"] }
+bridge-embex-core = { path = "../../core", version = "0.1.2" }
+bridge-embex-infrastructure = { path = "../../infrastructure", version = "0.1.2" }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
 async-trait = "0.1.89"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.147"
