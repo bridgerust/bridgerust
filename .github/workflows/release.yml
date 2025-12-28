@@ -30,6 +30,18 @@ jobs:
         # LanceDB requires protoc for building
         run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
 
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
       - name: Check formatting
         run: cargo fmt --all -- --check
 
@@ -68,6 +80,18 @@ jobs:
           elif [ "${{ runner.os }}" = "Windows" ]; then
             choco install protoc -y || echo "protoc may already be installed"
           fi
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
 
       - name: Install maturin
         run: pip install maturin
@@ -130,6 +154,18 @@ jobs:
           elif [ "${{ runner.os }}" = "Windows" ]; then
             choco install protoc -y || echo "protoc may already be installed"
           fi
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
 
       - name: Install dependencies
         working-directory: bindings/node/@bridgerust/embex
@@ -194,7 +230,6 @@ jobs:
   publish-crates:
     name: Publish to crates.io
     runs-on: ubuntu-latest
-    # Note: Not currently publishing to crates.io
     if: false
     environment:
       name: crates-io
