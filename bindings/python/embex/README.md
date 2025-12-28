@@ -65,16 +65,50 @@ Try Embex with any provider! Same API, different backend:
 
 ### 5. Filtered Search (Builder Pattern)
 
-```python
+````python
 # Coming soon: Python Builder Pattern
 # Currently supported via search() arguments:
 
+```python
 results = collection.search(
     vector=[0.1, 0.2, ...],
     limit=10,
     filter={"course": "CS101"}
 )
+````
+
+## ☁️ Connecting to Cloud Providers
+
+To connect to managed services like Pinecone, Qdrant Cloud, or Zilliz (Milvus), simply provide your API key and endpoint URL.
+
+```python
+import os
+from embex import EmbexClient
+
+# Connect to Pinecone (or other cloud providers)
+client = EmbexClient(
+    provider="pinecone",
+    url="https://index-name.svc.pinecone.io",
+    api_key=os.getenv("PINECONE_API_KEY")
+)
+
+# Connect to Qdrant Cloud
+client_qdrant = EmbexClient(
+    provider="qdrant",
+    url="https://xyz-example.eu-central.aws.cloud.qdrant.io:6333",
+    api_key=os.getenv("QDRANT_API_KEY")
+)
 ```
+
+### Official Documentation & API Keys
+
+Need help finding your API key? Check the official provider documentation:
+
+- **Pinecone**: [Authentication & API Keys](https://docs.pinecone.io/guides/get-started/quickstart#2-get-an-api-key)
+- **Qdrant**: [Cloud Authentication](https://qdrant.tech/documentation/cloud/authentication/)
+- **Milvus (Zilliz)**: [Manage Credentials](https://docs.zilliz.com/docs/manage-api-keys)
+- **Weaviate**: [Authentication](https://weaviate.io/developers/weaviate/configuration/authentication)
+- **Chroma**: [Auth & Client Settings](https://docs.trychroma.com/guides#authentication)
 
 ## 🔌 Supported Providers
 

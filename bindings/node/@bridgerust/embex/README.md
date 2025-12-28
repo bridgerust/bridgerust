@@ -82,6 +82,38 @@ const results = await collection.buildSearch([0.1, 0.2, ...])
   .execute();
 ```
 
+## ☁️ Connecting to Cloud Providers
+
+To connect to managed services like Pinecone, Qdrant Cloud, or Zilliz (Milvus), simply provide your API key and endpoint URL.
+
+```typescript
+import { EmbexClient } from "@bridgerust/embex";
+
+// Connect to Pinecone
+const client = new EmbexClient(
+  "pinecone",
+  "https://index-name.svc.pinecone.io",
+  process.env.PINECONE_API_KEY
+);
+
+// Connect to Qdrant Cloud
+const qdrantClient = new EmbexClient(
+  "qdrant",
+  "https://xyz-example.eu-central.aws.cloud.qdrant.io:6333",
+  process.env.QDRANT_API_KEY
+);
+```
+
+### Official Documentation & API Keys
+
+Need help finding your API key? Check the official provider documentation:
+
+- **Pinecone**: [Authentication & API Keys](https://docs.pinecone.io/guides/get-started/quickstart#2-get-an-api-key)
+- **Qdrant**: [Cloud Authentication](https://qdrant.tech/documentation/cloud/authentication/)
+- **Milvus (Zilliz)**: [Manage Credentials](https://docs.zilliz.com/docs/manage-api-keys)
+- **Weaviate**: [Authentication](https://weaviate.io/developers/weaviate/configuration/authentication)
+- **Chroma**: [Auth & Client Settings](https://docs.trychroma.com/guides#authentication)
+
 ## 🔌 Supported Providers
 
 | Provider | Key        | Async Init? |
