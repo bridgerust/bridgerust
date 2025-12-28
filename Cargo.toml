@@ -17,7 +17,8 @@ members = [
     "benchmarks/embex",
     "crates/embex/adapters/weaviate",
     "crates/embex/adapters/milvus",
-    "cli/embex-cli"
+    "cli/embex-cli",
+    "examples/rust",
 ]
 
 [workspace.package]

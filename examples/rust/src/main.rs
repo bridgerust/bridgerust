@@ -1,5 +1,5 @@
 use bridge_embex::client::EmbexClient;
-use bridge_embex_core::config::EmbexConfig;
+use bridge_embex::EmbexConfig;
 use bridge_embex_core::types::{CollectionSchema, DistanceMetric, Point};
 use anyhow::Result;
 

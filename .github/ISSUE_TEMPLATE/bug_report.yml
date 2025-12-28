@@ -1,0 +1,127 @@
+name: Bug Report
+description: Report a bug or unexpected behavior
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug! Please provide as much detail as possible.
+
+  - type: dropdown
+    id: language
+    attributes:
+      label: Language Binding
+      description: Which language binding are you using?
+      options:
+        - Python
+        - TypeScript/Node.js
+        - Rust
+    validations:
+      required: true
+
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Vector Database Provider
+      description: Which provider are you using?
+      options:
+        - Qdrant
+        - Pinecone
+        - Chroma
+        - Weaviate
+        - LanceDB
+        - Milvus
+        - PgVector
+        - Multiple
+        - Not applicable
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Embex Version
+      description: Version of Embex you're using
+      placeholder: e.g., 0.1.4
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of the bug
+      placeholder: What happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce this bug?
+      placeholder: |
+        1. Initialize client with...
+        2. Call method...
+        3. See error...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: error
+    attributes:
+      label: Error Message / Stack Trace
+      description: Paste any error messages or stack traces
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: code
+    attributes:
+      label: Code Example
+      description: Minimal code example that reproduces the issue
+      render: python
+      placeholder: |
+        from embex import EmbexClient
+
+        # Your code here
+    validations:
+      required: false
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Your environment details
+      placeholder: |
+        - OS: [e.g., macOS 14.0, Ubuntu 22.04]
+        - Python/Node.js version: [e.g., Python 3.11, Node.js 20]
+        - Rust version (if applicable): [e.g., 1.75.0]
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other context about the problem
+    validations:
+      required: false

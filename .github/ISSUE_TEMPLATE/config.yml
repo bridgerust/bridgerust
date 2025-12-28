@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Discussions
+    url: https://github.com/bridgerust/bridgerust/discussions
+    about: Ask questions, share ideas, or discuss Embex
+  - name: 📚 Documentation
+    url: https://github.com/bridgerust/bridgerust/tree/main/docs
+    about: Check our documentation for guides and API reference
+  - name: 🐛 Bug Reports
+    url: https://github.com/bridgerust/bridgerust/issues/new?template=bug_report.yml
+    about: Report a bug or unexpected behavior

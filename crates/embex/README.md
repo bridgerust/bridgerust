@@ -190,13 +190,35 @@ const results = await client.collection('documents').search({
 
 Embex is designed to offer the convenience of an ORM with the speed of a native driver.
 
-| Operation   | Environment      | Improvement (vs Scalar) |
-| ----------- | ---------------- | ----------------------- |
-| Dot Product | ARM64 (M1/M2/M3) | **3.6x - 4.0x**         |
-| L2 Distance | ARM64 (M1/M2/M3) | **3.5x - 3.8x**         |
-| Cosine Sim. | ARM64 (M1/M2/M3) | **3.6x**                |
+### SIMD Performance (vs Scalar Implementation)
 
-See [PERFORMANCE.md](../../docs/PERFORMANCE.md) for full benchmarks.
+| Operation   | Environment      | Speedup         |
+| ----------- | ---------------- | --------------- |
+| Dot Product | ARM64 (M1/M2/M3) | **3.6x - 4.0x** |
+| L2 Distance | ARM64 (M1/M2/M3) | **3.5x - 3.8x** |
+| Cosine Sim. | ARM64 (M1/M2/M3) | **3.6x**        |
+| Dot Product | x86_64 (AVX2)    | **5.5x - 7.5x** |
+| L2 Distance | x86_64 (AVX2)    | **6.0x**        |
+| Cosine Sim. | x86_64 (AVX2)    | **5.8x**        |
+
+### Overhead vs Native Clients
+
+| Operation         | Overhead | Notes                |
+| ----------------- | -------- | -------------------- |
+| Point Creation    | < 1%     | Negligible           |
+| Query Building    | < 2%     | Very low             |
+| Filter Conversion | 5-10%    | Complex filters only |
+| Serialization     | < 1%     | Uses serde_json      |
+| Client Init       | < 5%     | One-time cost        |
+
+### Throughput (1000 points, 768 dimensions)
+
+| Operation | LanceDB      | PgVector     | Qdrant       |
+| --------- | ------------ | ------------ | ------------ |
+| Insert    | ~15k ops/sec | ~12k ops/sec | ~10k ops/sec |
+| Search    | ~8k ops/sec  | ~6k ops/sec  | ~5k ops/sec  |
+
+_Note: Results vary based on hardware and database configuration. See [PERFORMANCE.md](../../docs/PERFORMANCE.md) for detailed benchmarks._
 
 ## 📚 Documentation
 

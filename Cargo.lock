@@ -2927,6 +2927,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "embex-basic-usage"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bridge-embex",
+ "bridge-embex-core",
+ "tokio",
+]
+
+[[package]]
 name = "embex-bench"
 version = "0.1.0"
 dependencies = [

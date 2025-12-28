@@ -1,0 +1,129 @@
+name: Feedback & Feature Request
+description: Share your experience, feedback, or request a feature
+title: "[Feedback] "
+labels: ["feedback", "enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to share your feedback! This helps us improve Embex.
+
+  - type: dropdown
+    id: use-case
+    attributes:
+      label: Use Case
+      description: How are you using Embex?
+      options:
+        - Production
+        - Prototype
+        - Learning
+        - Evaluation
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: language
+    attributes:
+      label: Primary Language
+      description: Which language binding are you using?
+      options:
+        - Python
+        - TypeScript/Node.js
+        - Rust
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: experience
+    attributes:
+      label: Your Experience
+      description: Tell us about your experience with Embex
+      placeholder: |
+        - What worked well?
+        - What was confusing or difficult?
+        - How long did it take to get started?
+        - Any installation issues?
+    validations:
+      required: true
+
+  - type: textarea
+    id: api-feedback
+    attributes:
+      label: API Design Feedback
+      description: How did you find the API design? (Optional)
+      placeholder: |
+        - Was the API intuitive?
+        - Any methods that were confusing?
+        - Suggestions for improvement?
+    validations:
+      required: false
+
+  - type: textarea
+    id: performance
+    attributes:
+      label: Performance Feedback
+      description: Performance observations (Optional)
+      placeholder: |
+        - Did you run benchmarks?
+        - Real-world performance vs expectations?
+        - Any performance issues?
+    validations:
+      required: false
+
+  - type: textarea
+    id: features
+    attributes:
+      label: Feature Requests
+      description: What features would make Embex better for you?
+      placeholder: |
+        - Missing features you need?
+        - Improvements to existing features?
+        - Integration requests?
+    validations:
+      required: false
+
+  - type: textarea
+    id: providers
+    attributes:
+      label: Provider Experience
+      description: Which vector database provider(s) did you use?
+      placeholder: |
+        - Which provider(s)?
+        - How was the switching experience?
+        - Any provider-specific issues?
+    validations:
+      required: false
+
+  - type: textarea
+    id: documentation
+    attributes:
+      label: Documentation Feedback
+      description: How was the documentation? (Optional)
+      placeholder: |
+        - What was helpful?
+        - What was missing or confusing?
+        - Suggestions for improvement?
+    validations:
+      required: false
+
+  - type: textarea
+    id: production
+    attributes:
+      label: Production Readiness
+      description: Would you use Embex in production? (Optional)
+      placeholder: |
+        - Yes/No/Maybe?
+        - What would make you more confident?
+        - Any blockers?
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Comments
+      description: Anything else you'd like to share?
+    validations:
+      required: false
