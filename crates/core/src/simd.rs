@@ -129,7 +129,7 @@ fn dot_product_scalar(a: &[f32], b: &[f32]) -> f32 {
 }
 
 #[inline(never)]
-fn l2_distance_scalar(a: &[f32], b: &[f32]) -> f32 {
+fn l2_distance_squared_scalar(a: &[f32], b: &[f32]) -> f32 {
     a.iter()
         .zip(b.iter())
         .map(|(x, y)| {
@@ -137,7 +137,11 @@ fn l2_distance_scalar(a: &[f32], b: &[f32]) -> f32 {
             diff * diff
         })
         .sum::<f32>()
-        .sqrt()
+}
+
+#[inline(never)]
+fn l2_distance_scalar(a: &[f32], b: &[f32]) -> f32 {
+    l2_distance_squared_scalar(a, b).sqrt()
 }
 
 #[inline(never)]
@@ -210,7 +214,7 @@ unsafe fn l2_distance_avx2(a: &[f32], b: &[f32]) -> f32 {
     let remainder = len % 8;
     if remainder > 0 {
         let start = chunks * 8;
-        (result + l2_distance_scalar(&a[start..], &b[start..])).sqrt()
+        (result + l2_distance_squared_scalar(&a[start..], &b[start..])).sqrt()
     } else {
         result.sqrt()
     }
@@ -301,7 +305,7 @@ unsafe fn l2_distance_sse4(a: &[f32], b: &[f32]) -> f32 {
     let remainder = len % 4;
     if remainder > 0 {
         let start = chunks * 4;
-        (result + l2_distance_scalar(&a[start..], &b[start..])).sqrt()
+        (result + l2_distance_squared_scalar(&a[start..], &b[start..])).sqrt()
     } else {
         result.sqrt()
     }
@@ -388,7 +392,7 @@ unsafe fn l2_distance_neon(a: &[f32], b: &[f32]) -> f32 {
     let remainder = len % 4;
     if remainder > 0 {
         let start = chunks * 4;
-        (sum + l2_distance_scalar(&a[start..], &b[start..])).sqrt()
+        (sum + l2_distance_squared_scalar(&a[start..], &b[start..])).sqrt()
     } else {
         sum.sqrt()
     }

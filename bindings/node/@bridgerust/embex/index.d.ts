@@ -90,6 +90,8 @@ export declare class SearchBuilder {
   execute(): Promise<SearchResponse>
 }
 
+export declare function cli(args: Array<string>): Promise<void>
+
 export interface MetadataUpdate {
   /** Point ID to update. */
   id: string

@@ -11,6 +11,9 @@ description = "Core utilities for BridgeRust engines"
 [features]
 default = []
 simd = []
+x86_64 = []
+avx2 = []
+
 
 [dependencies]
 anyhow = "1.0.100"

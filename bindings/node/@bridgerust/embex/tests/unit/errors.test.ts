@@ -14,6 +14,6 @@ describe("EmbexClient - Error Handling", () => {
   it("should handle missing URL", () => {
     expect(() => {
       new EmbexClient("qdrant", "", null);
-    }).not.toThrow(); // May or may not throw depending on validation
+    }).toThrow();
   });
 });

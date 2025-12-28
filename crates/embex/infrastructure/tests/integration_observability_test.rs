@@ -113,11 +113,10 @@ fn test_metrics_snapshot_helper_methods() {
     
     let snapshot = metrics.snapshot();
     
-    // Test helper methods
-    assert_eq!(snapshot.total_operations(), 2); // inserts + searches (deletes not counted)
+    assert_eq!(snapshot.total_operations(), 3); // inserts + searches
     assert_eq!(snapshot.total_errors(), 1);
-    assert_eq!(snapshot.error_rate(), 50.0); // 1 error / 2 operations = 50%
-    assert_eq!(snapshot.avg_insert_latency_ms(), 20.0); // Last recorded: 20ms
+    assert_eq!(snapshot.error_rate(), 33.33333333333333); // 1 error / 3 operations
+    assert_eq!(snapshot.avg_insert_latency_ms(), 15.0); // (10+20)/2 = 15ms
     assert_eq!(snapshot.avg_search_latency_ms(), 15.0);
     assert!(snapshot.avg_latency_ms() > 0.0);
 }

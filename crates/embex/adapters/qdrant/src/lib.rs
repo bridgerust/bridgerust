@@ -40,7 +40,22 @@ impl QdrantAdapter {
         api_key: Option<&str>,
         _pool_size: Option<u32>,
     ) -> Result<Self> {
-        let mut config = QdrantConfig::from_url(url);
+        // Heuristic: If user passes localhost:6333, they likely mean the gRPC port 6334
+        // (which is separate in standard Docker image), but are used to 6333 from Python/REST world.
+        let url_string = url.to_string();
+        let adjusted_url = if (url_string.contains("localhost:6333")
+            || url_string.contains("127.0.0.1:6333"))
+            && !url_string.contains("https")
+        {
+            tracing::info!(
+                "Detected localhost:6333 config. Automatically switching to gRPC port 6334 for Qdrant Rust client."
+            );
+            url_string.replace("6333", "6334")
+        } else {
+            url_string
+        };
+
+        let mut config = QdrantConfig::from_url(&adjusted_url);
 
         if let Some(key) = api_key {
             config.set_api_key(key);
@@ -283,7 +298,19 @@ fn convert_filter(filter: &types::Filter) -> qdrant_client::qdrant::Filter {
             qdrant_filter.should = filters.iter().map(convert_condition_to_qdrant).collect();
         }
         types::Filter::Key(key, condition) => {
-            qdrant_filter.must = vec![convert_key_condition(key, condition)];
+            match condition {
+                types::Condition::Ne(val) => {
+                    qdrant_filter.must_not =
+                        vec![convert_key_condition(key, &types::Condition::Eq(val.clone()))];
+                }
+                types::Condition::NotIn(vals) => {
+                    qdrant_filter.must_not =
+                        vec![convert_key_condition(key, &types::Condition::In(vals.clone()))];
+                }
+                _ => {
+                    qdrant_filter.must = vec![convert_key_condition(key, condition)];
+                }
+            }
         }
     }
     qdrant_filter
@@ -575,5 +602,14 @@ mod tests {
         let filter = Filter::r#in("ids", vec![1, 2, 3]);
         let qdrant_filter = convert_filter(&filter);
         assert!(!qdrant_filter.must.is_empty());
+    }
+
+    #[test]
+    fn test_qdrant_adapter_auto_correct_port() {
+        let adapter = QdrantAdapter::new("http://localhost:6333", None);
+        assert!(adapter.is_ok());
+
+        let adapter_ip = QdrantAdapter::new("http://127.0.0.1:6333", None);
+        assert!(adapter_ip.is_ok());
     }
 }

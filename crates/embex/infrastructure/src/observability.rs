@@ -5,19 +5,16 @@ use std::time::{Duration, Instant};
 /// Metrics for Embex operations
 #[derive(Clone)]
 pub struct EmbexMetrics {
-    // Operation counters
     pub inserts: Arc<AtomicU64>,
     pub searches: Arc<AtomicU64>,
     pub deletes: Arc<AtomicU64>,
     pub creates: Arc<AtomicU64>,
     pub deletes_collection: Arc<AtomicU64>,
 
-    // Error counters
     pub errors: Arc<AtomicU64>,
     pub retries: Arc<AtomicU64>,
     pub timeouts: Arc<AtomicU64>,
 
-    // Latency histograms (simplified - using average for now)
     pub insert_latency_ms: Arc<AtomicU64>,
     pub search_latency_ms: Arc<AtomicU64>,
     pub delete_latency_ms: Arc<AtomicU64>,
@@ -48,17 +45,17 @@ impl EmbexMetrics {
 
     pub fn record_insert(&self, latency_ms: u64) {
         self.inserts.fetch_add(1, Ordering::Relaxed);
-        self.insert_latency_ms.store(latency_ms, Ordering::Relaxed);
+        self.insert_latency_ms.fetch_add(latency_ms, Ordering::Relaxed);
     }
 
     pub fn record_search(&self, latency_ms: u64) {
         self.searches.fetch_add(1, Ordering::Relaxed);
-        self.search_latency_ms.store(latency_ms, Ordering::Relaxed);
+        self.search_latency_ms.fetch_add(latency_ms, Ordering::Relaxed);
     }
 
     pub fn record_delete(&self, latency_ms: u64) {
         self.deletes.fetch_add(1, Ordering::Relaxed);
-        self.delete_latency_ms.store(latency_ms, Ordering::Relaxed);
+        self.delete_latency_ms.fetch_add(latency_ms, Ordering::Relaxed);
     }
 
     pub fn record_create(&self) {
@@ -133,7 +130,6 @@ impl MetricsSnapshot {
         (self.errors as f64 / total as f64) * 100.0
     }
 
-    /// Average insert latency in milliseconds
     pub fn avg_insert_latency_ms(&self) -> f64 {
         if self.inserts == 0 {
             return 0.0;
@@ -141,7 +137,6 @@ impl MetricsSnapshot {
         self.insert_latency_ms as f64 / self.inserts as f64
     }
 
-    /// Average search latency in milliseconds
     pub fn avg_search_latency_ms(&self) -> f64 {
         if self.searches == 0 {
             return 0.0;
@@ -149,7 +144,6 @@ impl MetricsSnapshot {
         self.search_latency_ms as f64 / self.searches as f64
     }
 
-    /// Average delete latency in milliseconds
     pub fn avg_delete_latency_ms(&self) -> f64 {
         if self.deletes == 0 {
             return 0.0;
@@ -157,7 +151,6 @@ impl MetricsSnapshot {
         self.delete_latency_ms as f64 / self.deletes as f64
     }
 
-    /// Overall average latency across all operations
     pub fn avg_latency_ms(&self) -> f64 {
         let total_ops = self.inserts + self.searches + self.deletes;
         if total_ops == 0 {
@@ -168,7 +161,6 @@ impl MetricsSnapshot {
     }
 }
 
-/// Helper for timing operations
 pub struct Timer {
     start: Instant,
 }
@@ -189,10 +181,6 @@ impl Timer {
     }
 }
 
-/// Initialize tracing with default subscriber
-/// 
-/// This function requires the `tracing-subscriber` crate to be available.
-/// Users can also initialize tracing manually using their preferred subscriber.
 #[cfg(feature = "tracing-subscriber")]
 pub fn init_tracing() {
     use tracing_subscriber::{
@@ -208,7 +196,6 @@ pub fn init_tracing() {
         .init();
 }
 
-/// Initialize tracing with default subscriber (no-op if feature not enabled)
 #[cfg(not(feature = "tracing-subscriber"))]
 pub fn init_tracing() {
     // No-op if tracing-subscriber feature is not enabled

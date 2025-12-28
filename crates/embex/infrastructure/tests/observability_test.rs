@@ -21,7 +21,7 @@ fn test_metrics_recording_inserts() {
     
     let snapshot = metrics.snapshot();
     assert_eq!(snapshot.inserts, 3);
-    assert_eq!(snapshot.insert_latency_ms, 30); // Last recorded latency
+    assert_eq!(snapshot.insert_latency_ms, 60); // Total latency: 10 + 20 + 30
 }
 
 #[test]
@@ -33,7 +33,7 @@ fn test_metrics_recording_searches() {
     
     let snapshot = metrics.snapshot();
     assert_eq!(snapshot.searches, 2);
-    assert_eq!(snapshot.search_latency_ms, 25);
+    assert_eq!(snapshot.search_latency_ms, 40); // Total latency: 15 + 25
 }
 
 #[test]
@@ -45,7 +45,7 @@ fn test_metrics_recording_deletes() {
     
     let snapshot = metrics.snapshot();
     assert_eq!(snapshot.deletes, 2);
-    assert_eq!(snapshot.delete_latency_ms, 8);
+    assert_eq!(snapshot.delete_latency_ms, 13); // Total latency: 5 + 8
 }
 
 #[test]

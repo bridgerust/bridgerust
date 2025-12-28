@@ -576,3 +576,4 @@ module.exports.Collection = nativeBinding.Collection
 module.exports.EmbexClient = nativeBinding.EmbexClient
 module.exports.QueryBuilder = nativeBinding.QueryBuilder
 module.exports.SearchBuilder = nativeBinding.SearchBuilder
+module.exports.cli = nativeBinding.cli

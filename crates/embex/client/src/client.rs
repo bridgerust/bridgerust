@@ -16,7 +16,7 @@ use std::sync::Arc;
 ///
 /// ```rust,no_run
 /// use bridge_embex::client::EmbexClient;
-/// use bridge_embex_core::config::EmbexConfig;
+/// use bridge_embex_infrastructure::config::EmbexConfig;
 ///
 /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 /// let config = EmbexConfig {
@@ -125,9 +125,10 @@ impl Collection {
     /// ```rust,no_run
     /// use bridge_embex::client::EmbexClient;
     /// use bridge_embex_core::types::DistanceMetric;
+    /// use bridge_embex_infrastructure::config::EmbexConfig;
     ///
     /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-    /// let client = EmbexClient::new(/* config */)?;
+    /// let client = EmbexClient::new(EmbexConfig::default())?;
     /// let collection = client.collection("my_collection");
     ///
     /// // For Chroma: dimension will be inferred from first insert
@@ -191,7 +192,7 @@ impl Collection {
 
     /// Creates a search builder for querying the collection.
     pub fn search(&self, vector: Vec<f32>) -> SearchBuilder {
-        SearchBuilder::new(self.name.clone(), vector, self.db.clone())
+        SearchBuilder::new(self.name.clone(), vector, self.db.clone(), self.metrics.clone())
     }
 
     /// Executes a search query using a `QueryBuilder`.
@@ -309,13 +310,15 @@ impl Collection {
 pub struct SearchBuilder {
     inner: QueryBuilder,
     db: Arc<dyn VectorDatabase>,
+    metrics: Arc<EmbexMetrics>,
 }
 
 impl SearchBuilder {
-    pub fn new(collection: String, vector: Vec<f32>, db: Arc<dyn VectorDatabase>) -> Self {
+    pub fn new(collection: String, vector: Vec<f32>, db: Arc<dyn VectorDatabase>, metrics: Arc<EmbexMetrics>) -> Self {
         Self {
             inner: QueryBuilder::new(collection, vector),
             db,
+            metrics,
         }
     }
 
@@ -350,6 +353,13 @@ impl SearchBuilder {
     }
 
     pub async fn execute(self) -> Result<SearchResponse> {
-        self.db.search(&self.inner.build()).await
+        let timer = bridge_embex_infrastructure::observability::Timer::start();
+        let result = self.db.search(&self.inner.build()).await;
+        if result.is_ok() {
+            self.metrics.record_search(timer.elapsed_ms());
+        } else {
+            self.metrics.record_error();
+        }
+        result
     }
 }
