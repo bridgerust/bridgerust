@@ -31,6 +31,9 @@ Thank you for your interest in contributing to BridgeRust! This guide will help 
 git clone https://github.com/bridgerust/bridgerust.git
 cd bridgerust
 
+# Setup git hooks (automatically runs rustfmt and clippy before commits)
+./scripts/setup-git-hooks.sh
+
 # Build all crates
 cargo build --all
 
