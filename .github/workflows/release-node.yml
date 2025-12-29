@@ -153,6 +153,10 @@ jobs:
           echo "Found artifacts:"
           ls -lh *.node
 
+      - name: Install dependencies
+        working-directory: bindings/node/@bridgerust/embex
+        run: bun install
+
       - name: Publish to npm
         working-directory: bindings/node/@bridgerust/embex
         run: |
