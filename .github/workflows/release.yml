@@ -1,0 +1,40 @@
+name: Create Release
+
+on:
+  workflow_run:
+    workflows: ["Build Python Wheels", "Build Node.js Bindings"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Python artifacts
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          workflow: release-python.yml
+          path: artifacts/python
+
+      - name: Download Node.js artifacts
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          workflow: release-nodejs.yml
+          path: artifacts/nodejs
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.workflow_run.head_branch }}
+          files: |
+            artifacts/**/*.whl
+            artifacts/**/*.node
+            artifacts/**/*.tar.gz
+          generate_release_notes: true
