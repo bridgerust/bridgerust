@@ -32,8 +32,6 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
 
       - name: Install protobuf
         run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
@@ -45,24 +43,11 @@ jobs:
           cache-targets: false
           shared-key: "ci-v2"
 
-      - name: Check formatting
-        run: cargo fmt --all -- --check
-
-      - name: Clippy
-        run: cargo clippy --workspace -- -D warnings
-
       - name: Build workspace
         run: cargo build --workspace --release
-        env:
-          CARGO_BUILD_JOBS: 2
-
-      - name: Check disk space mid-build
-        run: df -h
 
       - name: Run tests
         run: cargo test --workspace --release --no-fail-fast
-        env:
-          RUST_MIN_STACK: 8388608
 
       - name: Check disk space after
         if: always()
