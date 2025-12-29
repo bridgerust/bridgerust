@@ -1,6 +1,6 @@
 {
   "name": "@bridgerust/embex",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Embex Vector Database ORM Node.js Bindings",
   "homepage": "https://github.com/bridgerust/bridgerust/embex",
   "repository": {
@@ -52,8 +52,7 @@
     "test": "vitest run",
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
-    "test:watch": "vitest watch",
-    "prepublishOnly": "napi prepublish -t npm"
+    "test:watch": "vitest watch"
   },
   "devDependencies": {
     "@napi-rs/cli": "^3.5.0",
@@ -61,11 +60,11 @@
     "@types/node": "^25.0.3"
   },
   "optionalDependencies": {
-    "@bridgerust/embex-darwin-arm64": "0.1.6",
-    "@bridgerust/embex-darwin-x64": "0.1.6",
-    "@bridgerust/embex-linux-x64-musl": "0.1.6",
-    "@bridgerust/embex-linux-arm64-musl": "0.1.6",
-    "@bridgerust/embex-win32-ia32-msvc": "0.1.6",
-    "@bridgerust/embex-linux-arm-gnueabihf": "0.1.6"
+    "@bridgerust/embex-darwin-arm64": "0.1.8",       // ← Change from 0.1.6
+    "@bridgerust/embex-darwin-x64": "0.1.8",         // ← Change from 0.1.6
+    "@bridgerust/embex-linux-x64-musl": "0.1.8",     // ← Change from 0.1.6
+    "@bridgerust/embex-linux-arm64-musl": "0.1.8",   // ← Change from 0.1.6
+    "@bridgerust/embex-win32-ia32-msvc": "0.1.8",    // ← Change from 0.1.6
+    "@bridgerust/embex-linux-arm-gnueabihf": "0.1.8" // ← Change from 0.1.6
   }
 }

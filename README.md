@@ -2,7 +2,9 @@
 
 **BridgeRust** builds high-performance infrastructure libraries for Python, Node.js, and other ecosystems, powered by a shared Rust core.
 
-[![CI](https://github.com/bridgerust/bridgerust/workflows/Release/badge.svg)](https://github.com/bridgerust/bridgerust/actions)
+[![CI](https://github.com/bridgerust/bridgerust/workflows/CI%20Tests/badge.svg)](https://github.com/bridgerust/bridgerust/actions)
+[![Python](https://github.com/bridgerust/bridgerust/workflows/Build%20Python%20Wheels/badge.svg)](https://github.com/bridgerust/bridgerust/actions)
+[![Node.js](https://github.com/bridgerust/bridgerust/workflows/Build%20Node.js%20Bindings/badge.svg)](https://github.com/bridgerust/bridgerust/actions)
 [![PyPI](https://img.shields.io/pypi/v/embex?color=blue)](https://pypi.org/project/embex/)
 [![NPM](https://img.shields.io/npm/v/@bridgerust/embex?color=red)](https://www.npmjs.com/package/@bridgerust/embex)
 [![Downloads](https://pepy.tech/badge/embex)](https://pepy.tech/project/embex)
@@ -119,7 +121,3 @@ See [examples/README.md](examples/README.md) for detailed setup instructions and
 ## License
 
 MIT OR Apache-2.0
-
-```
-
-```
