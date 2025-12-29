@@ -328,7 +328,6 @@ mod tests {
     use super::*;
     use bridge_embex_core::types::{DistanceMetric, Filter};
     use serde_json::json;
-    use std::f32::consts::PI;
 
     #[test]
     fn test_to_lance_distance() {
@@ -424,7 +423,7 @@ mod tests {
     #[test]
     fn test_format_value_number() {
         assert_eq!(format_value(&json!(42)), "42");
-        assert_eq!(format_value(&json!(PI)), PI.to_string());
+        assert_eq!(format_value(&json!(1.5)), "1.5");
     }
 
     #[test]

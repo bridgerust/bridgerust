@@ -340,7 +340,6 @@ fn format_value(value: &serde_json::Value) -> String {
 
 #[cfg(test)]
 mod tests {
-    use std::f32::consts::PI;
 
     use super::*;
     use bridge_embex_core::types::Filter;
@@ -443,7 +442,7 @@ mod tests {
     #[test]
     fn test_format_value_number() {
         assert_eq!(format_value(&json!(42)), "42");
-        assert_eq!(format_value(&json!(PI)), PI.to_string());
+        assert_eq!(format_value(&json!(1.5)), "1.5");
     }
 
     #[test]
