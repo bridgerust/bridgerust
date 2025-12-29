@@ -43,10 +43,7 @@ jobs:
           cache-targets: false
           shared-key: "ci-v2"
 
-      - name: Build workspace
-        run: cargo build --workspace --release
-
-      - name: Run tests
+      - name: Build and test workspace
         run: cargo test --workspace --release --no-fail-fast
 
       - name: Check disk space after
