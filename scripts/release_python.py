@@ -46,20 +46,32 @@ def publish(dry_run=False):
     #   - HTTP clients use rustls instead of OpenSSL
     
     if dry_run:
-        # Maturin doesn't strictly have a --dry-run for publish, 
-        # but we can build without uploading
+        # Build without uploading
+        # Note: maturin build accepts --release directly
         cmd = "maturin build --release --strip"
+        run(cmd, cwd=cwd)
     else:
-        # Check if wheels exist
-        wheels_dir = cwd / "target" / "wheels"
-        if wheels_dir.exists() and list(wheels_dir.glob("*.whl")):
-            print("   📦 Found existing wheels, uploading to PyPI...")
+        # Check if wheels exist in workspace target dir (default for workspace)
+        # or local target dir
+        workspace_wheels = ROOT_DIR / "target" / "wheels"
+        local_wheels = cwd / "target" / "wheels"
+        
+        wheels_to_upload = None
+        
+        if workspace_wheels.exists() and list(workspace_wheels.glob("*.whl")):
+            wheels_to_upload = workspace_wheels
+        elif local_wheels.exists() and list(local_wheels.glob("*.whl")):
+            wheels_to_upload = local_wheels
+            
+        if wheels_to_upload:
+            print(f"   📦 Found existing wheels in {wheels_to_upload}, uploading to PyPI...")
             # Use twine for better control
             run("pip install twine", check=False)
-            run("twine upload target/wheels/*.whl", cwd=cwd)
+            run(f"twine upload {wheels_to_upload}/*.whl", cwd=ROOT_DIR)
         else:
             # Build and publish in one step
-            cmd = "maturin publish --release --strip"
+            # Note: maturin publish defaults to --release and --strip (use --debug or --no-strip to disable)
+            cmd = "maturin publish"
             run(cmd, cwd=cwd)
 
 def main():

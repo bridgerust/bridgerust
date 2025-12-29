@@ -84,34 +84,67 @@ def prepublish_platforms():
     package_json_path = cwd / "package.json"
     original_prepublish = None
     
+    # Manual prepublish since napi prepublish fails locally with npm errors
     try:
-        # Read package.json
+        import json
+        import shutil
+        
+        # Read main package.json
         with open(package_json_path, 'r') as f:
             package_data = json.load(f)
-        
-        # Save original prepublishOnly
-        if "scripts" in package_data and "prepublishOnly" in package_data["scripts"]:
-            original_prepublish = package_data["scripts"]["prepublishOnly"]
-            # Temporarily remove it
-            del package_data["scripts"]["prepublishOnly"]
             
-            # Write back
-            with open(package_json_path, 'w') as f:
-                json.dump(package_data, f, indent=2)
+        version = package_data.get("version", "0.0.0")
+        description = package_data.get("description", "")
+        # homepage = package_data.get("homepage", "")
+        license_type = package_data.get("license", "MIT")
+
+        for platform in platforms_with_binaries:
+            pkg_dir = npm_dir / platform
+            
+            # Determine OS/CPU based on platform name
+            # For local testing we mostly see darwin-arm64/x64
+            os_list = []
+            cpu_list = []
+            
+            if "darwin" in platform:
+                os_list = ["darwin"]
+            elif "linux" in platform:
+                os_list = ["linux"]
+            elif "win32" in platform:
+                os_list = ["win32"]
+                
+            if "arm64" in platform:
+                cpu_list = ["arm64"]
+            elif "x64" in platform:
+                cpu_list = ["x64"]
+            
+            # Construct package.json content
+            pkg_json = {
+                "name": f"@bridgerust/embex-{platform}",
+                "version": version,
+                "description": description,
+                "os": os_list,
+                "cpu": cpu_list,
+                "main": f"embex.{platform}.node",
+                "files": [f"embex.{platform}.node"],
+                "license": license_type,
+                "engines": { "node": ">= 10" }
+            }
+            
+            # Write package.json
+            print(f"   Generating package.json for {platform}...")
+            with open(pkg_dir / "package.json", 'w') as f:
+                json.dump(pkg_json, f, indent=2)
+                
+            # Copy README if exists
+            if (cwd / "README.md").exists():
+                shutil.copy2(cwd / "README.md", pkg_dir / "README.md")
         
-        # Now run prepublish manually (this creates package.json files)
-        # It will warn about missing platforms, which is expected
-        print("   Running napi prepublish to create package.json files...")
-        success = run("napi prepublish -t npm", cwd=cwd, check=False)
+        success = True
         
-    finally:
-        # Restore original prepublishOnly
-        if original_prepublish:
-            with open(package_json_path, 'r') as f:
-                package_data = json.load(f)
-            package_data["scripts"]["prepublishOnly"] = original_prepublish
-            with open(package_json_path, 'w') as f:
-                json.dump(package_data, f, indent=2)
+    except Exception as e:
+        print(f"❌ Error during manual prepublish: {e}")
+        success = False
     
     if success:
         print("   ✅ Platform packages prepared\n")
@@ -173,7 +206,8 @@ def publish(dry_run=False):
     
     # Step 3: Publish main package
     flags = "--dry-run" if dry_run else ""
-    run(f"npm publish --access public {flags}", cwd=cwd)
+    # Use --ignore-scripts to skip prepublishOnly (napi prepublish) which fails locally
+    run(f"npm publish --access public --ignore-scripts {flags}", cwd=cwd)
 
 def main():
     parser = argparse.ArgumentParser(description="Release Script for Node.js Bindings (Local Testing Only)")
