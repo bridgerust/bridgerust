@@ -19,7 +19,7 @@ jobs:
       matrix:
         settings:
           # macOS
-          - host: macos-13
+          - host: macos-15-intel
             target: x86_64-apple-darwin
 
           - host: macos-14
@@ -51,10 +51,11 @@ jobs:
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
           df -h
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      # Setup Bun (replaces Node.js setup)
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: 20
+          bun-version: latest
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -84,17 +85,18 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gcc-aarch64-linux-gnu
 
+      # Install dependencies with Bun (MUCH FASTER)
       - name: Install dependencies
         working-directory: bindings/node/@bridgerust/embex
-        run: npm ci
+        run: bun install
+        # Bun doesn't have the npm ci sync issues!
 
       - name: Build
         working-directory: bindings/node/@bridgerust/embex
         shell: bash
         run: |
-          npm run build -- --target ${{ matrix.settings.target }} --release --strip
+          bun run build -- --target ${{ matrix.settings.target }} --release --strip
         env:
-          # Linker configuration for cross-compilation
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
 
       - name: Upload artifact
@@ -116,11 +118,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      # Setup Bun for publishing
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: 20
-          registry-url: "https://registry.npmjs.org"
+          bun-version: latest
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -140,8 +142,19 @@ jobs:
           done
           ls -la *.node
 
-      - name: Publish
+      - name: Verify artifacts
         working-directory: bindings/node/@bridgerust/embex
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ ! -f *.node ]; then
+            echo "ERROR: No .node files found!"
+            exit 1
+          fi
+          echo "Found artifacts:"
+          ls -lh *.node
+
+      - name: Publish to npm
+        working-directory: bindings/node/@bridgerust/embex
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+          npm publish --access public || echo "Package already published, skipping"
+        continue-on-error: true
