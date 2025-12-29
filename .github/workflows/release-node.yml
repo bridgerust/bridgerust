@@ -95,7 +95,7 @@ jobs:
         working-directory: bindings/node/@bridgerust/embex
         shell: bash
         run: |
-          npx @napi-rs/cli build --target ${{ matrix.settings.target }} --release --strip --js native.js --dts native.d.ts
+          bunx @napi-rs/cli build --target ${{ matrix.settings.target }} --release --strip --js native.js --dts native.d.ts
           bun run -b tsc || true
         env:
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc

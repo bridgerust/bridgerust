@@ -79,7 +79,10 @@ jobs:
           working-directory: bindings/python/embex
           rust-toolchain: stable
           before-script-linux: |
-            yum install -y protobuf-compiler 2>/dev/null || (apt-get update && apt-get install -y protobuf-compiler)
+            yum install -y wget unzip
+            wget https://github.com/protocolbuffers/protobuf/releases/download/v25.1/protoc-25.1-linux-x86_64.zip
+            unzip -o protoc-25.1-linux-x86_64.zip -d /usr/local
+            protoc --version
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
