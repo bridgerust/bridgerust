@@ -33,11 +33,6 @@ jobs:
             target: x86_64-unknown-linux-gnu
             os: linux
 
-          # Linux ARM64
-          - runner: ubuntu-latest
-            target: aarch64-unknown-linux-gnu
-            os: linux
-
           # Windows
           - runner: windows-latest
             target: x86_64-pc-windows-msvc
@@ -66,10 +61,6 @@ jobs:
         with:
           targets: ${{ matrix.platform.target }}
 
-      - name: Install protobuf (Linux)
-        if: matrix.platform.os == 'linux'
-        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
-
       - name: Install protobuf (macOS)
         if: matrix.platform.os == 'macos'
         run: brew install protobuf
@@ -88,7 +79,7 @@ jobs:
           working-directory: bindings/python/embex
           rust-toolchain: stable
           before-script-linux: |
-            yum install -y protobuf-compiler || apt-get update && apt-get install -y protobuf-compiler
+            yum install -y protobuf-compiler 2>/dev/null || (apt-get update && apt-get install -y protobuf-compiler)
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4

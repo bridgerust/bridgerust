@@ -2,14 +2,15 @@
 //!
 //! These tests verify that metrics and tracing work correctly in real scenarios.
 
-use bridge_embex::EmbexClient;
-use bridge_embex_core::types::{CollectionSchema, DistanceMetric, Point};
-use bridge_embex_infrastructure::config::EmbexConfig;
 use bridge_embex_infrastructure::observability::init_tracing;
 
 #[tokio::test]
 #[cfg(feature = "lancedb")]
 async fn test_metrics_recording_in_real_operations() {
+    use bridge_embex::EmbexClient;
+    use bridge_embex_core::types::{CollectionSchema, DistanceMetric, Point};
+    use bridge_embex_infrastructure::config::EmbexConfig;
+
     let temp_dir = tempfile::tempdir().unwrap();
     let db_path = temp_dir.path().to_string_lossy().to_string();
 

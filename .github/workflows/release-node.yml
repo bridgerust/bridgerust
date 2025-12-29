@@ -32,8 +32,8 @@ jobs:
           - host: ubuntu-latest
             target: x86_64-unknown-linux-musl
 
-          - host: ubuntu-latest
-            target: aarch64-unknown-linux-gnu
+          #   - host: ubuntu-latest
+          #     target: aarch64-unknown-linux-gnu
 
           # Windows
           - host: windows-latest
@@ -95,7 +95,8 @@ jobs:
         working-directory: bindings/node/@bridgerust/embex
         shell: bash
         run: |
-          bun run build -- --target ${{ matrix.settings.target }} --release --strip
+          npx @napi-rs/cli build --target ${{ matrix.settings.target }} --release --strip --js native.js --dts native.d.ts
+          bun run -b tsc || true
         env:
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
 
