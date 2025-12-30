@@ -173,39 +173,7 @@ jobs:
         shell: bash
         run: |
           echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
-
-          # Extract version from tag (e.g. v0.1.9 -> 0.1.9)
-          VERSION=${GITHUB_REF_NAME#v}
-          echo "🚀 Publishing version: $VERSION"
-
-          # Publish each platform package
-          for dir in npm/*/; do
-            if [ -d "$dir" ] && [ -f "$dir"/*.node ]; then
-              platform=$(basename "$dir")
-              echo "📦 Publishing @bridgerust/embex-$platform..."
-
-              # Create package.json dynamically using the Git tag version
-              cat > "$dir/package.json" <<EOF
-                {
-                    "name": "@bridgerust/embex-$platform",
-                    "version": "$VERSION",
-                    "main": "embex.$platform.node",
-                    "files": ["*.node"],
-                    "license": "MIT",
-                    "engines": { "node": ">= 10" }
-                }
-              EOF
-              
-              # Create README
-              echo "# @bridgerust/embex-$platform" > "$dir/README.md"
-              echo "Platform-specific binary for Embex. Install @bridgerust/embex instead." >> "$dir/README.md"
-
-              # Publish
-              cd "$dir"
-              npm publish --access public || echo "⚠️ Failed to publish $platform or already exists"
-              cd ../..
-            fi
-          done
+          bash ../../../.github/scripts/publish-npm-platforms.sh
 
       - name: Publish main package
         working-directory: bindings/node/@bridgerust/embex
