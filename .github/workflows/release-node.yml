@@ -173,7 +173,7 @@ jobs:
         shell: bash
         run: |
           echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
-          bash ../../../.github/scripts/publish-npm-platforms.sh
+          bash $GITHUB_WORKSPACE/.github/scripts/publish-npm-platforms.sh
 
       - name: Publish main package
         working-directory: bindings/node/@bridgerust/embex
