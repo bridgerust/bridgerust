@@ -135,9 +135,14 @@ jobs:
         working-directory: bindings/node/@bridgerust/embex
         shell: bash
         run: |
+          echo "🔍 Searching for artifacts in ${{ github.workspace }}/artifacts"
+          ls -R ${{ github.workspace }}/artifacts
+
           mkdir -p .
           # Use find to locate all .node files in the artifacts directory, recursively
-          find ../../../../artifacts -name "*.node" -exec cp -v {} . \;
+          find ${{ github.workspace }}/artifacts -name "*.node" -exec cp -v {} . \;
+
+          echo "📂 Files in current directory:"
           ls -la *.node
 
       - name: Verify artifacts
