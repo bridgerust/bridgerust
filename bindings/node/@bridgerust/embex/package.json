@@ -1,11 +1,11 @@
 {
   "name": "@bridgerust/embex",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "description": "Embex Vector Database ORM Node.js Bindings",
   "homepage": "https://github.com/bridgerust/bridgerust/embex",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bridgerust/bridgerust/embex"
+    "url": "https://github.com/bridgerust/bridgerust/embex.git"
   },
   "bugs": {
     "url": "https://github.com/bridgerust/bridgerust/issues"
@@ -60,10 +60,10 @@
     "@types/node": "^25.0.3"
   },
   "optionalDependencies": {
-    "@bridgerust/embex-darwin-arm64": "0.1.10",
-    "@bridgerust/embex-darwin-x64": "0.1.10",
-    "@bridgerust/embex-linux-x64-gnu": "0.1.10",
-    "@bridgerust/embex-linux-x64-musl": "0.1.10",
-    "@bridgerust/embex-win32-x64-msvc": "0.1.10"
+    "@bridgerust/embex-darwin-arm64": "0.1.11",
+    "@bridgerust/embex-darwin-x64": "0.1.11",
+    "@bridgerust/embex-linux-x64-gnu": "0.1.11",
+    "@bridgerust/embex-linux-x64-musl": "0.1.11",
+    "@bridgerust/embex-win32-x64-msvc": "0.1.11"
   }
 }

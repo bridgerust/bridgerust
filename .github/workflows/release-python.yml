@@ -1,9 +1,9 @@
 name: Build Python Wheels
 
 on:
-  # push:
-  #   tags:
-  #     - "v*"
+  push:
+    tags:
+      - "v*"
   workflow_dispatch:
 
 env:

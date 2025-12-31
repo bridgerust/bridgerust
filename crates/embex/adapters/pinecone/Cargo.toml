@@ -9,8 +9,8 @@ authors.workspace = true
 description = "Pinecone adapter for Embex Vector ORM"
 
 [dependencies]
-bridge-embex-core = { path = "../../core", version = "0.1.10" }
-bridge-embex-infrastructure = { path = "../../infrastructure", version = "0.1.10" }
+bridge-embex-core = { path = "../../core", version = "0.1.11" }
+bridge-embex-infrastructure = { path = "../../infrastructure", version = "0.1.11" }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
 async-trait = "0.1.89"
 serde = { version = "1.0.228", features = ["derive"] }
