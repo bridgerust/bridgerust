@@ -136,11 +136,8 @@ jobs:
         shell: bash
         run: |
           mkdir -p .
-          for dir in ../../../../artifacts/bindings-*/; do
-            if [ -d "$dir" ]; then
-              cp -v "$dir"*.node . || true
-            fi
-          done
+          # Use find to locate all .node files in the artifacts directory, recursively
+          find ../../../../artifacts -name "*.node" -exec cp -v {} . \;
           ls -la *.node
 
       - name: Verify artifacts
@@ -162,11 +159,13 @@ jobs:
         shell: bash
         run: |
           mkdir -p npm/darwin-arm64 npm/darwin-x64 npm/linux-x64-gnu npm/linux-x64-musl npm/win32-x64-msvc
-          cp embex.aarch64-apple-darwin.node npm/darwin-arm64/embex.darwin-arm64.node 2>/dev/null || true
-          cp embex.x86_64-apple-darwin.node npm/darwin-x64/embex.darwin-x64.node 2>/dev/null || true
-          cp embex.x86_64-unknown-linux-gnu.node npm/linux-x64-gnu/embex.linux-x64-gnu.node 2>/dev/null || true
-          cp embex.x86_64-unknown-linux-musl.node npm/linux-x64-musl/embex.linux-x64-musl.node 2>/dev/null || true
-          cp embex.x86_64-pc-windows-msvc.node npm/win32-x64-msvc/embex.win32-x64-msvc.node 2>/dev/null || true
+
+          # Copy binaries to their respective folders. Fails if source file is missing.
+          cp embex.aarch64-apple-darwin.node npm/darwin-arm64/embex.darwin-arm64.node
+          cp embex.x86_64-apple-darwin.node npm/darwin-x64/embex.darwin-x64.node
+          cp embex.x86_64-unknown-linux-gnu.node npm/linux-x64-gnu/embex.linux-x64-gnu.node
+          cp embex.x86_64-unknown-linux-musl.node npm/linux-x64-musl/embex.linux-x64-musl.node
+          cp embex.x86_64-pc-windows-msvc.node npm/win32-x64-msvc/embex.win32-x64-msvc.node
 
       - name: Publish platform packages
         working-directory: bindings/node/@bridgerust/embex

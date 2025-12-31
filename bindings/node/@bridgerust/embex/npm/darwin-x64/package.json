@@ -1,16 +1,16 @@
 {
-  "name": "@bridgerust/embex-darwin-arm64",
+  "name": "@bridgerust/embex-darwin-x64",
   "version": "0.1.9",
   "description": "Embex Vector Database ORM Node.js Bindings",
   "os": [
     "darwin"
   ],
   "cpu": [
-    "arm64"
+    "x64"
   ],
-  "main": "embex.darwin-arm64.node",
+  "main": "embex.darwin-x64.node",
   "files": [
-    "embex.darwin-arm64.node"
+    "embex.darwin-x64.node"
   ],
   "license": "MIT",
   "engines": {

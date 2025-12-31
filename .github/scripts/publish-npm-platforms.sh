@@ -9,7 +9,14 @@ for dir in npm/*/; do
     platform=$(basename "$dir")
     echo "📦 Publishing @bridgerust/embex-$platform..."
 
-    cat > "$dir/package.json" <<EOF
+    if [ -f "$dir/package.json" ]; then
+      echo "📝 Updating version in existing package.json for $platform"
+      # Use temporary file to avoid issues with sed/awk inline editing across platforms
+      # Simple regex replacement for version line
+      sed "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" "$dir/package.json" > "$dir/package.json.tmp" && mv "$dir/package.json.tmp" "$dir/package.json"
+    else
+      echo "🆕 Creating new package.json for $platform"
+      cat > "$dir/package.json" <<EOF
 {
   "name": "@bridgerust/embex-$platform",
   "version": "$VERSION",
@@ -19,6 +26,7 @@ for dir in npm/*/; do
   "engines": { "node": ">= 10" }
 }
 EOF
+    fi
     
     echo "# @bridgerust/embex-$platform" > "$dir/README.md"
     echo "Platform-specific binary for Embex. Install @bridgerust/embex instead." >> "$dir/README.md"
