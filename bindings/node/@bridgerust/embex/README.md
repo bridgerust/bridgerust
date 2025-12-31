@@ -13,15 +13,15 @@ Embex is a high-performance, universal client for vector databases, built on a s
 ## 📦 Installation
 
 ```bash
-npm install embex
+npm install @bridgerust/embex
 ```
 
 ```bash
-yarn add embex
+yarn add @bridgerust/embex
 ```
 
 ```bash
-bun add embex
+bun add @bridgerust/embex
 ```
 
 ## ⚡ Quick Start
@@ -130,4 +130,4 @@ Need help finding your API key? Check the official provider documentation:
 
 - **Main Repository**: [github.com/bridgerust/bridgerust](https://github.com/bridgerust/bridgerust)
 - **Issues**: [github.com/bridgerust/bridgerust/issues](https://github.com/bridgerust/bridgerust/issues)
-- **Documentation**: [Full Docs](https://github.com/bridgerust/bridgerust#documentation)
+- **Documentation**: [Full Docs](https://github.com/bridgerust/bridgerust/tree/main/bindings/node/%40bridgerust/embex)

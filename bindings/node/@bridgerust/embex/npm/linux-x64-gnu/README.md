@@ -1,6 +1,6 @@
-# @bridgerust/embex-darwin-arm64
+# @bridgerust/embex-linux-x64-gnu
 
-This is the **Apple Silicon (MX)** binary for `@bridgerust/embex`.
+This is the **Linux x64 (glibc)** binary for `@bridgerust/embex`.
 
 ## Installation
 

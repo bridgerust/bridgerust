@@ -1,6 +1,6 @@
-# @bridgerust/embex-darwin-arm64
+# @bridgerust/embex-darwin-x64
 
-This is the **Apple Silicon (MX)** binary for `@bridgerust/embex`.
+This is the **macOS Intel (x64)** binary for `@bridgerust/embex`.
 
 ## Installation
 

@@ -22,17 +22,17 @@ weaviate = ["dep:bridge-embex-weaviate"]
 milvus = ["dep:bridge-embex-milvus"]
 
 [dependencies]
-bridge-embex-core = { path = "../core", version = "0.1.11" }
-bridge-embex-infrastructure = { path = "../infrastructure", version = "0.1.11" }
+bridge-embex-core = { path = "../core", version = "0.1.12" }
+bridge-embex-infrastructure = { path = "../infrastructure", version = "0.1.12" }
 
 # Optional adapter crates
-bridge-embex-qdrant = { path = "../adapters/qdrant", version = "0.1.11", optional = true }
-bridge-embex-pinecone = { path = "../adapters/pinecone", version = "0.1.11", optional = true }
-bridge-embex-chroma = { path = "../adapters/chroma", version = "0.1.11", optional = true }
-bridge-embex-lancedb = { path = "../adapters/lancedb", version = "0.1.11", optional = true }
-bridge-embex-pgvector = { path = "../adapters/pgvector", version = "0.1.11", optional = true }
-bridge-embex-weaviate = { path = "../adapters/weaviate", version = "0.1.11", optional = true }
-bridge-embex-milvus = { path = "../adapters/milvus", version = "0.1.11", optional = true }
+bridge-embex-qdrant = { path = "../adapters/qdrant", version = "0.1.12", optional = true }
+bridge-embex-pinecone = { path = "../adapters/pinecone", version = "0.1.12", optional = true }
+bridge-embex-chroma = { path = "../adapters/chroma", version = "0.1.12", optional = true }
+bridge-embex-lancedb = { path = "../adapters/lancedb", version = "0.1.12", optional = true }
+bridge-embex-pgvector = { path = "../adapters/pgvector", version = "0.1.12", optional = true }
+bridge-embex-weaviate = { path = "../adapters/weaviate", version = "0.1.12", optional = true }
+bridge-embex-milvus = { path = "../adapters/milvus", version = "0.1.12", optional = true }
 
 # Shared dependencies for the orchestrator
 anyhow = "1.0.100"

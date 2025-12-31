@@ -28,8 +28,10 @@ for dir in npm/*/; do
 EOF
     fi
     
-    echo "# @bridgerust/embex-$platform" > "$dir/README.md"
-    echo "Platform-specific binary for Embex. Install @bridgerust/embex instead." >> "$dir/README.md"
+    if [ ! -f "$dir/README.md" ]; then
+      echo "# @bridgerust/embex-$platform" > "$dir/README.md"
+      echo "Platform-specific binary for Embex. Install @bridgerust/embex instead." >> "$dir/README.md"
+    fi
 
     cd "$dir"
     npm publish --access public || echo "⚠️ Already published: $platform"

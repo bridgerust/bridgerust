@@ -1,6 +1,6 @@
-# @bridgerust/embex-darwin-arm64
+# @bridgerust/embex-win32-x64-msvc
 
-This is the **Apple Silicon (MX)** binary for `@bridgerust/embex`.
+This is the **Windows x64 (MSVC)** binary for `@bridgerust/embex`.
 
 ## Installation
 
