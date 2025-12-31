@@ -32,9 +32,6 @@ jobs:
           - host: ubuntu-latest
             target: x86_64-unknown-linux-musl
 
-          #   - host: ubuntu-latest
-          #     target: aarch64-unknown-linux-gnu
-
           # Windows
           - host: windows-latest
             target: x86_64-pc-windows-msvc
@@ -51,7 +48,6 @@ jobs:
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
           df -h
 
-      # Setup Bun (replaces Node.js setup)
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -79,17 +75,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y musl-tools
 
-      - name: Setup toolchain (ARM64)
-        if: matrix.settings.target == 'aarch64-unknown-linux-gnu'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu
-
-      # Install dependencies with Bun (MUCH FASTER)
       - name: Install dependencies
         working-directory: bindings/node/@bridgerust/embex
         run: bun install
-        # Bun doesn't have the npm ci sync issues!
 
       - name: Build
         working-directory: bindings/node/@bridgerust/embex
@@ -97,14 +85,24 @@ jobs:
         run: |
           bunx @napi-rs/cli build --target ${{ matrix.settings.target }} --release --strip --js native.js --dts native.d.ts
           bun run -b tsc || true
-        env:
-          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+
+          # Debug: Show what files were created
+          echo "📦 Built files:"
+          ls -la *.node || echo "No .node files found!"
+
+          # Rename to target triple for uniqueness
+          for file in *.node; do
+            if [ -f "$file" ]; then
+              mv "$file" "embex.${{ matrix.settings.target }}.node"
+              echo "✅ Renamed: $file → embex.${{ matrix.settings.target }}.node"
+            fi
+          done
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: bindings-${{ matrix.settings.target }}
-          path: bindings/node/@bridgerust/embex/*.node
+          path: bindings/node/@bridgerust/embex/embex.${{ matrix.settings.target }}.node
           retention-days: 1
 
   publish:
@@ -119,7 +117,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Setup Bun for publishing
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -135,25 +132,24 @@ jobs:
         working-directory: bindings/node/@bridgerust/embex
         shell: bash
         run: |
-          echo "🔍 Searching for artifacts in ${{ github.workspace }}/artifacts"
-          ls -R ${{ github.workspace }}/artifacts
+          echo "🔍 Downloaded artifacts:"
+          find ${{ github.workspace }}/artifacts -type f -name "*.node" -exec ls -lh {} \;
 
-          mkdir -p .
-          # Use find to locate all .node files in the artifacts directory, recursively
+          # Copy all .node files to current directory
           find ${{ github.workspace }}/artifacts -name "*.node" -exec cp -v {} . \;
 
-          echo "📂 Files in current directory:"
-          ls -la *.node
+          echo "📂 Files in working directory:"
+          ls -lh *.node
 
       - name: Verify artifacts
         working-directory: bindings/node/@bridgerust/embex
         run: |
-          if [ ! -f *.node ]; then
-            echo "ERROR: No .node files found!"
+          COUNT=$(ls -1 *.node 2>/dev/null | wc -l)
+          if [ "$COUNT" -eq 0 ]; then
+            echo "❌ ERROR: No .node files found!"
             exit 1
           fi
-          echo "Found artifacts:"
-          ls -lh *.node
+          echo "✅ Found $COUNT .node file(s)"
 
       - name: Install dependencies
         working-directory: bindings/node/@bridgerust/embex
@@ -163,14 +159,18 @@ jobs:
         working-directory: bindings/node/@bridgerust/embex
         shell: bash
         run: |
+          # Create platform directories
           mkdir -p npm/darwin-arm64 npm/darwin-x64 npm/linux-x64-gnu npm/linux-x64-musl npm/win32-x64-msvc
 
-          # Copy binaries to their respective folders. Fails if source file is missing.
+          # Copy and rename binaries
           cp embex.aarch64-apple-darwin.node npm/darwin-arm64/embex.darwin-arm64.node
           cp embex.x86_64-apple-darwin.node npm/darwin-x64/embex.darwin-x64.node
           cp embex.x86_64-unknown-linux-gnu.node npm/linux-x64-gnu/embex.linux-x64-gnu.node
           cp embex.x86_64-unknown-linux-musl.node npm/linux-x64-musl/embex.linux-x64-musl.node
           cp embex.x86_64-pc-windows-msvc.node npm/win32-x64-msvc/embex.win32-x64-msvc.node
+
+          echo "✅ Platform packages prepared:"
+          find npm -name "*.node" -exec ls -lh {} \;
 
       - name: Publish platform packages
         working-directory: bindings/node/@bridgerust/embex
@@ -182,9 +182,8 @@ jobs:
       - name: Publish main package
         working-directory: bindings/node/@bridgerust/embex
         run: |
-          # Ensure the main package.json version matches the tag
           VERSION=${GITHUB_REF_NAME#v}
           npm version $VERSION --no-git-tag-version --allow-same-version
-            
+
           echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
           npm publish --access public
