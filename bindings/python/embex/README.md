@@ -61,7 +61,9 @@ Try Embex with any provider! Same API, different backend:
 | **Pinecone** | API key         | `python examples/pinecone/python/quickstart.py` |
 | **Chroma**   | Optional server | `python examples/chroma/python/quickstart.py`   |
 
-> 💡 **Same API everywhere!** Just change the provider name - all code stays the same. See [examples/README.md](../../../examples/README.md) for setup instructions.
+> 💡 **Same API everywhere!** Just change the provider name - all code stays the same. See [examples/README.md](https://github.com/bridgerust/bridgerust/blob/main/examples/README.md) for setup instructions.
+
+**New to vector databases?** Check out the [Getting Started Guide](https://github.com/bridgerust/bridgerust/blob/main/docs/getting_started.md) for a beginner-friendly introduction with core concepts explained.
 
 ### 5. Filtered Search (Builder Pattern)
 
@@ -130,6 +132,7 @@ If you find Embex useful, please star the repository! It helps others discover t
 
 ## 🔗 Resources
 
+- **Getting Started**: [Complete Guide](https://github.com/bridgerust/bridgerust/blob/main/docs/getting_started.md) - Beginner-friendly tutorial with core concepts
 - **Main Repository**: [github.com/bridgerust/bridgerust](https://github.com/bridgerust/bridgerust)
 - **Issues**: [github.com/bridgerust/bridgerust/issues](https://github.com/bridgerust/bridgerust/issues)
 - **Documentation**: [Full Docs](https://github.com/bridgerust/bridgerust#documentation)

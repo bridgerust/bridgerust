@@ -3,7 +3,29 @@ name: CI Tests
 on:
   push:
     branches: [main, develop]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "examples/**"
+      - "images/**"
+      - "CHANGELOG.md"
+      - "LICENSE*"
+      - ".github/ISSUE_TEMPLATE/**"
+      - ".github/workflows/release*.yml"
+      - ".github/workflows/benchmarks.yml"
+      - "benchmarks/**"
   pull_request:
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "examples/**"
+      - "images/**"
+      - "CHANGELOG.md"
+      - "LICENSE*"
+      - ".github/ISSUE_TEMPLATE/**"
+      - ".github/workflows/release*.yml"
+      - ".github/workflows/benchmarks.yml"
+      - "benchmarks/**"
 
 env:
   CARGO_TERM_COLOR: always

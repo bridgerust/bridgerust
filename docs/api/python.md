@@ -5,9 +5,9 @@ Complete API documentation for the Python implementation of Embex.
 ## Installation
 
 ```bash
-pip install embex-py
+pip install embex
 # OR
-uv pip install embex-py
+uv pip install embex
 ```
 
 ## Quick Start
