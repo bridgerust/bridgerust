@@ -5,12 +5,15 @@
 [![CI](https://github.com/bridgerust/bridgerust/workflows/CI%20Tests/badge.svg)](https://github.com/bridgerust/bridgerust/actions)
 [![Python](https://github.com/bridgerust/bridgerust/workflows/Build%20Python%20Wheels/badge.svg)](https://github.com/bridgerust/bridgerust/actions)
 [![Node.js](https://github.com/bridgerust/bridgerust/workflows/Build%20Node.js%20Bindings/badge.svg)](https://github.com/bridgerust/bridgerust/actions)
-[![PyPI](https://img.shields.io/pypi/v/embex?color=blue)](https://pypi.org/project/embex/)
-[![NPM](https://img.shields.io/npm/v/@bridgerust/embex?color=red)](https://www.npmjs.com/package/@bridgerust/embex)
-[![Downloads](https://pepy.tech/badge/embex)](https://pepy.tech/project/embex)
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-green)](LICENSE)
 
 ![Embex Logo](images/logo.png)
+
+## Packages & Status
+
+| Package                   | Python (PyPI)                                                                                                                                                                  | Node.js (NPM)                                                                                                                                                                                                                             | Docs                                                                  |
+| :------------------------ | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------- |
+| **[Embex](crates/embex)** | [![PyPI](https://img.shields.io/pypi/v/embex?color=blue)](https://pypi.org/project/embex/) <br> [![Downloads](https://pepy.tech/badge/embex)](https://pepy.tech/project/embex) | [![NPM](https://img.shields.io/npm/v/@bridgerust/embex?color=red)](https://www.npmjs.com/package/@bridgerust/embex) <br> [![Downloads](https://img.shields.io/npm/dt/@bridgerust/embex)](https://www.npmjs.com/package/@bridgerust/embex) | [![Docs](https://img.shields.io/badge/docs-read-green)](crates/embex) |
 
 ## 🚀 Active Projects
 
@@ -23,7 +26,7 @@
 - **Production Ready**: Built-in migrations, connection pooling, and observability.
 - **Language Support**: First-class bindings for [Python](crates/embex#python), [Node.js](crates/embex#nodejs-typescript), and [Rust](crates/embex#rust).
 
-[**⟶ Read the full Embex Documentation**](crates/embex)
+[**-> Read the full Embex Documentation**](crates/embex)
 
 ### [Bridge Schema](crates/schema) (JSON Validator)
 
@@ -117,6 +120,12 @@ Try Embex with any provider! Same API, different backend:
 > 💡 **Start with LanceDB** - Zero setup required! No server, no Docker, no API keys needed.
 
 See [examples/README.md](examples/README.md) for detailed setup instructions and more examples.
+
+## ⭐ Star Us
+
+If you find Embex useful, please star the repository! It helps others discover the project.
+
+[⭐ Star on GitHub](https://github.com/bridgerust/bridgerust)
 
 ## License
 

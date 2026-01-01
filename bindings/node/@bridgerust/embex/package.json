@@ -52,7 +52,8 @@
     "test": "vitest run",
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
-    "test:watch": "vitest watch"
+    "test:watch": "vitest watch",
+    "postinstall": "echo '⭐ Enjoying Embex? Star us: https://github.com/bridgerust/bridgerust'"
   },
   "devDependencies": {
     "@napi-rs/cli": "^3.5.0",

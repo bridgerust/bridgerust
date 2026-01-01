@@ -126,6 +126,12 @@ Need help finding your API key? Check the official provider documentation:
 | Milvus   | `milvus`   | **Yes**     |
 | PgVector | `pgvector` | **Yes**     |
 
+## ⭐ Star Us
+
+If you find Embex useful, please star the repository! It helps others discover the project.
+
+[⭐ Star on GitHub](https://github.com/bridgerust/bridgerust)
+
 ## 🔗 Resources
 
 - **Main Repository**: [github.com/bridgerust/bridgerust](https://github.com/bridgerust/bridgerust)
