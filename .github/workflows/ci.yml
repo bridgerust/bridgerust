@@ -14,6 +14,7 @@ on:
       - ".github/workflows/release*.yml"
       - ".github/workflows/benchmarks.yml"
       - "benchmarks/**"
+      - "bindings/node/**/package.json"
   pull_request:
     paths-ignore:
       - "**.md"
@@ -32,7 +33,7 @@ env:
   CARGO_INCREMENTAL: 0
   CARGO_NET_RETRY: 10
   CARGO_BUILD_JOBS: 2
-  RUSTFLAGS: "-C opt-level=2 -C link-arg=-fuse-ld=lld"
+  RUSTFLAGS: "-C link-arg=-fuse-ld=lld"
 
 jobs:
   test:
@@ -52,11 +53,11 @@ jobs:
           sudo docker system prune -af
           df -h
 
+      - name: Install LLD
+        run: sudo apt-get update && sudo apt-get install -y lld protobuf-compiler
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-
-      - name: Install protobuf
-        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
@@ -66,7 +67,7 @@ jobs:
           shared-key: "ci-v2"
 
       - name: Build and test workspace
-        run: cargo test --workspace --release --no-fail-fast
+        run: cargo test --workspace --no-fail-fast
 
       - name: Check disk space after
         if: always()
