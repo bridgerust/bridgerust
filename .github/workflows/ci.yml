@@ -15,6 +15,7 @@ on:
       - ".github/workflows/benchmarks.yml"
       - "benchmarks/**"
       - "bindings/node/**/package.json"
+      - "website/**"
   pull_request:
     paths-ignore:
       - "**.md"
@@ -27,6 +28,7 @@ on:
       - ".github/workflows/release*.yml"
       - ".github/workflows/benchmarks.yml"
       - "benchmarks/**"
+      - "website/**"
 
 env:
   CARGO_TERM_COLOR: always

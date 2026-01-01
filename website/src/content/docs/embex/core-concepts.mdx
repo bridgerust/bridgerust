@@ -1,0 +1,162 @@
+---
+title: Core Concepts
+description: Understanding Collections, Vectors, and Search in Embex.
+---
+
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+
+Embex simplifies vector database interactions into three main concepts: **Collections**, **Vectors**, and **Search**.
+
+## 1. Collections
+
+A **Collection** is a container for your vectors. It's similar to a "table" in a SQL database.
+
+- **Name**: A unique identifier (e.g., "users", "products").
+- **Dimension**: The size of the vectors (e.g., 1536 for OpenAI embeddings). Both vectors must share the same dimension to be stored in the same collection.
+
+<Tabs>
+  <TabItem label="Python">
+
+    ```python
+    # Create a collection for OpenAI embeddings (1536 dimensions)
+    await client.create_collection("products", dimension=1536)
+
+    # List all collections
+    collections = await client.list_collections()
+
+    # Delete a collection
+    await client.delete_collection("products")
+    ```
+
+  </TabItem>
+  <TabItem label="Node.js">
+
+    ```typescript
+    // Create a collection for OpenAI embeddings (1536 dimensions)
+    await client.createCollection("products", 1536);
+
+    // List all collections
+    const collections = await client.listCollections();
+
+    // Delete a collection
+    await client.deleteCollection("products");
+    ```
+
+  </TabItem>
+</Tabs>
+
+## 2. Vectors
+
+A **Vector** is the core data unit. It represents an object (text, image, audio) as a list of numbers.
+
+### Structure
+
+| Field      | Type          | Description                                              |
+| :--------- | :------------ | :------------------------------------------------------- |
+| `id`       | `String`      | Unique identifier for the record.                        |
+| `vector`   | `List[Float]` | The embedding array.                                     |
+| `metadata` | `Map`         | Optional JSON key-value pairs (e.g., source text, tags). |
+
+<Tabs>
+  <TabItem label="Python">
+    ```python
+    from embex import Vector
+
+    vec = Vector(
+        id="prod_123",
+        vector=[0.1, 0.05, ...], # 1536 floats
+        metadata={
+            "name": "Super Widget",
+            "price": 99.99,
+            "category": "electronics"
+        }
+    )
+
+    await client.insert("products", [vec])
+    ```
+
+  </TabItem>
+  <TabItem label="Node.js">
+    ```typescript
+    const vec = {
+        id: "prod_123",
+        vector: [0.1, 0.05, ...], // 1536 floats
+        metadata: {
+            name: "Super Widget",
+            price: 99.99,
+            category: "electronics"
+        }
+    };
+    
+    await client.insert("products", [vec]);
+    ```
+  </TabItem>
+</Tabs>
+
+## 3. Search & Filtering
+
+**Search** finds the vectors most similar to a query vector. You can filter results using metadata.
+
+### Basic Search
+
+<Tabs>
+  <TabItem label="Python">
+    ```python
+    results = await client.search(
+        collection_name="products",
+        vector=[0.1, 0.05, ...],
+        limit=5
+    )
+    ```
+  </TabItem>
+  <TabItem label="Node.js">
+    ```typescript
+    const results = await client.search({
+        collection_name: "products",
+        vector: [0.1, 0.05, ...],
+        limit: 5
+    });
+    ```
+  </TabItem>
+</Tabs>
+
+### Metadata Filtering
+
+You can refine search results using metadata filters. Embex uses a structured filter syntax:
+
+<Tabs>
+  <TabItem label="Python">
+    ```python
+    results = await client.search(
+        collection_name="products",
+        vector=[0.1, 0.05, ...],
+        limit=5,
+        filter={
+            "must": [
+                {"key": "category", "match": {"value": "electronics"}}
+            ],
+            "must_not": [
+                {"key": "price", "range": {"gt": 1000.0}}
+            ]
+        }
+    )
+    ```
+  </TabItem>
+  <TabItem label="Node.js">
+    ```typescript
+    const results = await client.search({
+        collection_name: "products",
+        vector: [0.1, 0.05, ...],
+        limit: 5,
+        filter: {
+            must: [
+                { key: "category", match: { value: "electronics" } }
+            ],
+            must_not: [
+                { key: "price", range: { gt: 1000.0 } }
+            ]
+        }
+    });
+    ```
+  </TabItem>
+</Tabs>

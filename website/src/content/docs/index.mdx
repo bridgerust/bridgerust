@@ -1,0 +1,92 @@
+---
+title: Unified Rust Bindings.
+description: Write your Rust code once. Deploy to Python and Node.js instantly.
+template: splash
+hero:
+  tagline: The framework for building native Python & Node.js libraries from a single Rust codebase.
+  image:
+    file: ../../assets/houston.webp
+  actions:
+    - text: View on GitHub
+      link: https://github.com/bridgerust/bridgerust
+      icon: github
+    - text: Check out Embex
+      link: /embex/introduction
+      icon: rocket
+      variant: minimal
+---
+
+import { Card, CardGrid, Tabs, TabItem } from "@astrojs/starlight/components";
+
+## The BridgeRust Ecosystem
+
+**Embex** is our flagship product: a high-performance Vector Database ORM that runs anywhere.
+
+<CardGrid>
+  <Card title="Embex" icon="rocket">
+    **The Universal Vector Database Client.** Connect to Qdrant, Pinecone,
+    Chroma, and LanceDB with a single API. - **Python**: `pip install embex` -
+    **Node.js**: `npm install @bridgerust/embex` [**Get Started with
+    Embex**](/embex/introduction)
+  </Card>
+</CardGrid>
+
+## Powered by the BridgeRust Framework
+
+Our libraries are built on **BridgeRust**, a framework that unifies `PyO3` and `napi-rs` into a single, zero-cost macro system.
+
+<Tabs>
+  <TabItem label="The BridgeRust Way">
+    ```rust
+    // lib.rs - ONE file for both ecosystems
+    #[bridgerust::export]
+    fn greet(name: String) -> String {
+        format!("Hello, {}!", name)
+    }
+    // Automagically compiles to:
+    // - Python: Native C-Extension module
+    // - Node.js: Native .node binary
+    ```
+  </TabItem>
+  <TabItem label="The Hard Way">
+    ```rust
+    // ❌ Requires duplicate wrappers
+
+    // python_bindings.rs
+    #[pyfunction]
+    fn greet_py(name: String) -> String { ... }
+
+    // node_bindings.rs
+    #[napi]
+    fn greet_node(name: String) -> String { ... }
+    ```
+
+  </TabItem>
+</Tabs>
+
+## Why Developers Choose BridgeRust
+
+<CardGrid>
+	<Card title="Unified Workflow" icon="pencil">
+		Write once, deploy everywhere. Single source of truth for all bindings.
+	</Card>
+	<Card title="Native Performance" icon="rocket">
+		Zero runtime overhead. Powered by the best-in-class performance of `PyO3` and `napi-rs`.
+	</Card>
+	<Card title="Zero Config" icon="setting">
+		One CLI command builds wheels for PyPI and binaries for npm.
+	</Card>
+	<Card title="Type Safety" icon="approve-check-circle">
+		Automatic type mapping. `Vec<T>` → `List[T]` (Python) / `T[]` (TS).
+	</Card>
+</CardGrid>
+
+## Showcase: Built with BridgeRust
+
+<CardGrid stagger>
+  <Card title="Embex" icon="star">
+    **The Universal Vector Database Client.** A production-ready ORM for Qdrant,
+    Pinecone, and more. Showcasing the power of the BridgeRust framework. [Learn
+    more](/embex/introduction)
+  </Card>
+</CardGrid>

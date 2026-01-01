@@ -1,0 +1,112 @@
+---
+title: Quickstart
+description: Go from zero to vector search in 5 minutes with Embex.
+---
+
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+
+This guide will walk you through installing Embex, setting up a local database (LanceDB), and performing your first vector search.
+
+**Pre-requisites:**
+
+- **Python**: Installed (v3.8+)
+- **Node.js**: Installed (v18+)
+
+# 1. Installation
+
+Install the Embex client for your language.
+
+<Tabs>
+  <TabItem label="Python">```bash pip install embex lancedb ```</TabItem>
+  <TabItem label="Node.js">
+    ```bash npm install @bridgerust/embex lancedb ```
+  </TabItem>
+</Tabs>
+
+# 2. Write Code
+
+We'll use **LanceDB** for this quickstart because it runs embedded locally—no Docker or API keys required!
+
+Create a file named `quickstart.py` or `quickstart.ts`.
+
+<Tabs>
+  <TabItem label="Python">
+    ```python
+    import asyncio
+    from embex import EmbexClient, Vector
+    
+    async def main():
+        # 1. Initialize Client (uses LanceDB by default if URI is a file path)
+        client = await EmbexClient.new_async("lancedb://./data")
+        
+        # 2. Create Collection
+        await client.create_collection("demo", dimension=3)
+        
+        # 3. Insert Data
+        vectors = [
+            Vector(id="1", vector=[0.1, 0.2, 0.3], metadata={"type": "fruit", "name": "Apple"}),
+            Vector(id="2", vector=[0.4, 0.5, 0.6], metadata={"type": "fruit", "name": "Banana"}),
+            Vector(id="3", vector=[0.7, 0.8, 0.9], metadata={"type": "vegetable", "name": "Carrot"}),
+        ]
+        await client.insert("demo", vectors)
+        
+        # 4. Search
+        results = await client.search(
+            collection_name="demo",
+            vector=[0.1, 0.2, 0.3],
+            limit=1
+        )
+        
+        print(f"Nearest neighbor: {results[0].metadata['name']}")
+        
+    if __name__ == "__main__":
+        asyncio.run(main())
+    ```
+  </TabItem>
+  <TabItem label="Node.js">
+    ```typescript
+    import { EmbexClient, Vector } from "@bridgerust/embex";
+    
+    async function main() {
+        // 1. Initialize Client
+        const client = await EmbexClient.newAsync("lancedb://./data");
+        
+        // 2. Create Collection
+        await client.createCollection("demo", 3);
+        
+        // 3. Insert Data
+        const vectors: Vector[] = [
+            { id: "1", vector: [0.1, 0.2, 0.3], metadata: { type: "fruit", name: "Apple" } },
+            { id: "2", vector: [0.4, 0.5, 0.6], metadata: { type: "fruit", name: "Banana" } },
+            { id: "3", vector: [0.7, 0.8, 0.9], metadata: { type: "vegetable", name: "Carrot" } }
+        ];
+        await client.insert("demo", vectors);
+        
+        // 4. Search
+        const results = await client.search({
+            collection_name: "demo",
+            vector: [0.1, 0.2, 0.3],
+            limit: 1
+        });
+        
+        console.log(`Nearest neighbor: ${results[0].metadata.name}`);
+    }
+    
+    main();
+    ```
+  </TabItem>
+</Tabs>
+
+# 3. Run It
+
+<Tabs>
+  <TabItem label="Python">```bash python quickstart.py ```</TabItem>
+  <TabItem label="Node.js">```bash npx tsx quickstart.ts ```</TabItem>
+</Tabs>
+
+Congratulations! You've just built a vector search application. 🚀
+
+## Next Steps
+
+- Learn about [Core Concepts](/embex/core-concepts) like Collections and Filters.
+- Connect to other [Providers](/embex/providers) like Qdrant or Pinecone.

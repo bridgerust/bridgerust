@@ -1,0 +1,101 @@
+---
+title: API Reference
+description: Complete API reference for Embex.
+---
+
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+
+## Client Initialization
+
+<Tabs>
+  <TabItem label="Python">
+
+    **`EmbexClient.new_async(uri: str) -> EmbexClient`**
+
+    Creates a new asynchronous client.
+
+    **Arguments:**
+    - `uri` (str): The connection URI (e.g., `lancedb://./data`).
+
+  </TabItem>
+  <TabItem label="Node.js">
+
+    **`EmbexClient.newAsync(uri: string) -> Promise<EmbexClient>`**
+
+    Creates a new asynchronous client.
+
+    **Arguments:**
+    - `uri` (string): The connection URI.
+
+  </TabItem>
+</Tabs>
+
+## Collections
+
+### Create Collection
+
+<Tabs>
+  <TabItem label="Python">
+    **`create_collection(name: str, dimension: int)`** Creates a new vector
+    collection.
+  </TabItem>
+  <TabItem label="Node.js">
+    **`createCollection(name: string, dimension: number)`** Creates a new vector
+    collection.
+  </TabItem>
+</Tabs>
+
+### Delete Collection
+
+<Tabs>
+  <TabItem label="Python">
+    **`delete_collection(name: str)`** Permanently deletes a collection and all
+    its data.
+  </TabItem>
+  <TabItem label="Node.js">
+    **`deleteCollection(name: string)`** Permanently deletes a collection.
+  </TabItem>
+</Tabs>
+
+## Data Operations
+
+### Insert
+
+<Tabs>
+  <TabItem label="Python">
+    **`insert(collection_name: str, vectors: List[Vector])`** Inserts a list of
+    vectors into the collection.
+  </TabItem>
+  <TabItem label="Node.js">
+    **`insert(collection_name: string, vectors: Vector[])`** Inserts an array of
+    vectors into the collection.
+  </TabItem>
+</Tabs>
+
+### Search
+
+<Tabs>
+  <TabItem label="Python">
+    **`search(collection_name: str, vector: List[float], limit: int = 10, filter: Optional[Dict] = None) -> List[SearchResult]`**
+    
+    Finds the nearest neighbors for the given vector, optionally filtered by metadata.
+    
+    ```python
+    await client.search("users", [0.1, ...], limit=5, filter={"key": "age", "range": {"gt": 25}})
+    ```
+  </TabItem>
+  <TabItem label="Node.js">
+    **`search(options: SearchOptions) -> Promise<SearchResult[]>`**
+    
+    Finds the nearest neighbors.
+    
+    ```typescript
+    await client.search({
+      collection_name: "users",
+      vector: [0.1, ...],
+      limit: 5,
+      filter: { key: "age", range: { gt: 25 } }
+    });
+    ```
+  </TabItem>
+</Tabs>
