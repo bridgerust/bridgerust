@@ -172,6 +172,10 @@ jobs:
           echo "✅ Platform packages prepared:"
           find npm -name "*.node" -exec ls -lh {} \;
 
+          # CLEAN UP: Remove .node files from root before publishing main package
+          rm -f *.node
+          echo "✅ Cleaned up binaries from root directory"
+
       - name: Publish platform packages
         working-directory: bindings/node/@bridgerust/embex
         shell: bash
@@ -182,6 +186,12 @@ jobs:
       - name: Publish main package
         working-directory: bindings/node/@bridgerust/embex
         run: |
+          # Verify no .node files in root
+          if ls *.node 2>/dev/null; then
+            echo "❌ ERROR: .node files still present!"
+            exit 1
+          fi
+
           VERSION=${GITHUB_REF_NAME#v}
           npm version $VERSION --no-git-tag-version --allow-same-version
 

@@ -1,6 +1,6 @@
 {
   "name": "@bridgerust/embex-darwin-x64",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "description": "Embex Vector Database ORM Node.js Bindings",
   "os": [
     "darwin"

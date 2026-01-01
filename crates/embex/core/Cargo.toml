@@ -9,7 +9,7 @@ authors.workspace = true
 description = "Core types and traits for Embex Vector ORM"
 
 [dependencies]
-bridge-core = { path = "../../core", version = "0.1.12", features = ["simd"] }
+bridge-core = { path = "../../core", version = "0.1.13", features = ["simd"] }
 anyhow = "1.0.100"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.147"

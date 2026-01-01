@@ -6,7 +6,7 @@ build-backend = "maturin"
 name = "embex"
 description = "Embex: A Universal Vector Database ORM"
 readme = "README.md"
-version = "0.1.12"
+version = "0.1.13"
 authors = [{name = "BridgeRust", email = "hello@bridgerust.com"}]
 urls = { Homepage = "https://github.com/bridgerust/bridgerust/tree/main/bindings/python/embex", Repository = "https://github.com/bridgerust/bridgerust/tree/main/bindings/python/embex", Issues = "https://github.com/bridgerust/bridgerust/issues" }
 requires-python = ">=3.8"
