@@ -8,14 +8,14 @@
     "email": "hello@kologojosias.com",
     "description": "BridgeRust builds high-performance infrastructure libraries for Python, Node.js, and other ecosystems, powered by a shared Rust core.",
     "webpageUrl": {
-      "url": "https://github.com/bridgerust"
+      "url": "https://bridgerust.dev"
     }
   },
   "projects": [
     {
       "guid": "embex",
       "name": "Embex",
-      "description": "The Universal Vector Database Client. One API for key vector databases (Qdrant, Pinecone, LanceDB, etc.) with high-performance Rust core.",
+      "description": "The Universal Vector Database Client. One API for key vector databases (Qdrant, Pinecone, LanceDB, Chroma etc.) with high-performance Rust core.",
       "webpageUrl": {
         "url": "https://github.com/bridgerust/bridgerust/tree/main/crates/embex"
       },
@@ -24,19 +24,6 @@
       },
       "licenses": ["spdx:MIT", "spdx:Apache-2.0"],
       "tags": ["rust", "python", "nodejs", "vector-database", "orm"]
-    },
-    {
-      "guid": "bridge-schema",
-      "name": "Bridge Schema",
-      "description": "A high-performance JSON Schema validator (Prototype).",
-      "webpageUrl": {
-        "url": "https://github.com/bridgerust/bridgerust/tree/main/crates/schema"
-      },
-      "repositoryUrl": {
-        "url": "https://github.com/bridgerust/bridgerust"
-      },
-      "licenses": ["spdx:MIT", "spdx:Apache-2.0"],
-      "tags": ["json-schema", "validator", "performance"]
     }
   ],
   "funding": {
@@ -46,6 +33,18 @@
         "type": "payment-provider",
         "address": "https://github.com/sponsors/bridgerust",
         "description": "Support the development via GitHub Sponsors."
+      },
+      {
+        "guid": "buymeacoffee",
+        "type": "payment-provider",
+        "address": "https://www.buymeacoffee.com/bridgerust",
+        "description": "Buy us a coffee to keep the code flowing."
+      },
+      {
+        "guid": "payoneer",
+        "type": "payment-provider",
+        "address": "kologojosias@gmail.com",
+        "description": "Direct support via Payoneer."
       }
     ],
     "plans": [
@@ -57,7 +56,7 @@
         "amount": 0,
         "currency": "USD",
         "frequency": "one-time",
-        "channels": ["github-sponsors"]
+        "channels": ["github-sponsors", "buymeacoffee", "payoneer"]
       }
     ]
   }

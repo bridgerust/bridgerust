@@ -3,8 +3,6 @@ title: Introduction
 description: Introduction to Embex, the universal vector database client.
 ---
 
-import { Tabs, TabItem } from '@astrojs/starlight/components';
-
 **Embex** is the universal vector database ORM for Rust, Python, and Node.js.
 
 ## Why Async Initialization?
