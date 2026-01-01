@@ -1,0 +1,11 @@
+error: Functions exported with #[bridgerust::export] must be public (use `pub fn`)
+ --> tests/ui/invalid_export.rs:6:4
+  |
+6 | fn private_function() -> i32 {
+  |    ^^^^^^^^^^^^^^^^
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> tests/ui/invalid_export.rs:8:2
+  |
+8 | }
+  |  ^ consider adding a `main` function to `$DIR/tests/ui/invalid_export.rs`

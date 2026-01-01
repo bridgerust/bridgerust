@@ -1,0 +1,20 @@
+{
+  "name": "@bridgerust/e2e-test",
+  "version": "0.1.0",
+  "description": "BridgeRust E2E Test Package",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "napi": {
+    "name": "bridgerust_e2e_test",
+    "triples": {
+      "defaults": true,
+      "additional": []
+    }
+  },
+  "scripts": {
+    "test": "node test_bindings.js"
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "^3.5.0"
+  }
+}

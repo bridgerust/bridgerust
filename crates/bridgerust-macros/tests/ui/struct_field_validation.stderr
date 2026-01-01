@@ -1,0 +1,11 @@
+error: field `data` `HashMap` is not directly supported by BridgeRust. Consider using `Vec<(K, V)>` for HashMap or `Vec<T>` for HashSet. For advanced use cases, implement bindings manually.
+ --> tests/ui/struct_field_validation.rs:6:15
+  |
+6 |     pub data: std::collections::HashMap<String, i32>,
+  |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> tests/ui/struct_field_validation.rs:7:2
+  |
+7 | }
+  |  ^ consider adding a `main` function to `$DIR/tests/ui/struct_field_validation.rs`

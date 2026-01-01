@@ -1,4 +1,30 @@
-# Embex Examples
+# Examples
+
+## BridgeRust Framework Examples
+
+### [bridgerust-example](bridgerust-example/)
+
+Comprehensive example demonstrating all BridgeRust features:
+
+- Function exports with various types (primitives, Option, Vec, Result)
+- Struct exports with methods
+- Error handling with `#[bridgerust::error]`
+- Complete Python and Node.js usage examples
+
+**Quick Start:**
+
+```bash
+cd examples/bridgerust-example
+bridge build --all
+python python/example.py
+node nodejs/example.js
+```
+
+See [bridgerust-example/README.md](bridgerust-example/README.md) for details.
+
+---
+
+## Embex Examples
 
 Quick start examples for different vector database providers, organized by provider and language.
 

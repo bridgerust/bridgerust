@@ -1,0 +1,11 @@
+error: Enums exported with #[bridgerust::export] must be public (use `pub enum`)
+ --> tests/ui/private_enum.rs:6:6
+  |
+6 | enum PrivateEnum {
+  |      ^^^^^^^^^^^
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> tests/ui/private_enum.rs:9:2
+  |
+9 | }
+  |  ^ consider adding a `main` function to `$DIR/tests/ui/private_enum.rs`

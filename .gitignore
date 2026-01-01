@@ -385,6 +385,9 @@ scratch/
 notes/
 TODO.local.md
 
+# Internal documentation (not for public push)
+.internal/
+
 # Performance profiling
 *.perf
 *.svg
@@ -420,7 +423,6 @@ docker-compose.override.yml
 #############
 
 # Compiled executables
-**/bridge
 **/bridge.exe
 **/bridge-cli
 **/bridge-cli.exe

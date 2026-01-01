@@ -2,6 +2,9 @@
 resolver = "3"
 members = [
     "crates/core",
+    "crates/bridgerust",
+    "crates/bridgerust-macros",
+    "crates/poc",
     # "crates/schema",  # Temporarily disabled - not ready yet
     "crates/embex/client",
     "crates/embex/core",
@@ -18,7 +21,10 @@ members = [
     "crates/embex/adapters/weaviate",
     "crates/embex/adapters/milvus",
     "cli/embex-cli",
+    "cli/bridge",
     "examples/rust",
+    "examples/bridgerust-example",
+    "tests/e2e",
 ]
 
 [workspace.package]

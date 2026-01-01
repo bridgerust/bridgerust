@@ -1,0 +1,175 @@
+name: BridgeRust Framework CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "crates/bridgerust/**"
+      - "crates/bridgerust-macros/**"
+      - "cli/bridge/**"
+      - "tests/e2e/**"
+      - "examples/bridgerust-example/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/bridgerust-framework.yml"
+  pull_request:
+    paths:
+      - "crates/bridgerust/**"
+      - "crates/bridgerust-macros/**"
+      - "cli/bridge/**"
+      - "tests/e2e/**"
+      - "examples/bridgerust-example/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/bridgerust-framework.yml"
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_RETRY: 10
+
+jobs:
+  # Minimal test suite - single platform to reduce costs
+  test:
+    name: Test Framework
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+          cache-targets: false
+          shared-key: "bridgerust-framework-v1"
+          workspaces: |
+            crates/bridgerust
+            crates/bridgerust-macros
+            cli/bridge
+            tests/e2e
+
+      - name: Check formatting
+        run: |
+          cargo fmt --check --manifest-path crates/bridgerust/Cargo.toml
+          cargo fmt --check --manifest-path crates/bridgerust-macros/Cargo.toml
+          cargo fmt --check --manifest-path cli/bridge/Cargo.toml
+
+      - name: Clippy check
+        run: |
+          cargo clippy --workspace --manifest-path Cargo.toml \
+            --package bridgerust \
+            --package bridgerust-macros \
+            --package bridgerust-cli \
+            -- -D warnings
+
+      - name: Build framework
+        run: |
+          cargo build --workspace \
+            --package bridgerust \
+            --package bridgerust-macros \
+            --package bridgerust-cli
+
+      - name: Test macros
+        run: |
+          cargo test --package bridgerust-macros --lib
+
+      - name: Test framework
+        run: |
+          cargo test --package bridgerust --lib
+
+      - name: Test CLI
+        run: |
+          cargo test --package bridgerust-cli --lib
+
+      - name: Test UI tests (compile-fail)
+        run: |
+          cargo test --package bridgerust-macros --test ui_tests
+
+  # Build with features to ensure everything compiles
+  build-features:
+    name: Build with Features
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+          cache-targets: false
+          shared-key: "bridgerust-features-v1"
+
+      - name: Build with Python feature
+        run: |
+          cargo build --package bridgerust --features python
+
+      - name: Build with Node.js feature
+        run: |
+          cargo build --package bridgerust --features nodejs
+
+      - name: Build with all features
+        run: |
+          cargo build --package bridgerust --features python,nodejs
+
+  # Only run on main branch to reduce costs
+  e2e-test:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install maturin
+        run: pip install maturin
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+          cache-targets: false
+          shared-key: "bridgerust-e2e-v1"
+
+      - name: Run E2E tests
+        working-directory: tests/e2e
+        run: |
+          # Build the test library
+          cargo build --release
+
+          # Build Python bindings
+          cd python && maturin develop --release && cd ..
+
+          # Build Node.js bindings
+          cd nodejs && npm install && npm run build && cd ..
+
+          # Run Python tests
+          cd python && python test_bindings.py && cd ..
+
+          # Run Node.js tests
+          cd nodejs && node test_bindings.js && cd ..

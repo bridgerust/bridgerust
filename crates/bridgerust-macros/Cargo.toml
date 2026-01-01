@@ -1,0 +1,23 @@
+[package]
+name = "bridgerust-macros"
+version = "0.1.0"
+edition = "2021"
+description = "Procedural macros for BridgeRust framework"
+authors = ["BridgeRust Team"]
+license = "MIT OR Apache-2.0"
+
+[lib]
+proc-macro = true
+
+[[example]]
+name = "error_example"
+path = "examples/error_example.rs"
+
+[dependencies]
+syn = { version = "2.0", features = ["full"] }
+quote = "1.0"
+proc-macro2 = "1.0"
+
+[dev-dependencies]
+trybuild = "1.0"
+bridgerust = { path = "../bridgerust", features = [] }
