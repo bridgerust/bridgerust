@@ -53,9 +53,9 @@
         "status": "active",
         "name": "Community Support",
         "description": "Support the ongoing maintenance and development of BridgeRust open source projects.",
-        "amount": 0,
+        "amount": 10,
         "currency": "USD",
-        "frequency": "one-time",
+        "frequency": "monthly",
         "channels": ["github-sponsors", "buymeacoffee", "payoneer"]
       }
     ]
