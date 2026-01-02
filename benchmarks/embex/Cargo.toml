@@ -6,6 +6,7 @@ publish = false
 
 [features]
 default = []
+simd = ["bridge-core/simd", "bridge-embex-core/simd"]
 lancedb = ["bridge-embex/lancedb"]
 qdrant = ["bridge-embex/qdrant"]
 weaviate = ["bridge-embex/weaviate"]
@@ -14,7 +15,7 @@ weaviate = ["bridge-embex/weaviate"]
 bridge-embex = { path = "../../crates/embex/client", features = ["all"] }
 bridge-embex-core = { path = "../../crates/embex/core" }
 bridge-embex-infrastructure = { path = "../../crates/embex/infrastructure" }
-bridge-core = { path = "../../crates/core", features = ["simd"] }
+bridge-core = { path = "../../crates/core" }
 tokio = { version = "1.48", features = ["full", "rt-multi-thread"] }
 criterion = { version = "0.8.1", features = ["async_tokio"] }
 rand = "0.9.2"
