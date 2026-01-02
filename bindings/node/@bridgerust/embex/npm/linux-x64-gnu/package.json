@@ -1,6 +1,6 @@
 {
   "name": "@bridgerust/embex-linux-x64-gnu",
-  "version": "0.1.14",
+  "version": "0.1.15",
   "description": "Embex Vector Database ORM Node.js Bindings",
   "os": [
     "linux"

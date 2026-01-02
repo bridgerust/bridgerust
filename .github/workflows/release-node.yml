@@ -169,6 +169,21 @@ jobs:
             exit 1
           fi
 
+          # Copy native.js and native.d.ts to dist/ so compiled code can find them
+          if [ -f "native.js" ]; then
+            cp native.js dist/native.js
+            echo "✅ Copied native.js to dist/"
+          else
+            echo "⚠️  native.js not found in root"
+          fi
+
+          if [ -f "native.d.ts" ]; then
+            cp native.d.ts dist/native.d.ts
+            echo "✅ Copied native.d.ts to dist/"
+          else
+            echo "⚠️  native.d.ts not found in root"
+          fi
+
           # Verify required files exist
           if [ ! -f "dist/index.js" ]; then
             echo "❌ ERROR: dist/index.js not found!"
@@ -179,7 +194,12 @@ jobs:
             echo "   TypeScript declaration files are required for TypeScript users."
             exit 1
           fi
-          echo "✅ Verified dist/index.js and dist/index.d.ts exist"
+          if [ ! -f "dist/native.js" ]; then
+            echo "❌ ERROR: dist/native.js not found!"
+            echo "   Required for compiled code to import native bindings."
+            exit 1
+          fi
+          echo "✅ Verified dist/index.js, dist/index.d.ts, and dist/native.js exist"
 
       - name: Prepare platform packages
         working-directory: bindings/node/@bridgerust/embex
