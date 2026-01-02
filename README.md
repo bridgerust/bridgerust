@@ -6,6 +6,7 @@
 [![Python](https://github.com/bridgerust/bridgerust/workflows/Build%20Python%20Wheels/badge.svg)](https://github.com/bridgerust/bridgerust/actions)
 [![Node.js](https://github.com/bridgerust/bridgerust/workflows/Build%20Node.js%20Bindings/badge.svg)](https://github.com/bridgerust/bridgerust/actions)
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-green)](LICENSE)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/bridgerust)
 
 ![Embex Logo](images/logo.png)
 
