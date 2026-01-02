@@ -16,18 +16,23 @@
 | :------------------------ | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------- |
 | **[Embex](crates/embex)** | [![PyPI](https://img.shields.io/pypi/v/embex?color=blue)](https://pypi.org/project/embex/) <br> [![Downloads](https://pepy.tech/badge/embex)](https://pepy.tech/project/embex) | [![NPM](https://img.shields.io/npm/v/@bridgerust/embex?color=red)](https://www.npmjs.com/package/@bridgerust/embex) <br> [![Downloads](https://img.shields.io/npm/dt/@bridgerust/embex)](https://www.npmjs.com/package/@bridgerust/embex) | [![Docs](https://img.shields.io/badge/docs-read-green)](crates/embex) |
 
-## 🚀 Active Projects
+## 🚀 Start Building in 5 Minutes
 
-### [Embex](crates/embex) (Vector Database ORM)
+**Embex** is the universal vector database client. It lets you:
 
-**The Universal Vector Database Client.** One API for Qdrant, Pinecone, Chroma, LanceDB, and more.
+1. **Start Embedded**: Use LanceDB locally. Zero setup. No API keys.
+2. **Scale Later**: Switch to Qdrant, Pinecone, or Milvus when you hit production.
 
-- **Unified API**: Switch providers instantly. "Write once, run anywhere."
-- **Performance**: Rust-core with SIMD acceleration (**4x faster** vector ops).
-- **Production Ready**: Built-in migrations, connection pooling, and observability.
-- **Language Support**: First-class bindings for [Python](crates/embex#python), [Node.js](crates/embex#nodejs-typescript), and [Rust](crates/embex#rust).
+### Development → Production Roadmap
 
-[**-> Read the full Embex Documentation**](crates/embex)
+| Stage               | Recommendation        | Why?                                |
+| :------------------ | :-------------------- | :---------------------------------- |
+| **Day 1: Learning** | **LanceDB**           | Runs locally. No Docker. Free.      |
+| **Week 2: Staging** | **Qdrant / Pinecone** | Managed cloud. Connection pooling.  |
+| **Month 1: Scale**  | **Milvus**            | Billion-scale vectors. Distributed. |
+| **Anytime**         | **PgVector**          | You already use PostgreSQL.         |
+
+[**-> Read the full Embex Documentation**](https://bridgerust.dev/embex/introduction)
 
 ### [Bridge Schema](crates/schema) (JSON Validator)
 

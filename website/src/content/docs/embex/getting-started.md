@@ -3,18 +3,34 @@ title: Getting Started
 description: Get started with Embex in minutes.
 ---
 
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+
 # Getting Started
 
-## Installation
+The fastest way to get started with Embex is to follow our **[Quickstart Tutorial](/embex/quickstart)**. It walks you through:
 
-### Python
+1. Setting up a local vector database (**LanceDB**) with zero configuration.
+2. Generating real embeddings from text.
+3. Building a semantic search engine in 5 minutes.
 
-```bash
-pip install embex
-```
+## Installation Reference
 
-### Node.js
+If you just need the installation commands:
 
-```bash
-npm install @bridgerust/embex
-```
+<Tabs>
+  <TabItem label="Python">
+    ```bash
+    pip install embex lancedb sentence-transformers
+    ```
+  </TabItem>
+  <TabItem label="Node.js">
+    ```bash
+    npm install @bridgerust/embex lancedb @xenova/transformers
+    ```
+  </TabItem>
+</Tabs>
+
+## Next Steps
+
+- Check out the [Core Concepts](/embex/core-concepts) to understand how Embex works.
+- See the [Providers](/embex/providers) page to learn how to switch databases.

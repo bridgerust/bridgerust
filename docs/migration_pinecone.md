@@ -111,8 +111,8 @@ from embex import Point
 await collection.insert([
     Point(
         id="A",
-        vector=[0.1] * 768,
-        metadata={"genre": "drama"}
+        vector=[0.1, 0.2, ...], # Your 768-dim vector
+        metadata={"category": "tech"}
     )
 ])
 ```
@@ -125,8 +125,8 @@ await collection.insert([
 await idx.upsert([
   {
     id: "A",
-    values: Array(768).fill(0.1),
-    metadata: { genre: "drama" },
+    values: [0.1, 0.2, ...], // Your 768-dim vector
+    metadata: { category: "tech" },
   },
 ]);
 ```
@@ -137,8 +137,8 @@ await idx.upsert([
 await collection.insert([
   {
     id: "A",
-    vector: Array(768).fill(0.1),
-    metadata: { genre: "drama" },
+    vector: [0.1, 0.2, ...], // Your 768-dim vector
+    metadata: { category: "tech" },
   },
 ]);
 ```
@@ -151,7 +151,7 @@ await collection.insert([
 
 ```python
 results = idx.query(
-    vector=[0.1] * 768,
+    vector=[0.1, 0.2, ...], # Query vector
     top_k=5,
     include_metadata=True
 )
@@ -161,7 +161,7 @@ results = idx.query(
 
 ```python
 results = await collection.search(
-    vector=[0.1] * 768,
+    vector=[0.1, 0.2, ...], # Query vector
     top_k=5,
     include_metadata=True
 )
@@ -173,7 +173,7 @@ results = await collection.search(
 
 ```typescript
 const results = await idx.query({
-  vector: Array(768).fill(0.1),
+  vector: [0.1, 0.2, ...], // Query vector
   topK: 5,
   includeMetadata: true,
 });
@@ -182,7 +182,7 @@ const results = await idx.query({
 **Embex:**
 
 ```typescript
-const results = await collection.search(Array(768).fill(0.1), 5, {
+const results = await collection.search([0.1, 0.2, ...], 5, { // Query vector
   include_metadata: true,
 });
 ```
@@ -195,7 +195,7 @@ const results = await collection.search(Array(768).fill(0.1), 5, {
 
 ```python
 results = idx.query(
-    vector=[0.1] * 768,
+    vector=[0.1, 0.2, ...], # Query vector
     top_k=5,
     filter={"genre": {"$eq": "drama"}}
 )
@@ -205,7 +205,7 @@ results = idx.query(
 
 ```python
 results = await collection.search(
-    vector=[0.1] * 768,
+    vector=[0.1, 0.2, ...], # Query vector
     top_k=5,
     filter={
         "op": "key",
@@ -217,7 +217,7 @@ results = await collection.search(
 Or using the query builder:
 
 ```python
-builder = client.collection("my-index").build_search([0.1] * 768)
+builder = client.collection("my_collection").build_search([0.1, 0.2, ...]) # Query vector
 results = await builder.filter({
     "op": "key",
     "args": ["genre", {"op": "eq", "args": "drama"}]
@@ -230,7 +230,7 @@ results = await builder.filter({
 
 ```typescript
 const results = await idx.query({
-  vector: Array(768).fill(0.1),
+  vector: [0.1, 0.2, ...], // Query vector
   topK: 5,
   filter: { genre: { $eq: "drama" } },
 });
@@ -239,7 +239,7 @@ const results = await idx.query({
 **Embex:**
 
 ```typescript
-const results = await collection.search(Array(768).fill(0.1), 5, {
+const results = await collection.search([0.1, 0.2, ...], 5, { // Query vector
   filter: {
     op: "key",
     args: ["genre", { op: "eq", args: "drama" }],

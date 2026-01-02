@@ -135,7 +135,7 @@ client.upsert(
     points=[
         models.PointStruct(
             id=1,
-            vector=[0.1] * 768,
+            vector=[0.1, 0.2, ...], # Your 768-dim vector
             payload={"color": "red", "category": "tech"}
         )
     ]
@@ -150,7 +150,7 @@ from embex import Point
 await client.collection("my_collection").insert([
     Point(
         id="1",
-        vector=[0.1] * 768,
+        vector=[0.1, 0.2, ...], # Your 768-dim vector
         metadata={"color": "red", "category": "tech"}
     )
 ])
@@ -167,7 +167,7 @@ await client.upsert("my_collection", {
   points: [
     {
       id: 1,
-      vector: Array(768).fill(0.1),
+      vector: [0.1, 0.2, ...], // Your 768-dim vector
       payload: { color: "red", category: "tech" },
     },
   ],
@@ -180,7 +180,7 @@ await client.upsert("my_collection", {
 await client.collection("my_collection").insert([
   {
     id: "1",
-    vector: Array(768).fill(0.1),
+    vector: [0.1, 0.2, ...], // Your 768-dim vector
     metadata: { color: "red", category: "tech" },
   },
 ]);
@@ -195,7 +195,7 @@ await client.collection("my_collection").insert([
 ```python
 results = client.search(
     collection_name="my_collection",
-    query_vector=[0.1] * 768,
+    query_vector=[0.1, 0.2, ...], # Query vector
     limit=5
 )
 ```
@@ -204,7 +204,7 @@ results = client.search(
 
 ```python
 results = await client.collection("my_collection").search(
-    vector=[0.1] * 768,
+    vector=[0.1, 0.2, ...], # Query vector
     top_k=5
 )
 ```
@@ -215,7 +215,7 @@ results = await client.collection("my_collection").search(
 
 ```typescript
 const results = await client.search("my_collection", {
-  vector: Array(768).fill(0.1),
+  vector: [0.1, 0.2, ...], // Query vector
   limit: 5,
 });
 ```
@@ -225,7 +225,7 @@ const results = await client.search("my_collection", {
 ```typescript
 const results = await client
   .collection("my_collection")
-  .search(Array(768).fill(0.1), 5);
+  .search([0.1, 0.2, ...], 5); // Query vector
 ```
 
 ## Filters
@@ -239,7 +239,7 @@ from qdrant_client.http import models
 
 results = client.search(
     collection_name="my_collection",
-    query_vector=[0.1] * 768,
+    query_vector=[0.1, 0.2, ...], # Query vector
     query_filter=models.Filter(
         must=[
             models.FieldCondition(
@@ -256,7 +256,7 @@ results = client.search(
 
 ```python
 results = await client.collection("my_collection").search(
-    vector=[0.1] * 768,
+    vector=[0.1, 0.2, ...], # Query vector
     top_k=5,
     filter={
         "op": "key",
@@ -268,7 +268,7 @@ results = await client.collection("my_collection").search(
 Or using the query builder:
 
 ```python
-builder = client.collection("my_collection").build_search([0.1] * 768)
+builder = client.collection("my_collection").build_search([0.1, 0.2, ...]) # Query vector
 results = await builder.filter({
     "op": "key",
     "args": ["category", {"op": "eq", "args": "tech"}]
@@ -281,7 +281,7 @@ results = await builder.filter({
 
 ```typescript
 const results = await client.search("my_collection", {
-  vector: Array(768).fill(0.1),
+  vector: [0.1, 0.2, ...], // Query vector
   filter: {
     must: [
       {
@@ -299,7 +299,7 @@ const results = await client.search("my_collection", {
 ```typescript
 const results = await client
   .collection("my_collection")
-  .search(Array(768).fill(0.1), 5, {
+  .search([0.1, 0.2, ...], 5, { // Query vector
     filter: {
       op: "key",
       args: ["category", { op: "eq", args: "tech" }],

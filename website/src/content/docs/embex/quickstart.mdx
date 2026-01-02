@@ -5,108 +5,152 @@ description: Go from zero to vector search in 5 minutes with Embex.
 
 import { Tabs, TabItem } from "@astrojs/starlight/components";
 
-This guide will walk you through installing Embex, setting up a local database (LanceDB), and performing your first vector search.
+This guide will walk you through installing Embex, generating real embeddings, and performing semantic search.
 
-**Pre-requisites:**
+We recommend starting with **LanceDB** because it runs embedded locally—no Docker, no cloud setup, and no API keys required!
 
-- **Python**: Installed (v3.8+)
-- **Node.js**: Installed (v18+)
+## 1. Installation
 
-# 1. Installation
-
-Install the Embex client for your language.
+Install the Embex client and an embedding library.
 
 <Tabs>
-  <TabItem label="Python">```bash pip install embex lancedb ```</TabItem>
+  <TabItem label="Python">
+    ```bash pip install embex lancedb sentence-transformers ```
+  </TabItem>
   <TabItem label="Node.js">
-    ```bash npm install @bridgerust/embex lancedb ```
+    ```bash npm install @bridgerust/embex lancedb @xenova/transformers ```
   </TabItem>
 </Tabs>
 
-# 2. Write Code
+## 2. Write Code
 
-We'll use **LanceDB** for this quickstart because it runs embedded locally—no Docker or API keys required!
-
-Create a file named `quickstart.py` or `quickstart.ts`.
+Create a file named `quickstart.py` or `quickstart.ts`. We will use a small, efficient model (`all-MiniLM-L6-v2`) to generate embeddings locally.
 
 <Tabs>
   <TabItem label="Python">
     ```python
     import asyncio
     from embex import EmbexClient, Vector
-    
+    from sentence_transformers import SentenceTransformer
+
     async def main():
-        # 1. Initialize Client (uses LanceDB by default if URI is a file path)
+        # 1. Setup Embedding Model
+        model = SentenceTransformer('all-MiniLM-L6-v2')
+
+        # 2. Initialize Client (uses LanceDB by default)
         client = await EmbexClient.new_async("lancedb://./data")
-        
-        # 2. Create Collection
-        await client.create_collection("demo", dimension=3)
-        
-        # 3. Insert Data
-        vectors = [
-            Vector(id="1", vector=[0.1, 0.2, 0.3], metadata={"type": "fruit", "name": "Apple"}),
-            Vector(id="2", vector=[0.4, 0.5, 0.6], metadata={"type": "fruit", "name": "Banana"}),
-            Vector(id="3", vector=[0.7, 0.8, 0.9], metadata={"type": "vegetable", "name": "Carrot"}),
+
+        # 3. Create Collection
+        # 'all-MiniLM-L6-v2' produces 384-dimensional vectors
+        await client.create_collection("products", dimension=384)
+
+        # 4. Prepare Data
+        documents = [
+            {"id": "1", "text": "Apple iPhone 14", "category": "electronics"},
+            {"id": "2", "text": "Samsung Galaxy S23", "category": "electronics"},
+            {"id": "3", "text": "Organic Bananas", "category": "groceries"},
         ]
-        await client.insert("demo", vectors)
-        
-        # 4. Search
+
+        # 5. Generate Embeddings & Insert
+        vectors = []
+        for doc in documents:
+            embedding = model.encode(doc["text"]).tolist()
+            vectors.append(Vector(
+                id=doc["id"],
+                vector=embedding,
+                metadata={"text": doc["text"], "category": doc["category"]}
+            ))
+
+        await client.insert("products", vectors)
+
+        # 6. Semantic Search
+        query_text = "smartphone"
+        query_vector = model.encode(query_text).tolist()
+
         results = await client.search(
-            collection_name="demo",
-            vector=[0.1, 0.2, 0.3],
+            collection_name="products",
+            vector=query_vector,
             limit=1
         )
-        
-        print(f"Nearest neighbor: {results[0].metadata['name']}")
-        
+
+        print(f"Query: '{query_text}'")
+        print(f"Match: {results[0].metadata['text']}")
+
     if __name__ == "__main__":
         asyncio.run(main())
     ```
+
   </TabItem>
   <TabItem label="Node.js">
     ```typescript
     import { EmbexClient, Vector } from "@bridgerust/embex";
-    
+    import { pipeline } from "@xenova/transformers";
+
     async function main() {
-        // 1. Initialize Client
+        // 1. Setup Embedding Model
+        const generateEmbedding = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+
+        // Helper to get array from tensor
+        const embed = async (text: string) => {
+            const output = await generateEmbedding(text, { pooling: 'mean', normalize: true });
+            return Array.from(output.data);
+        };
+
+        // 2. Initialize Client
         const client = await EmbexClient.newAsync("lancedb://./data");
-        
-        // 2. Create Collection
-        await client.createCollection("demo", 3);
-        
-        // 3. Insert Data
-        const vectors: Vector[] = [
-            { id: "1", vector: [0.1, 0.2, 0.3], metadata: { type: "fruit", name: "Apple" } },
-            { id: "2", vector: [0.4, 0.5, 0.6], metadata: { type: "fruit", name: "Banana" } },
-            { id: "3", vector: [0.7, 0.8, 0.9], metadata: { type: "vegetable", name: "Carrot" } }
+
+        // 3. Create Collection (384 dimensions for MiniLM)
+        await client.createCollection("products", 384);
+
+        // 4. Prepare Data
+        const documents = [
+            { id: "1", text: "Apple iPhone 14", category: "electronics" },
+            { id: "2", text: "Samsung Galaxy S23", category: "electronics" },
+            { id: "3", text: "Organic Bananas", category: "groceries" },
         ];
-        await client.insert("demo", vectors);
-        
-        // 4. Search
+
+        // 5. Generate Embeddings & Insert
+        const vectors: Vector[] = [];
+        for (const doc of documents) {
+            vectors.push({
+                id: doc.id,
+                vector: await embed(doc.text),
+                metadata: { text: doc.text, category: doc.category }
+            });
+        }
+
+        await client.insert("products", vectors);
+
+        // 6. Semantic Search
+        const queryText = "smartphone";
+        const queryVector = await embed(queryText);
+
         const results = await client.search({
-            collection_name: "demo",
-            vector: [0.1, 0.2, 0.3],
+            collection_name: "products",
+            vector: queryVector,
             limit: 1
         });
-        
-        console.log(`Nearest neighbor: ${results[0].metadata.name}`);
+
+        console.log(`Query: '${queryText}'`);
+        console.log(`Match: ${results[0].metadata.text}`);
     }
-    
+
     main();
     ```
+
   </TabItem>
 </Tabs>
 
-# 3. Run It
+## 3. Run It
 
 <Tabs>
   <TabItem label="Python">```bash python quickstart.py ```</TabItem>
   <TabItem label="Node.js">```bash npx tsx quickstart.ts ```</TabItem>
 </Tabs>
 
-Congratulations! You've just built a vector search application. 🚀
+You just built a semantic search engine! Notice how searching for "smartphone" found "Apple iPhone 14" even though the word "smartphone" isn't in the text? That's the power of vector embeddings. 🚀
 
 ## Next Steps
 
-- Learn about [Core Concepts](/embex/core-concepts) like Collections and Filters.
-- Connect to other [Providers](/embex/providers) like Qdrant or Pinecone.
+- **Deploy to Production**: Ready to scale? Switch to [Qdrant or Pinecone](/embex/providers) by changing just the initialization line.
+- **Learn Core Concepts**: Understand [Collections and Filters](/embex/core-concepts).

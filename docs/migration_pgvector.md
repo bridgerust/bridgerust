@@ -127,7 +127,7 @@ conn.commit()
 from embex import Point
 
 await client.collection("items").insert([
-    Point(id="1", vector=[0.1] * 768, metadata={})
+    Point(id="1", vector=[0.1, 0.2, ...], metadata={})
 ])
 ```
 
@@ -149,7 +149,7 @@ await pool.query("INSERT INTO items (embedding) VALUES ($1)", [
 await client.collection("items").insert([
   {
     id: "1",
-    vector: Array(768).fill(0.1),
+    vector: [0.1, 0.2, ...],
     metadata: {},
   },
 ]);
@@ -175,7 +175,7 @@ results = cur.fetchall()
 
 ```python
 results = await client.collection("items").search(
-    vector=[0.1] * 768,
+    vector=[0.1, 0.2, ...],
     top_k=5
 )
 ```
@@ -203,7 +203,7 @@ const results = await pool.query(
 ```typescript
 const results = await client
   .collection("items")
-  .search(Array(768).fill(0.1), 5);
+  .search([0.1, 0.2, ...], 5);
 ```
 
 ## Filters
@@ -226,7 +226,7 @@ cur.execute("""
 
 ```python
 results = await client.collection("items").search(
-    vector=[0.1] * 768,
+    vector=[0.1, 0.2, ...],
     top_k=5,
     filter={
         "op": "key",
@@ -238,7 +238,7 @@ results = await client.collection("items").search(
 Or using the query builder:
 
 ```python
-builder = client.collection("items").build_search([0.1] * 768)
+builder = client.collection("items").build_search([0.1, 0.2, ...])
 results = await builder.filter({
     "op": "key",
     "args": ["category", {"op": "eq", "args": "tech"}]
@@ -267,7 +267,7 @@ const results = await pool.query(
 ```typescript
 const results = await client
   .collection("items")
-  .search(Array(768).fill(0.1), 5, {
+  .search([0.1, 0.2, ...], 5, {
     filter: {
       op: "key",
       args: ["category", { op: "eq", args: "tech" }],

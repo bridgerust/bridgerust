@@ -26,12 +26,12 @@ await collection.create(768, "cosine");
 
 // Insert points
 const points = [
-  { id: "1", vector: Array(768).fill(0.1), metadata: { title: "Doc 1" } },
+  { id: "1", vector: [0.1, 0.2, ...], metadata: { title: "Doc 1" } },
 ];
 await collection.insert(points);
 
 // Search
-const results = await collection.search(Array(768).fill(0.1), 5);
+const results = await collection.search([0.1, 0.2, ...], 5);
 for (const r of results.results) {
   console.log(`ID: ${r.id}, Score: ${r.score}`);
 }
@@ -165,7 +165,7 @@ Search for similar vectors with direct parameters.
 
 ```typescript
 // Simple search
-const results = await collection.search(Array(768).fill(0.1), 5);
+const results = await collection.search([0.1, 0.2, ...], 5);
 
 // Search with filter
 const filter = {
@@ -174,7 +174,7 @@ const filter = {
 };
 
 const results = await collection.search(
-  Array(768).fill(0.1),
+  [0.1, 0.2, ...],
   5,
   filter,
   true,
@@ -202,7 +202,7 @@ Search using options object.
 **Example:**
 
 ```typescript
-const results = await collection.query(Array(768).fill(0.1), {
+const results = await collection.query([0.1, 0.2, ...], {
   limit: 10,
   filter: {
     op: "key",
@@ -222,7 +222,7 @@ Create a search builder for method chaining.
 
 ```typescript
 const results = await collection
-  .buildSearch(Array(768).fill(0.1))
+  .buildSearch([0.1, 0.2, ...])
   .limit(10)
   .includeMetadata(true)
   .includeVector(false)
@@ -577,14 +577,14 @@ async function main() {
 
   const points = documents.map((doc) => ({
     id: doc.id,
-    vector: Array(768).fill(0.1), // Replace with actual embeddings
+    vector: [0.1, 0.2, ...], // Replace with actual embeddings
     metadata: { text: doc.text, category: doc.category },
   }));
 
   await collection.insert(points);
 
   // Search with aggregations
-  const queryVector = Array(768).fill(0.1);
+  const queryVector = [0.1, 0.2, ...];
   const results = await collection
     .buildSearch(queryVector)
     .limit(2)

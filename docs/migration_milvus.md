@@ -119,7 +119,7 @@ await client.collection("my_collection").create(768, "cosine");
 ```python
 data = [
     [1, 2, 3],  # IDs
-    [[0.1] * 768, [0.2] * 768, [0.3] * 768]  # Vectors
+    [[0.1, 0.2, ...], [0.1, 0.2, ...], [0.1, 0.2, ...]]  # Vectors
 ]
 collection.insert(data)
 collection.flush()
@@ -131,9 +131,9 @@ collection.flush()
 from embex import Point
 
 await client.collection("my_collection").insert([
-    Point(id="1", vector=[0.1] * 768, metadata={}),
-    Point(id="2", vector=[0.2] * 768, metadata={}),
-    Point(id="3", vector=[0.3] * 768, metadata={})
+    Point(id="1", vector=[0.1, 0.2, ...], metadata={}),
+    Point(id="2", vector=[0.1, 0.2, ...], metadata={}),
+    Point(id="3", vector=[0.1, 0.2, ...], metadata={})
 ])
 ```
 
@@ -148,7 +148,7 @@ await client.insert({
   collection_name: "my_collection",
   data: [
     [1, 2, 3], // IDs
-    [Array(768).fill(0.1), Array(768).fill(0.2), Array(768).fill(0.3)], // Vectors
+    [[0.1, 0.2, ...], [0.1, 0.2, ...], [0.1, 0.2, ...]], // Vectors
   ],
 });
 ```
@@ -157,7 +157,7 @@ await client.insert({
 
 ```typescript
 await client.collection("my_collection").insert([
-  { id: "1", vector: Array(768).fill(0.1), metadata: {} },
+  { id: "1", vector: [0.1, 0.2 /* ... */], metadata: { category: "tech" } }, // Your vector
   { id: "2", vector: Array(768).fill(0.2), metadata: {} },
   { id: "3", vector: Array(768).fill(0.3), metadata: {} },
 ]);
@@ -172,7 +172,7 @@ await client.collection("my_collection").insert([
 ```python
 collection.load()
 results = collection.search(
-    data=[[0.1] * 768],
+    data=[[0.1, 0.2, ...]], # Query vector
     anns_field="vector",
     param={"metric_type": "COSINE", "params": {"nprobe": 10}},
     limit=5
@@ -183,7 +183,7 @@ results = collection.search(
 
 ```python
 results = await client.collection("my_collection").search(
-    vector=[0.1] * 768,
+    vector=[0.1, 0.2, ...], # Query vector
     top_k=5
 )
 ```
@@ -198,7 +198,7 @@ results = await client.collection("my_collection").search(
 await client.loadCollection({ collection_name: "my_collection" });
 const results = await client.search({
   collection_name: "my_collection",
-  vector: Array(768).fill(0.1),
+  vector: [0.1, 0.2, ...], // Query vector
   limit: 5,
   params: { metric_type: "COSINE", nprobe: 10 },
 });
@@ -209,7 +209,7 @@ const results = await client.search({
 ```typescript
 const results = await client
   .collection("my_collection")
-  .search(Array(768).fill(0.1), 5);
+  .search([0.1, 0.2 /* ... */], 5); // Query vector
 ```
 
 ## Filters
@@ -220,7 +220,7 @@ const results = await client
 
 ```python
 results = collection.search(
-    data=[[0.1] * 768],
+    data=[[0.1, 0.2, ...]], # Query vector
     anns_field="vector",
     param={"metric_type": "COSINE"},
     limit=5,
@@ -232,7 +232,7 @@ results = collection.search(
 
 ```python
 results = await client.collection("my_collection").search(
-    vector=[0.1] * 768,
+    vector=[0.1, 0.2, /* ... */], # Your vector
     top_k=5,
     filter={
         "op": "key",
@@ -244,7 +244,7 @@ results = await client.collection("my_collection").search(
 Or using the query builder:
 
 ```python
-builder = client.collection("my_collection").build_search([0.1] * 768)
+builder = client.collection("my_collection").build_search([0.1, 0.2, ...]) # Query vector
 results = await builder.filter({
     "op": "key",
     "args": ["category", {"op": "eq", "args": "tech"}]
@@ -258,7 +258,7 @@ results = await builder.filter({
 ```typescript
 const results = await client.search({
   collection_name: "my_collection",
-  vector: Array(768).fill(0.1),
+  vector: [0.1, 0.2, ...], // Query vector
   limit: 5,
   expr: "category == 'tech'",
 });
@@ -269,7 +269,7 @@ const results = await client.search({
 ```typescript
 const results = await client
   .collection("my_collection")
-  .search(Array(768).fill(0.1), 5, {
+  .search([0.1, 0.2, ...], 5, { // Query vector
     filter: {
       op: "key",
       args: ["category", { op: "eq", args: "tech" }],

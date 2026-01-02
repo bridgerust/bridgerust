@@ -26,12 +26,12 @@ await collection.create(dimension=768, distance="cosine")
 
 # Insert points
 points = [
-    Point(id="1", vector=[0.1] * 768, metadata={"title": "Doc 1"})
+    Point(id="1", vector=[0.1, 0.2, ...], metadata={"title": "Doc 1"})
 ]
 await collection.insert(points)
 
 # Search
-results = await collection.search(vector=[0.1] * 768, top_k=5)
+results = await collection.search(vector=[0.1, 0.2, ...], top_k=5)
 for r in results.results:
     print(f"ID: {r.id}, Score: {r.score}")
 ```
@@ -127,12 +127,12 @@ from embex import Point
 points = [
     Point(
         id="doc1",
-        vector=[0.1, 0.2, 0.3],
+        vector=[0.1, 0.2, ...],
         metadata={"title": "Document 1", "category": "tech"}
     ),
     Point(
         id="doc2",
-        vector=[0.4, 0.5, 0.6],
+        vector=[0.4, 0.5, ...],
         metadata={"title": "Document 2", "category": "science"}
     ),
 ]
@@ -174,7 +174,7 @@ Search for similar vectors.
 ```python
 # Simple search
 results = await collection.search(
-    vector=[0.1] * 768,
+    vector=[0.1, 0.2, ...],
     top_k=5
 )
 
@@ -184,7 +184,7 @@ filter_dict = {
     "args": ["category", {"op": "eq", "args": "tech"}]
 }
 results = await collection.search(
-    vector=[0.1] * 768,
+    vector=[0.1, 0.2, ...],
     top_k=5,
     filter=filter_dict
 )
@@ -203,7 +203,7 @@ Create a search builder for method chaining.
 **Example:**
 
 ```python
-results = await collection.build_search([0.1] * 768) \
+results = await collection.build_search([0.1, 0.2, ...]) \
     .limit(10) \
     .include_metadata(True) \
     .include_vector(False) \
@@ -252,7 +252,7 @@ from embex import Point
 
 point = Point(
     id="doc1",
-    vector=[0.1, 0.2, 0.3, 0.4],
+    vector=[0.1, 0.2, ...],
     metadata={
         "title": "My Document",
         "category": "tech",
@@ -293,7 +293,7 @@ Get number of results.
 **Example:**
 
 ```python
-results = await collection.search(vector=[0.1] * 768, top_k=10)
+results = await collection.search(vector=[0.1, 0.2, ...], top_k=10)
 print(f"Found {len(results)} results")
 print(f"Aggregations: {results.aggregations}")
 ```
@@ -411,7 +411,7 @@ async def main():
     points = [
         Point(
             id=doc["id"],
-            vector=[0.1] * 768,  # Replace with actual embeddings
+            vector=[0.1, 0.2, ...],  # Replace with actual embeddings
             metadata={"text": doc["text"], "category": doc["category"]}
         )
         for doc in documents
@@ -420,7 +420,7 @@ async def main():
     await collection.insert(points)
 
     # Search
-    query_vector = [0.1] * 768
+    query_vector = [0.1, 0.2, ...]
     results = await collection.search(
         vector=query_vector,
         top_k=2,

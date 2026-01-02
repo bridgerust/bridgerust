@@ -138,12 +138,12 @@ from embex import Point
 await client.collection("my_collection").insert([
     Point(
         id="id1",
-        vector=[0.1] * 768,  # Must provide vector
+        vector=[...], # Your vector
         metadata={"source": "notion"}
     ),
     Point(
         id="id2",
-        vector=[0.2] * 768,
+        vector=[...], # Your vector
         metadata={"source": "wiki"}
     )
 ])
@@ -169,12 +169,12 @@ await collection.add({
 await client.collection("my_collection").insert([
   {
     id: "id1",
-    vector: Array(768).fill(0.1),
+    vector: [...], // Your vector
     metadata: { source: "notion" },
   },
   {
     id: "id2",
-    vector: Array(768).fill(0.2),
+    vector: [...], // Your vector
     metadata: { source: "wiki" },
   },
 ]);
@@ -193,7 +193,7 @@ results = collection.query(
 )
 # OR with embeddings
 results = collection.query(
-    query_embeddings=[[0.1] * 768],
+    query_embeddings=[[0.1, 0.2, ...]], # Query vector
     n_results=5
 )
 ```
@@ -202,7 +202,7 @@ results = collection.query(
 
 ```python
 results = await client.collection("my_collection").search(
-    vector=[0.1] * 768,
+    vector=[0.1, 0.2, ...], # Query vector
     top_k=5
 )
 ```
@@ -225,7 +225,7 @@ const results = await collection.query({
 ```typescript
 const results = await client
   .collection("my_collection")
-  .search(Array(768).fill(0.1), 5);
+  .search([0.1, 0.2, ...], 5); // Query vector
 ```
 
 ## Filters
@@ -236,7 +236,7 @@ const results = await client
 
 ```python
 results = collection.query(
-    query_embeddings=[[0.1] * 768],
+    query_embeddings=[[0.1, 0.2, ...]], # Query vector
     n_results=5,
     where={"source": "notion"}
 )
@@ -246,7 +246,7 @@ results = collection.query(
 
 ```python
 results = await client.collection("my_collection").search(
-    vector=[0.1] * 768,
+    vector=[0.1, 0.2, ...], # Query vector
     top_k=5,
     filter={
         "op": "key",
@@ -258,7 +258,7 @@ results = await client.collection("my_collection").search(
 Or using the query builder:
 
 ```python
-builder = client.collection("my_collection").build_search([0.1] * 768)
+builder = client.collection("my_collection").build_search([0.1, 0.2, ...]) # Query vector
 results = await builder.filter({
     "op": "key",
     "args": ["source", {"op": "eq", "args": "notion"}]
@@ -271,7 +271,7 @@ results = await builder.filter({
 
 ```typescript
 const results = await collection.query({
-  queryEmbeddings: [Array(768).fill(0.1)],
+  queryEmbeddings: [[0.1, 0.2, ...]], // Query vector
   nResults: 5,
   where: { source: "notion" },
 });
@@ -282,7 +282,7 @@ const results = await collection.query({
 ```typescript
 const results = await client
   .collection("my_collection")
-  .search(Array(768).fill(0.1), 5, {
+  .search([0.1, 0.2, ...], 5, { // Query vector
     filter: {
       op: "key",
       args: ["source", { op: "eq", args: "notion" }],

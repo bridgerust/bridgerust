@@ -3,11 +3,15 @@ title: Introduction
 description: Introduction to Embex, the universal vector database client.
 ---
 
-**Embex** is the universal vector database ORM for Rust, Python, and Node.js.
+**Embex** is the universal vector database client.
+
+## The Recommended Path
+
+We recommend starting with **LanceDB** for development. It runs embedded (no Docker, no cloud setup), stores data locally, and is production-ready.
+
+When you're ready to scale or need a managed service, you can switch to Qdrant, Pinecone, or others **without rewriting your code**.
 
 ## Why Async Initialization?
-
-We use asynchronous initialization (`new_async` / `newAsync`) to ensure compatibility with all providers. Some embedded databases (like LanceDB) require async setup to handle file I/O non-blockingly.
 
 <Tabs>
   <TabItem label="Python">

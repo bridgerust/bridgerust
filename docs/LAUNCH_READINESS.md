@@ -68,11 +68,11 @@ collection = client.collection("test")
 await collection.create(768, "cosine")
 await collection.insert([{
     "id": "1",
-    "vector": [0.1] * 768,
+    "vector": [0.1, 0.2, ...], // 768-dim vector from model
     "metadata": {"text": "Hello World"}
 }])
 
-results = await collection.search([0.1] * 768, limit=5)
+results = await collection.search([0.1, 0.2, ...], limit=5)
 print(results)  # Should work!
 ```
 

@@ -134,7 +134,7 @@ from embex import Point
 await client.collection("Article").insert([
     Point(
         id="article-1",
-        vector=[0.1] * 768,
+        vector=[0.1, 0.2, ...], # 768-dim vector
         metadata={"title": "My Article", "content": "Article content"}
     )
 ])
@@ -164,7 +164,7 @@ await client.data
 await client.collection("Article").insert([
   {
     id: "article-1",
-    vector: Array(768).fill(0.1),
+    vector: [0.1, 0.2, ...], // 768-dim vector
     metadata: { title: "My Article", content: "Article content" },
   },
 ]);
@@ -186,7 +186,7 @@ result = client.query.get("Article", ["title", "content"]).with_near_vector({
 
 ```python
 results = await client.collection("Article").search(
-    vector=[0.1] * 768,
+    vector=[0.1, 0.2, ...], # Query vector
     top_k=5
 )
 ```
@@ -212,7 +212,7 @@ const result = await client.graphql
 ```typescript
 const results = await client
   .collection("Article")
-  .search(Array(768).fill(0.1), 5);
+  .search([0.1, 0.2, ...], 5); // Query vector
 ```
 
 ## Filters
@@ -233,7 +233,7 @@ result = client.query.get("Article", ["title"]).with_where({
 
 ```python
 results = await client.collection("Article").search(
-    vector=[0.1] * 768,
+    vector=[0.1, 0.2, ...], # Query vector
     top_k=5,
     filter={
         "op": "key",
@@ -245,7 +245,7 @@ results = await client.collection("Article").search(
 Or using the query builder:
 
 ```python
-builder = client.collection("Article").build_search([0.1] * 768)
+builder = client.collection("Article").build_search([0.1, 0.2, ...]) # Query vector
 results = await builder.filter({
     "op": "key",
     "args": ["title", {"op": "eq", "args": "My Article"}]
@@ -275,7 +275,7 @@ const result = await client.graphql
 ```typescript
 const results = await client
   .collection("Article")
-  .search(Array(768).fill(0.1), 5, {
+  .search([0.1, 0.2, ...], 5, { // Query vector
     filter: {
       op: "key",
       args: ["title", { op: "eq", args: "My Article" }],
@@ -398,7 +398,7 @@ client.data_object.create(
 
 # After (Embex)
 await client.collection("Article").insert([
-    Point(id="1", vector=[0.1] * 768, metadata={"title": "Article"})
+    Point(id="1", vector=[0.1, 0.2, ...], metadata={"title": "Article"})
 ])
 ```
 
