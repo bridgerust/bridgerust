@@ -1,6 +1,6 @@
 {
   "name": "@bridgerust/embex",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "description": "Embex Vector Database ORM Node.js Bindings",
   "homepage": "https://github.com/bridgerust/bridgerust/tree/main/crates/embex",
   "repository": {
@@ -49,6 +49,7 @@
     "build": "napi build --platform --release --js native.js --dts native.d.ts && tsc",
     "build:debug": "napi build --platform --js native.js --dts native.d.ts && tsc",
     "artifacts": "napi artifacts",
+    "prepublishOnly": "tsc",
     "test": "vitest run",
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
@@ -61,10 +62,10 @@
     "@types/node": "^25.0.3"
   },
   "optionalDependencies": {
-    "@bridgerust/embex-darwin-arm64": "0.1.13",
-    "@bridgerust/embex-darwin-x64": "0.1.13",
-    "@bridgerust/embex-linux-x64-gnu": "0.1.13",
-    "@bridgerust/embex-linux-x64-musl": "0.1.13",
-    "@bridgerust/embex-win32-x64-msvc": "0.1.13"
+    "@bridgerust/embex-darwin-arm64": "0.1.14",
+    "@bridgerust/embex-darwin-x64": "0.1.14",
+    "@bridgerust/embex-linux-x64-gnu": "0.1.14",
+    "@bridgerust/embex-linux-x64-musl": "0.1.14",
+    "@bridgerust/embex-win32-x64-msvc": "0.1.14"
   }
 }

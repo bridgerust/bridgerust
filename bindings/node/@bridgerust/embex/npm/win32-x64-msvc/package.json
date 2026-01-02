@@ -1,6 +1,6 @@
 {
   "name": "@bridgerust/embex-win32-x64-msvc",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "description": "Embex Vector Database ORM Node.js Bindings",
   "os": [
     "win32"

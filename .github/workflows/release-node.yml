@@ -155,6 +155,32 @@ jobs:
         working-directory: bindings/node/@bridgerust/embex
         run: bun install
 
+      - name: Build TypeScript
+        working-directory: bindings/node/@bridgerust/embex
+        run: |
+          echo "🔨 Building TypeScript to dist/..."
+          bun run -b tsc
+          echo "✅ TypeScript build complete"
+          if [ -d "dist" ]; then
+            echo "📦 dist/ folder contents:"
+            find dist -type f | head -20
+          else
+            echo "⚠️  dist/ folder not created!"
+            exit 1
+          fi
+
+          # Verify required files exist
+          if [ ! -f "dist/index.js" ]; then
+            echo "❌ ERROR: dist/index.js not found!"
+            exit 1
+          fi
+          if [ ! -f "dist/index.d.ts" ]; then
+            echo "❌ ERROR: dist/index.d.ts not found!"
+            echo "   TypeScript declaration files are required for TypeScript users."
+            exit 1
+          fi
+          echo "✅ Verified dist/index.js and dist/index.d.ts exist"
+
       - name: Prepare platform packages
         working-directory: bindings/node/@bridgerust/embex
         shell: bash
@@ -191,6 +217,21 @@ jobs:
             echo "❌ ERROR: .node files still present!"
             exit 1
           fi
+
+          # Verify dist/ folder exists with required files
+          if [ ! -f "dist/index.js" ]; then
+            echo "❌ ERROR: dist/index.js not found!"
+            echo "   This file is required as the main entry point."
+            echo "   Make sure TypeScript compilation succeeded."
+            exit 1
+          fi
+          if [ ! -f "dist/index.d.ts" ]; then
+            echo "❌ ERROR: dist/index.d.ts not found!"
+            echo "   This file is required for TypeScript support."
+            echo "   Make sure TypeScript compilation with declaration files succeeded."
+            exit 1
+          fi
+          echo "✅ Verified dist/index.js and dist/index.d.ts exist"
 
           VERSION=${GITHUB_REF_NAME#v}
           npm version $VERSION --no-git-tag-version --allow-same-version
