@@ -364,7 +364,44 @@ For organization repositories, we recommend enabling branch protection rules for
    - ✅ Do not allow bypassing the above settings
    - ✅ Restrict pushes that create files larger than 100 MB
 
-This ensures all changes go through code review and CI checks.
+#### Required Status Checks
+
+When configuring "Require status checks to pass", add these workflows:
+
+**Required (always):**
+
+- `CI Tests / Test Suite` - Runs Rust tests on all PRs that touch code
+
+**Optional (conditional):**
+
+- `Website / Build Website` - Only runs when website files are changed
+
+**Note**: The status check names follow the pattern: `{Workflow Name} / {Job Name}`. You can find the exact names after creating a PR and seeing which checks run.
+
+#### CI Workflow Analysis
+
+The CI workflow is already optimized:
+
+✅ **What it does:**
+
+- Runs `cargo test --workspace` (single job, ~5-15 minutes with caching)
+- Uses Rust caching to speed up builds
+- Has `paths-ignore` to skip docs-only changes
+
+✅ **What it skips:**
+
+- Documentation changes (`docs/**`, `**.md`)
+- Examples (`examples/**`)
+- Website changes (`website/**`)
+- Benchmarks (`benchmarks/**`)
+- Release workflows
+
+**Future optimizations** (if needed):
+
+- Skip CI for Dependabot PRs that only change `Cargo.lock`
+- Add `[skip ci]` commit message support for non-code changes
+
+This ensures all code changes go through testing while avoiding unnecessary CI runs.
 
 ### Organization-Level Defaults
 
