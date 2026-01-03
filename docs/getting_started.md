@@ -47,7 +47,7 @@ async def main():
     model = SentenceTransformer('all-MiniLM-L6-v2')
 
     # 2. Initialize Client (uses LanceDB just by specifying a path)
-    client = await EmbexClient.new_async("lancedb://./data")
+    client = await EmbexClient.new_async(provider="lancedb", url="./data")
 
     # 3. Create Collection (384 dims for MiniLM)
     await client.create_collection("products", dimension=384)
@@ -109,7 +109,7 @@ async function main() {
   };
 
   // 2. Initialize Client (LanceDB)
-  const client = await EmbexClient.newAsync("lancedb://./data");
+  const client = await EmbexClient.newAsync("lancedb", "./data");
 
   // 3. Create Collection
   await client.createCollection("products", 384);
@@ -158,13 +158,13 @@ When you're ready to scale, you can switch providers without rewriting your appl
 **Before (Development):**
 
 ```python
-client = await EmbexClient.new_async("lancedb://./data")
+client = await EmbexClient.new_async(provider="lancedb", url="./data")
 ```
 
 **After (Production):**
 
 ```python
-client = EmbexClient(provider="qdrant", url="https://your-qdrant-cluster.com", api_key="...")
+client = await EmbexClient.new_async(provider="qdrant", url="https://your-qdrant-cluster.com", api_key="...")
 ```
 
 Everything else (`insert`, `search`, `create_collection`) remains exactly the same.

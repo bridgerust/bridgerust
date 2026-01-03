@@ -31,7 +31,7 @@ async def main():
     model = SentenceTransformer('all-MiniLM-L6-v2')
 
     # 2. Initialize Client (uses LanceDB embedded)
-    client = await EmbexClient.new_async("lancedb://./data")
+    client = await EmbexClient.new_async(provider="lancedb", url="./data")
 
     # 3. Create Collection (384 dimensions for MiniLM)
     await client.create_collection("products", dimension=384)
@@ -83,7 +83,7 @@ Ready for production? Just change the initialization line.
 **From LanceDB (Dev):**
 
 ```python
-client = await EmbexClient.new_async("lancedb://./data")
+client = await EmbexClient.new_async(provider="lancedb", url="./data")
 ```
 
 **To Qdrant Cloud (Prod):**

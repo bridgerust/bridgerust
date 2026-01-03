@@ -18,15 +18,15 @@ When you're ready to scale or need a managed service, you can switch to Qdrant, 
 <Tabs>
   <TabItem label="Python">
     ```python 
-    # Initialize properly for ANY provider (local or cloud) client =
-    await EmbexClient.new_async("lancedb://./data") 
+    # Initialize properly for ANY provider (local or cloud)
+    client = await EmbexClient.new_async(provider="lancedb", url="./data") 
     ```
 
   </TabItem>
   <TabItem label="Node.js">
     ```typescript 
-    // Initialize properly for ANY provider (local or cloud) const
-    client = await EmbexClient.newAsync("lancedb://./data"); 
+    // Initialize properly for ANY provider (local or cloud)
+    const client = await EmbexClient.newAsync("lancedb", "./data"); 
     ```
     
   </TabItem>

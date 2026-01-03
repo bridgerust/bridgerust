@@ -10,22 +10,36 @@ import { Tabs, TabItem } from "@astrojs/starlight/components";
 <Tabs>
   <TabItem label="Python">
 
-    **`EmbexClient.new_async(uri: str) -> EmbexClient`**
+    **`EmbexClient.new_async(provider: str, url: str, api_key: Optional[str] = None) -> EmbexClient`**
 
     Creates a new asynchronous client.
 
     **Arguments:**
-    - `uri` (str): The connection URI (e.g., `lancedb://./data`).
+    - `provider` (str): The database provider (e.g., `"lancedb"`, `"qdrant"`, `"pinecone"`).
+    - `url` (str): The connection URL or path (e.g., `"./data"` for LanceDB, `"http://localhost:6333"` for Qdrant).
+    - `api_key` (str, optional): API key for cloud providers.
+
+    **Example:**
+    ```python
+    client = await EmbexClient.new_async(provider="lancedb", url="./data")
+    ```
 
   </TabItem>
   <TabItem label="Node.js">
 
-    **`EmbexClient.newAsync(uri: string) -> Promise<EmbexClient>`**
+    **`EmbexClient.newAsync(provider: string, url: string, apiKey?: string) -> Promise<EmbexClient>`**
 
     Creates a new asynchronous client.
 
     **Arguments:**
-    - `uri` (string): The connection URI.
+    - `provider` (string): The database provider.
+    - `url` (string): The connection URL or path.
+    - `apiKey` (string, optional): API key for cloud providers.
+
+    **Example:**
+    ```typescript
+    const client = await EmbexClient.newAsync("lancedb", "./data");
+    ```
 
   </TabItem>
 </Tabs>

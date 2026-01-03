@@ -441,7 +441,8 @@ jobs:
               async def test_async_init():
                   try:
                       # Test that new_async is awaitable
-                      client = await EmbexClient.new_async("lancedb://./test-data")
+                      # new_async requires provider and url as separate arguments
+                      client = await EmbexClient.new_async(provider="lancedb", url="./test-data")
                       print('✅ Test 7: Async initialization successful')
                       print(f'   - Client created via new_async: {type(client)}')
                       print(f'   - Has collection method: {hasattr(client, "collection")}')

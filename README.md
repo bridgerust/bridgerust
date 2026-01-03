@@ -43,7 +43,7 @@ from sentence_transformers import SentenceTransformer
 
 async def main():
     # Initialize with LanceDB (embedded, zero setup)
-    client = await EmbexClient.new_async("lancedb://./data")
+    client = await EmbexClient.new_async(provider="lancedb", url="./data")
     model = SentenceTransformer('all-MiniLM-L6-v2')
 
     # Create collection

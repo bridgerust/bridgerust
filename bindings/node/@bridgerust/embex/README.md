@@ -40,7 +40,7 @@ async function main() {
   };
 
   // 2. Initialize Client (uses LanceDB embedded)
-  const client = await EmbexClient.newAsync("lancedb://./data");
+  const client = await EmbexClient.newAsync("lancedb", "./data");
 
   // 3. Create Collection (384 dimensions for MiniLM)
   await client.createCollection("products", 384);
@@ -93,7 +93,7 @@ Ready for production? Just change the initialization line.
 **From LanceDB (Dev):**
 
 ```typescript
-const client = await EmbexClient.newAsync("lancedb://./data");
+const client = await EmbexClient.newAsync("lancedb", "./data");
 ```
 
 **To Qdrant Cloud (Prod):**

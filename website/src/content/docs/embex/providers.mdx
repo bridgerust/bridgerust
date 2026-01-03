@@ -5,7 +5,7 @@ description: Configure Embex for Qdrant, Pinecone, LanceDB, Milvus, Weaviate, an
 
 import { Tabs, TabItem } from "@astrojs/starlight/components";
 
-Embex supports a wide range of vector databases. Switching providers is as simple as changing the connection string.
+Embex supports a wide range of vector databases. Switching providers is as simple as changing the provider and URL parameters.
 
 ## The Recommended Path
 
@@ -25,15 +25,15 @@ Embex supports a wide range of vector databases. Switching providers is as simpl
 
     ```python
     # Persist to local folder (creates ./data directory)
-    client = await EmbexClient.new_async("lancedb://./data")
+    client = await EmbexClient.new_async(provider="lancedb", url="./data")
     ```
 
   </TabItem>
   <TabItem label="Node.js">
 
     ```typescript
-    # Persist to local folder (creates ./data directory)
-    const client = await EmbexClient.newAsync("lancedb://./data");
+    // Persist to local folder (creates ./data directory)
+    const client = await EmbexClient.newAsync("lancedb", "./data");
     ```
 
   </TabItem>
@@ -51,10 +51,6 @@ Managed serverless vector database.
   <TabItem label="Python">
 
     ```python
-    # Option 1: Connection String
-    client = await EmbexClient.new_async("pinecone://api-key@environment")
-
-    # Option 2: Explicit Config
     client = await EmbexClient.new_async(
         provider="pinecone",
         url="https://index-name.svc.pinecone.io",
@@ -66,15 +62,11 @@ Managed serverless vector database.
   <TabItem label="Node.js">
 
     ```typescript
-    // Option 1: Connection String
-    const client = await EmbexClient.newAsync("pinecone://api-key@environment");
-
-    // Option 2: Explicit Config
-    const client = await EmbexClient.newAsync({
-      provider: "pinecone",
-      url: "https://index-name.svc.pinecone.io",
-      apiKey: "your-api-key",
-    });
+    const client = await EmbexClient.newAsync(
+      "pinecone",
+      "https://index-name.svc.pinecone.io",
+      "your-api-key"
+    );
     ```
 
   </TabItem>
@@ -96,7 +88,10 @@ High-performance Rust vector database (Cloud or Self-Hosted).
     )
 
     # Local Docker
-    client = await EmbexClient.new_async("qdrant://localhost:6334")
+    client = await EmbexClient.new_async(
+        provider="qdrant",
+        url="http://localhost:6333"
+    )
     ```
 
   </TabItem>
@@ -104,14 +99,14 @@ High-performance Rust vector database (Cloud or Self-Hosted).
 
     ```typescript
     // Qdrant Cloud
-    const client = await EmbexClient.newAsync({
-      provider: "qdrant",
-      url: "https://xyz-example.eu-central.aws.cloud.qdrant.io:6333",
-      apiKey: "your-api-key",
-    });
+    const client = await EmbexClient.newAsync(
+      "qdrant",
+      "https://xyz-example.eu-central.aws.cloud.qdrant.io:6333",
+      "your-api-key"
+    );
 
     // Local Docker
-    const client = await EmbexClient.newAsync("qdrant://localhost:6334");
+    const client = await EmbexClient.newAsync("qdrant", "http://localhost:6333");
     ```
 
   </TabItem>
@@ -125,14 +120,14 @@ High-performance Rust vector database (Cloud or Self-Hosted).
   <TabItem label="Python">
 
     ```python
-    client = await EmbexClient.new_async("milvus://localhost:19530")
+    client = await EmbexClient.new_async(provider="milvus", url="http://localhost:19530")
     ```
 
   </TabItem>
   <TabItem label="Node.js">
 
     ```typescript
-    const client = await EmbexClient.newAsync("milvus://localhost:19530");
+    const client = await EmbexClient.newAsync("milvus", "http://localhost:19530");
     ```
 
   </TabItem>
@@ -144,14 +139,14 @@ High-performance Rust vector database (Cloud or Self-Hosted).
   <TabItem label="Python">
 
     ```python
-    client = await EmbexClient.new_async("weaviate://localhost:8080")
+    client = await EmbexClient.new_async(provider="weaviate", url="http://localhost:8080")
     ```
 
   </TabItem>
   <TabItem label="Node.js">
 
     ```typescript
-    const client = await EmbexClient.newAsync("weaviate://localhost:8080");
+    const client = await EmbexClient.newAsync("weaviate", "http://localhost:8080");
     ```
 
   </TabItem>
@@ -163,14 +158,14 @@ High-performance Rust vector database (Cloud or Self-Hosted).
   <TabItem label="Python">
 
     ```python
-    client = await EmbexClient.new_async("chroma://localhost:8000")
+    client = await EmbexClient.new_async(provider="chroma", url="http://localhost:8000")
     ```
 
   </TabItem>
   <TabItem label="Node.js">
 
     ```typescript
-    const client = await EmbexClient.newAsync("chroma://localhost:8000");
+    const client = await EmbexClient.newAsync("chroma", "http://localhost:8000");
     ```
 
   </TabItem>
@@ -182,27 +177,33 @@ High-performance Rust vector database (Cloud or Self-Hosted).
   <TabItem label="Python">
 
     ```python
-    client = await EmbexClient.new_async("postgres://user:pass@localhost:5432/db")
+    client = await EmbexClient.new_async(
+        provider="pgvector",
+        url="postgresql://user:pass@localhost:5432/db"
+    )
     ```
 
   </TabItem>
   <TabItem label="Node.js">
 
     ```typescript
-    const client = await EmbexClient.newAsync("postgres://user:pass@localhost:5432/db");
+    const client = await EmbexClient.newAsync(
+      "pgvector",
+      "postgresql://user:pass@localhost:5432/db"
+    );
     ```
 
   </TabItem>
 </Tabs>
 
-## Supported Matrix
+## Supported Providers
 
-| Provider     | Connection String Prefix | Example URI                              |
-| :----------- | :----------------------- | :--------------------------------------- |
-| **Pinecone** | `pinecone://`            | `pinecone://api-key@environment`         |
-| **Qdrant**   | `qdrant://`              | `qdrant://localhost:6334`                |
-| **Milvus**   | `milvus://`              | `milvus://localhost:19530`               |
-| **Weaviate** | `weaviate://`            | `weaviate://localhost:8080`              |
-| **Chroma**   | `chroma://`              | `chroma://localhost:8000`                |
-| **PgVector** | `postgres://`            | `postgres://user:pass@localhost:5432/db` |
-| **LanceDB**  | `lancedb://`             | `lancedb://./data`                       |
+| Provider     | Provider String | Example URL                                  |
+| :----------- | :-------------- | :------------------------------------------- |
+| **Pinecone** | `"pinecone"`    | `"https://index-name.svc.pinecone.io"`       |
+| **Qdrant**   | `"qdrant"`      | `"http://localhost:6333"`                    |
+| **Milvus**   | `"milvus"`      | `"http://localhost:19530"`                   |
+| **Weaviate** | `"weaviate"`    | `"http://localhost:8080"`                    |
+| **Chroma**   | `"chroma"`      | `"http://localhost:8000"`                    |
+| **PgVector** | `"pgvector"`    | `"postgresql://user:pass@localhost:5432/db"` |
+| **LanceDB**  | `"lancedb"`     | `"./data"`                                   |

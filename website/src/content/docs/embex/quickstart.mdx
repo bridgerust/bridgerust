@@ -38,7 +38,7 @@ Create a file named `quickstart.py` or `quickstart.ts`. We will use a small, eff
         model = SentenceTransformer('all-MiniLM-L6-v2')
 
         # 2. Initialize Client (uses LanceDB by default)
-        client = await EmbexClient.new_async("lancedb://./data")
+        client = await EmbexClient.new_async(provider="lancedb", url="./data")
 
         # 3. Create Collection
         # 'all-MiniLM-L6-v2' produces 384-dimensional vectors
@@ -97,7 +97,7 @@ Create a file named `quickstart.py` or `quickstart.ts`. We will use a small, eff
         };
 
         // 2. Initialize Client
-        const client = await EmbexClient.newAsync("lancedb://./data");
+        const client = await EmbexClient.newAsync("lancedb", "./data");
 
         // 3. Create Collection (384 dimensions for MiniLM)
         await client.createCollection("products", 384);
