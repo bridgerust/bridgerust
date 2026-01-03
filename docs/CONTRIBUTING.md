@@ -18,8 +18,8 @@ Thank you for your interest in contributing to BridgeRust! This guide will help 
 
 ### Prerequisites
 
-- **Rust**: Latest stable version (1.92+)
-- **Python**: 3.9+ (for Python bindings)
+- **Rust**: 1.92+ (as specified in `Cargo.toml`)
+- **Python**: 3.8+ (for Python bindings, as specified in `pyproject.toml`)
 - **Node.js**: 18+ (for Node.js bindings)
 - **Docker**: For running integration tests
 - **Git**: For version control
@@ -91,6 +91,36 @@ cargo test --features all --test integration
 pytest tests/integration/ -v --integration
 npm test -- tests/integration/
 ```
+
+Alternatively, use the integration test runner script:
+
+```bash
+./scripts/run_integration_tests.sh
+```
+
+### Testing Published Packages
+
+After publishing packages to npm and PyPI, verify they work correctly for end users:
+
+```bash
+# Test npm package (latest or specific version)
+./scripts/test-npm-package.sh
+./scripts/test-npm-package.sh 0.1.16
+
+# Test PyPI package (latest or specific version)
+./scripts/test-pypi-package.sh
+./scripts/test-pypi-package.sh 0.1.16
+```
+
+These scripts verify:
+
+- Package installation
+- Import/require functionality
+- Basic client instantiation
+- Async initialization methods
+- Package structure and types
+
+See `scripts/TEST_PUBLISHED_PACKAGES.md` for detailed documentation.
 
 ## Project Structure
 
@@ -312,7 +342,36 @@ Update `crates/embex/client/src/client.rs` to handle the new provider.
 
 - Add migration guide in `docs/migration_newdb.md`
 - Update README with new provider
-- Add examples
+- Add examples with correct API usage:
+  - Python: `await EmbexClient.new_async(provider="provider", url="url")`
+  - Node.js: `await EmbexClient.newAsync("provider", "url")`
+- Note: Use separate `provider` and `url` arguments, not connection strings
+
+## Branch Protection
+
+**Important**: By default, GitHub does **not** protect the `main` branch. Anyone with write access can push directly to `main`.
+
+### Recommended Branch Protection Settings
+
+For organization repositories, we recommend enabling branch protection rules for `main`:
+
+1. **Go to**: Repository → Settings → Branches
+2. **Add rule** for branch pattern: `main`
+3. **Enable**:
+   - ✅ Require a pull request before merging
+   - ✅ Require approvals (at least 1)
+   - ✅ Require status checks to pass before merging
+   - ✅ Do not allow bypassing the above settings
+   - ✅ Restrict pushes that create files larger than 100 MB
+
+This ensures all changes go through code review and CI checks.
+
+### Organization-Level Defaults
+
+Organization owners can set default branch protection rules that apply to all new repositories:
+
+- Go to: Organization → Settings → Rules → Rulesets
+- Create a ruleset for the `main` branch pattern
 
 ## Pull Request Process
 
@@ -353,24 +412,29 @@ Update `crates/embex/client/src/client.rs` to handle the new provider.
 
 ### Release Process
 
-We provide an automated script to handle testing, building, and publishing for all ecosystems.
+Releases are automated via GitHub Actions workflows. Cross-compilation for all platforms (Linux, macOS, Windows) is handled automatically by the CI/CD pipeline.
 
-#### Release Prerequisites
+#### Release Workflows
 
-To support cross-compilation (Linux/Windows) from macOS/Linux, install:
+Releases are triggered by creating and pushing a git tag:
 
-1. **Zig** (for Node.js cross-compilation):
+```bash
+# Create and push a release tag
+git tag v0.1.16
+git push origin v0.1.16
+```
 
-   ```bash
-    brew install zig
-   ```
+The GitHub Actions workflows will automatically:
 
-2. **Docker** (for Python manylinux wheels):
-   Ensure Docker Desktop is running.
+1. Run all unit and integration tests across the workspace.
+2. Build artifacts for all platforms (cross-compilation handled by GitHub Actions).
+3. Publish Rust crates to Crates.io in topological order.
+4. Build and publish Python wheels to PyPI (including Linux wheels via Docker).
+5. Build and publish Node.js bindings to NPM (including all platform-specific packages).
 
-#### Running the Release Script
+#### Manual Release (Local Development)
 
-Use `scripts/release.py` to automate the process:
+For local testing, you can use the release scripts:
 
 ```bash
 # 1. Dry Run (Recommended first)
@@ -386,12 +450,7 @@ Use `scripts/release.py` to automate the process:
 ./scripts/release.py --only node
 ```
 
-The script will:
-
-1. Run all unit and integration tests across the workspace.
-2. Publish Rust crates to Crates.io in topological order.
-3. Build and publish Python wheels to PyPI (using Docker for Linux wheels).
-4. Build and publish Node.js bindings to NPM.
+**Note**: Local releases only build for your current platform. For full cross-platform releases, use GitHub Actions.
 
 ### PR Description Template
 
