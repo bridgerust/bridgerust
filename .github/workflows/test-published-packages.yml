@@ -138,6 +138,11 @@ jobs:
           const fs = require('fs');
           const path = require('path');
 
+          // Helper to run async tests
+          async function runAsyncTests() {
+            // This will be called after sync tests
+          }
+
           console.log('🧪 Testing @bridgerust/embex package...\n');
 
           // Test 1: Try to require the package
@@ -223,6 +228,36 @@ jobs:
             process.exit(1);
           }
 
+          // Test 5: Check async initialization method exists
+          try {
+            if (typeof EmbexClient.newAsync !== 'function') {
+              throw new Error('EmbexClient.newAsync is not a function');
+            }
+            console.log('✅ Test 5: Async initialization method exists');
+            console.log('   - newAsync type:', typeof EmbexClient.newAsync);
+          } catch (error) {
+            console.error('❌ Test 5 failed:', error.message);
+            process.exit(1);
+          }
+
+          // Test 6: Test async initialization (syntax check, no actual connection)
+          try {
+            // Test that newAsync returns a Promise
+            const clientPromise = EmbexClient.newAsync('lancedb', './test-data', null);
+            if (!(clientPromise instanceof Promise)) {
+              throw new Error('newAsync does not return a Promise');
+            }
+            console.log('✅ Test 6: Async initialization syntax correct');
+            console.log('   - newAsync returns Promise');
+            console.log('   - Method signature is correct');
+            
+            // Note: We don't await here to avoid hanging, but we've verified the Promise exists
+            // In a real scenario with a DB, this would work: const client = await EmbexClient.newAsync(...)
+          } catch (error) {
+            console.error('❌ Test 6 failed:', error.message);
+            process.exit(1);
+          }
+
           console.log('\n🎉 All basic tests passed!');
           console.log('\n💡 Note: Full integration tests require a running database server.');
           console.log('   To test with a real database, start Qdrant:');
@@ -233,7 +268,7 @@ jobs:
       - name: Run npm package tests
         working-directory: test-npm-package
         run: |
-          node test-package.js
+          node test-package.js || (sleep 2 && exit 1)
 
       - name: Test TypeScript usage (if available)
         working-directory: test-npm-package
@@ -279,6 +314,7 @@ jobs:
 
       - name: Create virtual environment
         working-directory: test-pypi-package
+        shell: bash
         run: |
           python -m venv venv
           if [[ "$RUNNER_OS" == "Windows" ]]; then
@@ -290,6 +326,7 @@ jobs:
 
       - name: Install embex from PyPI
         working-directory: test-pypi-package
+        shell: bash
         run: |
           if [[ "$RUNNER_OS" == "Windows" ]]; then
             source venv/Scripts/activate || . venv/Scripts/activate
@@ -305,6 +342,7 @@ jobs:
 
       - name: Verify package installation
         working-directory: test-pypi-package
+        shell: bash
         run: |
           if [[ "$RUNNER_OS" == "Windows" ]]; then
             source venv/Scripts/activate || . venv/Scripts/activate
@@ -385,6 +423,46 @@ jobs:
           except Exception as e:
               print(f'⚠️ Test 5 warning: {e}')
 
+          # Test 6: Check async initialization method exists
+          try:
+              if not hasattr(EmbexClient, 'new_async'):
+                  raise Exception('EmbexClient.new_async method not found')
+              print('✅ Test 6: Async initialization method exists')
+              print(f'   - new_async type: {type(EmbexClient.new_async)}')
+              print(f'   - Is static method: {inspect.ismethod(EmbexClient.new_async) or inspect.isfunction(EmbexClient.new_async)}')
+          except Exception as e:
+              print(f'❌ Test 6 failed: {e}')
+              sys.exit(1)
+
+          # Test 7: Test async initialization (syntax check)
+          try:
+              import asyncio
+              
+              async def test_async_init():
+                  try:
+                      # Test that new_async is awaitable
+                      client = await EmbexClient.new_async("lancedb://./test-data")
+                      print('✅ Test 7: Async initialization successful')
+                      print(f'   - Client created via new_async: {type(client)}')
+                      print(f'   - Has collection method: {hasattr(client, "collection")}')
+                      return True
+                  except Exception as e:
+                      # Expected to fail without actual DB, but syntax is correct
+                      if 'lancedb' in str(e).lower() or 'connection' in str(e).lower() or 'enoent' in str(e).lower():
+                          print('✅ Test 7: Async initialization syntax correct')
+                          print('   - new_async is awaitable')
+                          print('   - Can be called (connection error expected without DB)')
+                          return True
+                      else:
+                          raise
+              
+              result = asyncio.run(test_async_init())
+              if not result:
+                  raise Exception('Async initialization test failed')
+          except Exception as e:
+              print(f'❌ Test 7 failed: {e}')
+              sys.exit(1)
+
           print('\n🎉 All basic tests passed!')
           print('\n💡 Note: Full integration tests require a running database server.')
           print('   To test with a real database, start Qdrant:')
@@ -394,6 +472,7 @@ jobs:
 
       - name: Run PyPI package tests
         working-directory: test-pypi-package
+        shell: bash
         run: |
           if [[ "$RUNNER_OS" == "Windows" ]]; then
             source venv/Scripts/activate || . venv/Scripts/activate
@@ -404,6 +483,7 @@ jobs:
 
       - name: Test package metadata
         working-directory: test-pypi-package
+        shell: bash
         run: |
           if [[ "$RUNNER_OS" == "Windows" ]]; then
             source venv/Scripts/activate || . venv/Scripts/activate

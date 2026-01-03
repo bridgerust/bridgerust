@@ -3,6 +3,8 @@ title: Introduction
 description: Introduction to Embex, the universal vector database client.
 ---
 
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+
 **Embex** is the universal vector database client.
 
 ## The Recommended Path
@@ -15,20 +17,18 @@ When you're ready to scale or need a managed service, you can switch to Qdrant, 
 
 <Tabs>
   <TabItem label="Python">
-
-    ```python
-    # Initialize properly for ANY provider (local or cloud)
-    client = await EmbexClient.new_async("lancedb://./data")
+    ```python 
+    # Initialize properly for ANY provider (local or cloud) client =
+    await EmbexClient.new_async("lancedb://./data") 
     ```
 
   </TabItem>
   <TabItem label="Node.js">
-
-    ```typescript
-    // Initialize properly for ANY provider (local or cloud)
-    const client = await EmbexClient.newAsync("lancedb://./data");
+    ```typescript 
+    // Initialize properly for ANY provider (local or cloud) const
+    client = await EmbexClient.newAsync("lancedb://./data"); 
     ```
-
+    
   </TabItem>
 </Tabs>
 

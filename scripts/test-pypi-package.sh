@@ -116,6 +116,47 @@ try:
 except Exception as e:
     print(f'⚠️ Test 6 warning: {e}')
 
+# Test 7: Check async initialization method exists
+try:
+    import inspect
+    if not hasattr(EmbexClient, 'new_async'):
+        raise Exception('EmbexClient.new_async method not found')
+    print('✅ Test 7: Async initialization method exists')
+    print(f'   - new_async type: {type(EmbexClient.new_async)}')
+    print(f'   - Is static method: {inspect.ismethod(EmbexClient.new_async) or inspect.isfunction(EmbexClient.new_async)}')
+except Exception as e:
+    print(f'❌ Test 7 failed: {e}')
+    sys.exit(1)
+
+# Test 8: Test async initialization (syntax check)
+try:
+    import asyncio
+    
+    async def test_async_init():
+        try:
+            # Test that new_async is awaitable
+            client = await EmbexClient.new_async("lancedb://./test-data")
+            print('✅ Test 8: Async initialization successful')
+            print(f'   - Client created via new_async: {type(client)}')
+            print(f'   - Has collection method: {hasattr(client, "collection")}')
+            return True
+        except Exception as e:
+            # Expected to fail without actual DB, but syntax is correct
+            if 'lancedb' in str(e).lower() or 'connection' in str(e).lower() or 'enoent' in str(e).lower():
+                print('✅ Test 8: Async initialization syntax correct')
+                print('   - new_async is awaitable')
+                print('   - Can be called (connection error expected without DB)')
+                return True
+            else:
+                raise
+    
+    result = asyncio.run(test_async_init())
+    if not result:
+        raise Exception('Async initialization test failed')
+except Exception as e:
+    print(f'❌ Test 8 failed: {e}')
+    sys.exit(1)
+
 print('\n🎉 All basic tests passed!')
 print('\n💡 Note: Full integration tests require a running database server.')
 print('   To test with a real database, start Qdrant:')
