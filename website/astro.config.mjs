@@ -20,7 +20,10 @@ export default defineConfig({
           label: "BridgeRust",
           items: [
             { label: "Introduction", link: "/bridgerust/introduction" },
+            { label: "Core Concepts", link: "/bridgerust/core-concepts" },
+            { label: "Bridge CLI", link: "/bridgerust/cli" },
             { label: "The Export Macro", link: "/bridgerust/macros" },
+            { label: "Advanced Usage", link: "/bridgerust/advanced-usage" },
             { label: "Architecture", link: "/bridgerust/architecture" },
           ],
         },

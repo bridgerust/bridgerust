@@ -1,5 +1,5 @@
 [package]
-name = "bridgerust-cli"
+name = "bridge"
 version = "0.1.0"
 edition = "2021"
 description = "Command Line Interface for BridgeRust framework"
