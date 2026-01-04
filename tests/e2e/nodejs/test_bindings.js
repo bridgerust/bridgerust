@@ -10,7 +10,7 @@ const {
   might_fail,
   Point,
   Rectangle,
-} = require("./index.node");
+} = require("./bridgerust_e2e_test.node");
 
 // Test functions
 console.log("Testing functions...");
