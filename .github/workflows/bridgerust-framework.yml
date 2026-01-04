@@ -38,6 +38,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Protoc
+        run: sudo apt-get install -y protobuf-compiler
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -101,6 +104,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Protoc
+        run: sudo apt-get install -y protobuf-compiler
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
@@ -133,6 +139,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Protoc
+        run: sudo apt-get install -y protobuf-compiler
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
@@ -160,16 +169,24 @@ jobs:
         working-directory: tests/e2e
         run: |
           # Build the test library
-          cargo build --release
+          cargo build --release --features "python,nodejs"
 
-          # Build Python bindings
-          cd python && maturin develop --release && cd ..
+          # Build and Test Python bindings
+          echo "🐍 Testing Python bindings..."
+          cd python
+          # Use 'maturin build' instead of 'develop' to avoid virtualenv requirement
+          maturin build --release --features python --manifest-path ../Cargo.toml
+          # Install the wheel we just built
+          pip install ../target/wheels/*.whl --force-reinstall
+          # Run tests
+          python test_bindings.py
+          cd ..
 
-          # Build Node.js bindings
-          cd nodejs && npm install && npm run build && cd ..
-
-          # Run Python tests
-          cd python && python test_bindings.py && cd ..
-
-          # Run Node.js tests
-          cd nodejs && node test_bindings.js && cd ..
+          # Build and Test Node.js bindings
+          echo "📦 Testing Node.js bindings..."
+          cd nodejs
+          npm install
+          npm run build
+          # Run tests
+          node test_bindings.js
+          cd ..

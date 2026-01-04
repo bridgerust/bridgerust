@@ -42,7 +42,7 @@ pub fn sum_numbers(numbers: Vec<i32>) -> i32 {
 }
 
 // Local Error Type to satisfy Orphan Rules
-pub struct TestError(String);
+pub struct TestError(#[allow(dead_code)] String);
 
 impl From<String> for TestError {
     fn from(s: String) -> Self {

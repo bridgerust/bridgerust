@@ -10,7 +10,7 @@ use syn::{parse_macro_input, DeriveInput, ItemEnum, ItemFn, ItemStruct};
 /// - Enums: Generates `#[pyclass]` and `#[napi]` attributes
 ///
 /// Usage:
-/// ```rust
+/// ```rust,ignore
 /// #[bridgerust::export]
 /// pub fn greet(name: String) -> String { ... }
 ///
@@ -575,7 +575,7 @@ fn export_enum(input_enum: ItemEnum) -> TokenStream {
 /// It generates simple conversion functions that use the Display implementation.
 ///
 /// Usage:
-/// ```rust
+/// ```rust,ignore
 /// use thiserror::Error;
 ///
 /// #[bridgerust::error]
