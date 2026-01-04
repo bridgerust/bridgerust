@@ -177,7 +177,8 @@ jobs:
           # Use 'maturin build' instead of 'develop' to avoid virtualenv requirement
           maturin build --release --features python --manifest-path ../Cargo.toml
           # Install the wheel we just built
-          pip install ../target/wheels/*.whl --force-reinstall
+          # Find wheel in workspace target directory (tests/e2e is a workspace member)
+          find ../../../target/wheels -name "*.whl" -exec pip install {} --force-reinstall \;
           # Run tests
           python test_bindings.py
           cd ..

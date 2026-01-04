@@ -17,6 +17,14 @@ export default defineConfig({
       ],
       sidebar: [
         {
+          label: "BridgeRust",
+          items: [
+            { label: "Introduction", link: "/bridgerust/introduction" },
+            { label: "The Export Macro", link: "/bridgerust/macros" },
+            { label: "Architecture", link: "/bridgerust/architecture" },
+          ],
+        },
+        {
           label: "Embex",
           items: [
             { label: "Introduction", link: "/embex/introduction" },
