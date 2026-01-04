@@ -89,7 +89,7 @@ jobs:
           sed -i "s|path = \"../bridgerust-macros\", version = \".*\"|version = \"$VERSION\"|" crates/bridgerust/Cargo.toml
           sed -i "s|path = \"../bridgerust-macros\", version = \".*\",|version = \"$VERSION\",|" crates/bridgerust/Cargo.toml
 
-          # Update bridgerust-cli
+          # Update bridge (cli)
           sed -i "s/^version = \".*\"/version = \"$VERSION\"/" cli/bridge/Cargo.toml
 
           echo "Updated versions to $VERSION"
@@ -115,20 +115,20 @@ jobs:
           cargo clippy --workspace --manifest-path Cargo.toml \
             --package bridgerust-macros \
             --package bridgerust \
-            --package bridgerust-cli \
+            --package bridge \
             -- -D warnings
 
       - name: Build all packages
         run: |
           cargo build --package bridgerust-macros --release
           cargo build --package bridgerust --release --features python,nodejs
-          cargo build --package bridgerust-cli --release
+          cargo build --package bridge --release
 
       - name: Run tests
         run: |
           cargo test --package bridgerust-macros --lib
           cargo test --package bridgerust --lib
-          cargo test --package bridgerust-cli --lib
+          cargo test --package bridge --lib
 
       - name: Check if packages already exist
         id: check_existing
@@ -138,14 +138,14 @@ jobs:
           # Check if versions already exist on crates.io
           MACROS_EXISTS=$(curl -s "https://crates.io/api/v1/crates/bridgerust-macros/$VERSION" | jq -r '.version // empty')
           MAIN_EXISTS=$(curl -s "https://crates.io/api/v1/crates/bridgerust/$VERSION" | jq -r '.version // empty')
-          CLI_EXISTS=$(curl -s "https://crates.io/api/v1/crates/bridgerust-cli/$VERSION" | jq -r '.version // empty')
+          CLI_EXISTS=$(curl -s "https://crates.io/api/v1/crates/bridge/$VERSION" | jq -r '.version // empty')
 
           if [ -n "$MACROS_EXISTS" ] || [ -n "$MAIN_EXISTS" ] || [ -n "$CLI_EXISTS" ]; then
             echo "exists=true" >> $GITHUB_OUTPUT
             echo "Warning: Some packages already exist on crates.io"
             [ -n "$MACROS_EXISTS" ] && echo "  - bridgerust-macros@$VERSION exists"
             [ -n "$MAIN_EXISTS" ] && echo "  - bridgerust@$VERSION exists"
-            [ -n "$CLI_EXISTS" ] && echo "  - bridgerust-cli@$VERSION exists"
+            [ -n "$CLI_EXISTS" ] && echo "  - bridge@$VERSION exists"
           else
             echo "exists=false" >> $GITHUB_OUTPUT
             echo "All packages are new versions"
@@ -191,7 +191,7 @@ jobs:
             sleep 10
           done
 
-      - name: Publish bridgerust-cli
+      - name: Publish bridge
         if: steps.check_existing.outputs.exists == 'false' && github.event.inputs.dry_run != 'true'
         run: |
           cd cli/bridge
@@ -208,7 +208,7 @@ jobs:
           echo "Would publish:" >> $GITHUB_STEP_SUMMARY
           echo "- bridgerust-macros@${{ steps.set_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- bridgerust@${{ steps.set_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- bridgerust-cli@${{ steps.set_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- bridge@${{ steps.set_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "To publish, run the workflow again with dry_run=false" >> $GITHUB_STEP_SUMMARY
 
@@ -222,7 +222,7 @@ jobs:
           sleep 30
 
           # Check each package
-          for pkg in bridgerust-macros bridgerust bridgerust-cli; do
+          for pkg in bridgerust-macros bridgerust bridge; do
             if curl -s "https://crates.io/api/v1/crates/$pkg/$VERSION" | jq -e '.version' > /dev/null 2>&1; then
               echo "✅ $pkg@$VERSION is available"
             else
@@ -239,7 +239,7 @@ jobs:
           echo "✅ Published to crates.io:" >> $GITHUB_STEP_SUMMARY
           echo "- [bridgerust-macros@$VERSION](https://crates.io/crates/bridgerust-macros/$VERSION)" >> $GITHUB_STEP_SUMMARY
           echo "- [bridgerust@$VERSION](https://crates.io/crates/bridgerust/$VERSION)" >> $GITHUB_STEP_SUMMARY
-          echo "- [bridgerust-cli@$VERSION](https://crates.io/crates/bridgerust-cli/$VERSION)" >> $GITHUB_STEP_SUMMARY
+          echo "- [bridge@$VERSION](https://crates.io/crates/bridge/$VERSION)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Next steps:**" >> $GITHUB_STEP_SUMMARY
           echo "1. Commit version changes to Cargo.toml files" >> $GITHUB_STEP_SUMMARY
