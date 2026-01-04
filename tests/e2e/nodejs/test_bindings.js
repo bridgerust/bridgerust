@@ -1,16 +1,19 @@
 // End-to-end tests for Node.js bindings
 
+const bindings = require("../bridgerust_e2e_test.node");
+console.log("Exported keys:", Object.keys(bindings));
+
 const {
   greet,
   add,
   multiply,
-  is_even,
+  isEven,
   divide,
-  sum_numbers,
-  might_fail,
+  sumNumbers,
+  mightFail,
   Point,
   Rectangle,
-} = require("../bridgerust_e2e_test.node");
+} = bindings;
 
 // Test functions
 console.log("Testing functions...");
@@ -33,10 +36,10 @@ const multiplyResult = multiply(2.5, 4.0);
 console.assert(multiplyResult === 10.0, `Expected 10.0, got ${multiplyResult}`);
 console.log("✓ multiply() works");
 
-// Test is_even
-console.assert(is_even(2) === true, "Expected is_even(2) to be true");
-console.assert(is_even(3) === false, "Expected is_even(3) to be false");
-console.log("✓ is_even() works");
+// Test isEven
+console.assert(isEven(2) === true, "Expected isEven(2) to be true");
+console.assert(isEven(3) === false, "Expected isEven(3) to be false");
+console.log("✓ isEven() works");
 
 // Test divide
 const divideResult = divide(10.0, 2.0);
@@ -48,19 +51,19 @@ console.assert(
 );
 console.log("✓ divide() works");
 
-// Test sum_numbers
-const sumResult = sum_numbers([1, 2, 3, 4, 5]);
+// Test sumNumbers
+const sumResult = sumNumbers([1, 2, 3, 4, 5]);
 console.assert(sumResult === 15, `Expected 15, got ${sumResult}`);
-console.log("✓ sum_numbers() works");
+console.log("✓ sumNumbers() works");
 
-// Test might_fail
-const mightFailSuccess = might_fail(5);
+// Test mightFail
+const mightFailSuccess = mightFail(5);
 console.assert(mightFailSuccess === 10, `Expected 10, got ${mightFailSuccess}`);
 try {
-  might_fail(-1);
-  console.assert(false, "Expected might_fail(-1) to throw");
+  mightFail(-1);
+  console.assert(false, "Expected mightFail(-1) to throw");
 } catch (e) {
-  console.log("✓ might_fail() error handling works");
+  console.log("✓ mightFail() error handling works");
 }
 
 // Test structs

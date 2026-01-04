@@ -23,6 +23,7 @@ features = ["extension-module"]
 [dependencies.napi]
 version = "3"
 optional = true
+features = ["napi4"]
 
 [dependencies.napi-derive]
 version = "3"
