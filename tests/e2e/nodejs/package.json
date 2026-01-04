@@ -6,14 +6,17 @@
   "types": "index.d.ts",
   "napi": {
     "name": "bridgerust_e2e_test",
-    "triples": {
-      "defaults": true,
-      "additional": []
-    }
+    "binaryName": "bridgerust_e2e_test",
+    "targets": [
+      "x86_64-unknown-linux-gnu",
+      "x86_64-apple-darwin",
+      "aarch64-apple-darwin",
+      "x86_64-pc-windows-msvc"
+    ]
   },
   "scripts": {
     "test": "node test_bindings.js",
-    "build": "napi build --platform --release --manifest-path ../Cargo.toml"
+    "build": "napi build --release --manifest-path ../Cargo.toml"
   },
   "devDependencies": {
     "@napi-rs/cli": "^3.5.0"
