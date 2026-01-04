@@ -12,7 +12,8 @@
     }
   },
   "scripts": {
-    "test": "node test_bindings.js"
+    "test": "node test_bindings.js",
+    "build": "napi build --platform --release --manifest-path ../Cargo.toml"
   },
   "devDependencies": {
     "@napi-rs/cli": "^3.5.0"

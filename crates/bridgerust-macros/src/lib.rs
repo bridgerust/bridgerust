@@ -440,8 +440,9 @@ fn export_struct(input_struct: ItemStruct) -> TokenStream {
         }
     }
 
-    // Check for generic type parameters
+    // Check for generic type parameters (Same as before)
     if !input_struct.generics.params.is_empty() {
+        // ... (Omitting full error message for brevity in tool call, but conceptually same block)
         let generic_params: Vec<String> = input_struct
             .generics
             .params
@@ -499,7 +500,7 @@ fn export_struct(input_struct: ItemStruct) -> TokenStream {
     }
 
     let expanded = quote! {
-        #[cfg_attr(feature = "python", ::bridgerust::pyo3::pyclass(crate = "::bridgerust::pyo3"))]
+        #[cfg_attr(feature = "python", ::bridgerust::pyo3::pyclass(crate = "::bridgerust::pyo3", get_all, set_all))]
         #[cfg_attr(feature = "nodejs", ::bridgerust::napi_derive::napi)]
         #input_struct
     };
