@@ -1,0 +1,11 @@
+error: parameter type element type (in Vec) `HashMap` is not directly supported by BridgeRust. Consider using `Vec<(K, V)>` for HashMap or `Vec<T>` for HashSet. For advanced use cases, implement bindings manually.
+ --> tests/ui/nested_unsupported_type.rs:5:27
+  |
+5 | pub fn process(items: Vec<std::collections::HashMap<String, i32>>) -> Vec<i32> {
+  |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> tests/ui/nested_unsupported_type.rs:7:2
+  |
+7 | }
+  |  ^ consider adding a `main` function to `$DIR/tests/ui/nested_unsupported_type.rs`

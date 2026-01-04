@@ -421,7 +421,7 @@ results = await client.collection("my_collection").search(
 )
 ```
 
-**Future Improvement**: We're considering adding optional text-based search support with configurable embedding functions. See [CHROMA_IMPROVEMENTS.md](CHROMA_IMPROVEMENTS.md) for details.
+**Future Improvement**: We're considering adding optional text-based search support with configurable embedding functions. (Internal planning document available for contributors)
 
 ### Issue: Persistent mode not available
 
@@ -442,7 +442,7 @@ collection = client.collection("my_collection")
 
 **Alternative**: If you need persistent mode, you can continue using Chroma's persistent client for local development and use Embex with HTTP client for production deployments.
 
-**Future Improvement**: We're planning to add support for Chroma's persistent client mode. See [CHROMA_IMPROVEMENTS.md](CHROMA_IMPROVEMENTS.md) for details.
+**Future Improvement**: We're planning to add support for Chroma's persistent client mode. (Internal planning document available for contributors)
 
 ## Next Steps
 

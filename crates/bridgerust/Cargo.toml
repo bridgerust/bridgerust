@@ -1,0 +1,21 @@
+[package]
+name = "bridgerust"
+version = "0.1.0"
+edition = "2021"
+description = "Write Rust once, deploy to Python and Node.js"
+authors = ["BridgeRust Team"]
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+
+[dependencies]
+bridgerust-macros = { path = "../bridgerust-macros", version = "0.1.0" }
+
+# Optional dependencies for actual bindings
+pyo3 = { version = "0.27", optional = true, features = ["extension-module"] }
+napi = { version = "3", optional = true, features = ["default"] }
+napi-derive = { version = "3", optional = true }
+
+[features]
+default = []
+python = ["dep:pyo3"]
+nodejs = ["dep:napi", "dep:napi-derive"]

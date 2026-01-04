@@ -1,0 +1,15 @@
+[package]
+name = "poc"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bridgerust = { path = "../bridgerust", features = [] }
+napi = { version = "3", optional = true, features = ["default"] }
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+python = ["bridgerust/python"]
+nodejs = ["bridgerust/nodejs", "dep:napi"]
