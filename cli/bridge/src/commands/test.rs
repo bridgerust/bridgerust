@@ -119,18 +119,18 @@ async fn test_target(target: &str, project_root: &PathBuf) -> Result<()> {
 
             let mut test_files = Vec::new();
             for test_dir in &test_dirs {
-                if test_dir.exists() {
-                    if let Ok(entries) = std::fs::read_dir(test_dir) {
-                        for entry in entries.flatten() {
-                            let path = entry.path();
-                            if path.extension().map(|e| e == "py").unwrap_or(false)
-                                && path
-                                    .file_name()
-                                    .map(|n| n.to_string_lossy().starts_with("test_"))
-                                    .unwrap_or(false)
-                            {
-                                test_files.push(path);
-                            }
+                if test_dir.exists()
+                    && let Ok(entries) = std::fs::read_dir(test_dir)
+                {
+                    for entry in entries.flatten() {
+                        let path = entry.path();
+                        if path.extension().map(|e| e == "py").unwrap_or(false)
+                            && path
+                                .file_name()
+                                .map(|n| n.to_string_lossy().starts_with("test_"))
+                                .unwrap_or(false)
+                        {
+                            test_files.push(path);
                         }
                     }
                 }

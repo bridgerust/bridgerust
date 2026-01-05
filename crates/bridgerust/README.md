@@ -4,6 +4,8 @@
 
 BridgeRust is a unified framework for building cross-language Rust libraries. It eliminates the complexity of managing separate bindings for PyO3 (Python) and napi-rs (Node.js) by providing a single, unified macro system.
 
+**Website:** [bridgerust.dev](https://bridgerust.dev)
+
 ## 🚀 Features
 
 - **Unified Logic**: One `#[bridgerust::export]` macro handles both Python and Node.js generation.
@@ -65,14 +67,13 @@ cargo build --features nodejs
 
 ## 📚 Documentation
 
-- [Quick Reference](../../docs/QUICK_REFERENCE.md) - Cheat sheet for common patterns
-- [Getting Started Guide](../../docs/getting-started-bridgerust.md) - Complete tutorial
-- [Migration Guide](../../docs/MIGRATION_GUIDE.md) - Migrate from PyO3/napi-rs
-- [Examples](../../docs/EXAMPLES.md) - Code examples and patterns
-- [Troubleshooting](../../docs/TROUBLESHOOTING.md) - Common issues and solutions
-- [CLI Documentation](../../cli/bridge/README.md) - CLI tool reference
-- [E2E Test Examples](../../tests/e2e/README.md) - Integration test examples
-- [Implementation Plan](../../.cursor/rules/brigerust-implementation-plan.md) - Roadmap
+- [Quick Reference](https://github.com/bridgerust/bridgerust/blob/main/docs/QUICK_REFERENCE.md) - Cheat sheet for common patterns
+- [Getting Started Guide](https://github.com/bridgerust/bridgerust/blob/main/docs/getting-started-bridgerust.md) - Complete tutorial
+- [Migration Guide](https://github.com/bridgerust/bridgerust/blob/main/docs/MIGRATION_GUIDE.md) - Migrate from PyO3/napi-rs
+- [Examples](https://github.com/bridgerust/bridgerust/blob/main/docs/EXAMPLES.md) - Code examples and patterns
+- [Troubleshooting](https://github.com/bridgerust/bridgerust/blob/main/docs/TROUBLESHOOTING.md) - Common issues and solutions
+- [CLI Documentation](https://github.com/bridgerust/bridgerust/blob/main/cli/bridge/README.md) - CLI tool reference
+- [E2E Test Examples](https://github.com/bridgerust/bridgerust/blob/main/tests/e2e/README.md) - Integration test examples
 
 ## 🎯 Quick Example
 

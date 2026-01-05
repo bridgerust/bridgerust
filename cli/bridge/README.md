@@ -2,10 +2,12 @@
 
 Command-line interface for the BridgeRust framework - write Rust once, deploy to Python and Node.js.
 
+**Website:** [bridgerust.dev](https://bridgerust.dev)
+
 ## Installation
 
 ```bash
-cargo install --path cli/bridge
+cargo install bridge
 ```
 
 Or from the workspace root:
@@ -266,4 +268,4 @@ package_name = "@bridgerust/my-project"
 
 ## Examples
 
-See the `examples/` directory for complete examples of BridgeRust projects.
+See the [examples directory](https://github.com/bridgerust/bridgerust/tree/main/examples) for complete examples of BridgeRust projects.

@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, ItemStruct};
+use syn::{ItemStruct, parse_macro_input};
 
 pub fn export_exception(attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as ItemStruct);
@@ -68,16 +68,14 @@ impl syn::parse::Parse for ExceptionArgs {
             let opts =
                 syn::punctuated::Punctuated::<syn::Meta, syn::Token![,]>::parse_terminated(input)?;
             for opt in opts {
-                if let syn::Meta::NameValue(nv) = opt {
-                    if nv.path.is_ident("module") {
-                        if let syn::Expr::Lit(syn::ExprLit {
-                            lit: syn::Lit::Str(lit),
-                            ..
-                        }) = nv.value
-                        {
-                            module = Some(lit.value());
-                        }
-                    }
+                if let syn::Meta::NameValue(nv) = opt
+                    && nv.path.is_ident("module")
+                    && let syn::Expr::Lit(syn::ExprLit {
+                        lit: syn::Lit::Str(lit),
+                        ..
+                    }) = nv.value
+                {
+                    module = Some(lit.value());
                 }
             }
         }

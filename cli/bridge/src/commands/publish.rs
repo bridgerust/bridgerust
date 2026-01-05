@@ -94,7 +94,9 @@ fn validate_publish_target(target: &str, project_root: &Path) -> Result<()> {
             let pyproject_toml = python_dir.join("pyproject.toml");
 
             if !pyproject_toml.exists() {
-                anyhow::bail!("Python package not configured. Run 'bridge init' or create python/pyproject.toml");
+                anyhow::bail!(
+                    "Python package not configured. Run 'bridge init' or create python/pyproject.toml"
+                );
             }
 
             // Check if maturin is available
@@ -109,7 +111,9 @@ fn validate_publish_target(target: &str, project_root: &Path) -> Result<()> {
             let package_json = nodejs_dir.join("package.json");
 
             if !package_json.exists() {
-                anyhow::bail!("Node.js package not configured. Run 'bridge init' or create nodejs/package.json");
+                anyhow::bail!(
+                    "Node.js package not configured. Run 'bridge init' or create nodejs/package.json"
+                );
             }
 
             // Check if npm is available

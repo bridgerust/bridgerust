@@ -35,6 +35,7 @@ rust-version = "1.92"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/bridgerust/bridgerust"
 authors = ["KOLOGO B Josias Yannick <hello@kologojosias.com>"]
+homepage = "https://bridgerust.dev"
 
 # Optimize release builds for size
 [profile.release]
