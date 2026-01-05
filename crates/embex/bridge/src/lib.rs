@@ -390,147 +390,42 @@ impl EmbexClient {
 
     pub async fn run_migrations(&self, migrations: Vec<MigrationItem>) -> BridgeResult<()> {
         use bridge_embex::{Migration, MigrationManager};
-        use std::sync::Arc;
 
-        let mut adapters: Vec<Box<dyn Migration>> = Vec::with_capacity(migrations.len());
-
-        for item in migrations {
-            match item {
-                #[cfg(feature = "python")]
-                MigrationItem::Python(py_migration) => {
-                    use async_trait::async_trait;
-                    struct PyMigrationAdapter {
-                        inner: Py<PyAny>,
-                    }
-
-                    #[async_trait]
-                    impl Migration for PyMigrationAdapter {
-                        fn version(&self) -> String {
-                            Python::with_gil(|py| {
-                                self.inner
-                                    .call_method0(py, "version")
-                                    .expect("Migration must have version() method")
-                                    .extract(py)
-                                    .expect("version() must return string")
-                            })
-                        }
-
-                        async fn up(
-                            &self,
-                            db: Arc<dyn bridge_embex::VectorDatabase>,
-                        ) -> bridge_embex::Result<()> {
-                            let rust_client = bridge_embex::EmbexClient::from_db(db);
-                            let bridge_client = EmbexClient { inner: rust_client };
-
-                            let py_future = Python::with_gil(|py| {
-                                let py_client = Py::new(py, bridge_client)
-                                    .expect("Failed to create python client wrapper");
-                                self.inner.call_method1(py, "up", (py_client,))
-                            });
-
-                            match py_future {
-                                Ok(awaitable) => {
-                                    let fut = Python::with_gil(|py| {
-                                        bridgerust::pyo3_async_runtimes::tokio::into_future(
-                                            awaitable.into_bound(py),
-                                        )
-                                    });
-
-                                    match fut {
-                                        Ok(f) => f.await.map(|_| ()).map_err(|e| {
-                                            bridge_embex::EmbexError::Other(anyhow::anyhow!(
-                                                "Python error: {}",
-                                                e
-                                            ))
-                                        }),
-                                        Err(e) => {
-                                            Err(bridge_embex::EmbexError::Other(anyhow::anyhow!(
-                                                "Failed to convert python future: {}",
-                                                e
-                                            )))
-                                        }
-                                    }
-                                }
-                                Err(e) => Err(bridge_embex::EmbexError::Other(anyhow::anyhow!(
-                                    "Failed to call up(): {}",
-                                    e
-                                ))),
-                            }
-                        }
-
-                        async fn down(
-                            &self,
-                            db: Arc<dyn bridge_embex::VectorDatabase>,
-                        ) -> bridge_embex::Result<()> {
-                            let rust_client = bridge_embex::EmbexClient::from_db(db);
-                            let bridge_client = EmbexClient { inner: rust_client };
-
-                            let py_future = Python::with_gil(|py| {
-                                let py_client = Py::new(py, bridge_client)
-                                    .expect("Failed to create python client wrapper");
-                                self.inner.call_method1(py, "down", (py_client,))
-                            });
-
-                            match py_future {
-                                Ok(awaitable) => {
-                                    let fut = Python::with_gil(|py| {
-                                        bridgerust::pyo3_async_runtimes::tokio::into_future(
-                                            awaitable.into_bound(py),
-                                        )
-                                    });
-
-                                    match fut {
-                                        Ok(f) => f.await.map(|_| ()).map_err(|e| {
-                                            bridge_embex::EmbexError::Other(anyhow::anyhow!(
-                                                "Python error: {}",
-                                                e
-                                            ))
-                                        }),
-                                        Err(e) => {
-                                            Err(bridge_embex::EmbexError::Other(anyhow::anyhow!(
-                                                "Failed to convert python future: {}",
-                                                e
-                                            )))
-                                        }
-                                    }
-                                }
-                                Err(e) => Err(bridge_embex::EmbexError::Other(anyhow::anyhow!(
-                                    "Failed to call down(): {}",
-                                    e
-                                ))),
-                            }
-                        }
-                    }
-                    adapters.push(Box::new(PyMigrationAdapter {
+        let adapters: Vec<Box<dyn Migration>> = migrations
+            .into_iter()
+            .map(|item| -> BridgeResult<Box<dyn Migration>> {
+                match item {
+                    #[cfg(feature = "python")]
+                    MigrationItem::Python(py_migration) => Ok(Box::new(PyMigrationAdapter {
                         inner: py_migration,
-                    }));
-                }
-                #[cfg(feature = "nodejs")]
-                MigrationItem::Node(m) => {
-                    let up_ops: Vec<MigrationOp> = serde_json::from_value(
-                        m.operations.map(|v| v.0).unwrap_or(serde_json::Value::Null),
-                    )
-                    .map_err(|e| {
-                        BridgeError(format!("Invalid operations: {}", e)).into_platform()
-                    })?;
+                    })),
+                    #[cfg(feature = "nodejs")]
+                    MigrationItem::Node(m) => {
+                        let up_ops: Vec<MigrationOp> = serde_json::from_value(
+                            m.operations.map(|v| v.0).unwrap_or(serde_json::Value::Null),
+                        )
+                        .map_err(|e| {
+                            BridgeError(format!("Invalid operations: {}", e)).into_platform()
+                        })?;
 
-                    let down_ops: Vec<MigrationOp> = serde_json::from_value(
-                        m.down_operations
-                            .map(|v| v.0)
-                            .unwrap_or(serde_json::Value::Null),
-                    )
-                    .map_err(|e| {
-                        BridgeError(format!("Invalid downOperations: {}", e)).into_platform()
-                    })?;
+                        let down_ops: Vec<MigrationOp> = serde_json::from_value(
+                            m.down_operations
+                                .map(|v| v.0)
+                                .unwrap_or(serde_json::Value::Null),
+                        )
+                        .map_err(|e| {
+                            BridgeError(format!("Invalid downOperations: {}", e)).into_platform()
+                        })?;
 
-                    adapters.push(Box::new(DeclarativeMigrationAdapter {
-                        version: m.version,
-                        up_ops,
-                        down_ops,
-                    }));
+                        Ok(Box::new(DeclarativeMigrationAdapter {
+                            version: m.version,
+                            up_ops,
+                            down_ops,
+                        }))
+                    }
                 }
-            }
-        }
+            })
+            .collect::<BridgeResult<Vec<_>>>()?;
 
         let manager = MigrationManager::new(self.inner.db());
 
@@ -551,6 +446,97 @@ impl EmbexClient {
         {
             fut.await
                 .map_err(|e| BridgeError(e.to_string()).into_platform())
+        }
+    }
+}
+
+#[cfg(feature = "python")]
+struct PyMigrationAdapter {
+    inner: Py<PyAny>,
+}
+
+#[cfg(feature = "python")]
+#[async_trait::async_trait]
+impl bridge_embex::Migration for PyMigrationAdapter {
+    fn version(&self) -> String {
+        Python::with_gil(|py| {
+            self.inner
+                .call_method0(py, "version")
+                .expect("Migration must have version() method")
+                .extract(py)
+                .expect("version() must return string")
+        })
+    }
+
+    async fn up(
+        &self,
+        db: std::sync::Arc<dyn bridge_embex::VectorDatabase>,
+    ) -> bridge_embex::Result<()> {
+        let rust_client = bridge_embex::EmbexClient::from_db(db);
+        let bridge_client = EmbexClient { inner: rust_client };
+
+        let py_future = Python::with_gil(|py| {
+            let py_client =
+                Py::new(py, bridge_client).expect("Failed to create python client wrapper");
+            self.inner.call_method1(py, "up", (py_client,))
+        });
+
+        match py_future {
+            Ok(awaitable) => {
+                let fut = Python::with_gil(|py| {
+                    bridgerust::pyo3_async_runtimes::tokio::into_future(awaitable.into_bound(py))
+                });
+
+                match fut {
+                    Ok(f) => f.await.map(|_| ()).map_err(|e| {
+                        bridge_embex::EmbexError::Other(anyhow::anyhow!("Python error: {}", e))
+                    }),
+                    Err(e) => Err(bridge_embex::EmbexError::Other(anyhow::anyhow!(
+                        "Failed to convert python future: {}",
+                        e
+                    ))),
+                }
+            }
+            Err(e) => Err(bridge_embex::EmbexError::Other(anyhow::anyhow!(
+                "Failed to call up(): {}",
+                e
+            ))),
+        }
+    }
+
+    async fn down(
+        &self,
+        db: std::sync::Arc<dyn bridge_embex::VectorDatabase>,
+    ) -> bridge_embex::Result<()> {
+        let rust_client = bridge_embex::EmbexClient::from_db(db);
+        let bridge_client = EmbexClient { inner: rust_client };
+
+        let py_future = Python::with_gil(|py| {
+            let py_client =
+                Py::new(py, bridge_client).expect("Failed to create python client wrapper");
+            self.inner.call_method1(py, "down", (py_client,))
+        });
+
+        match py_future {
+            Ok(awaitable) => {
+                let fut = Python::with_gil(|py| {
+                    bridgerust::pyo3_async_runtimes::tokio::into_future(awaitable.into_bound(py))
+                });
+
+                match fut {
+                    Ok(f) => f.await.map(|_| ()).map_err(|e| {
+                        bridge_embex::EmbexError::Other(anyhow::anyhow!("Python error: {}", e))
+                    }),
+                    Err(e) => Err(bridge_embex::EmbexError::Other(anyhow::anyhow!(
+                        "Failed to convert python future: {}",
+                        e
+                    ))),
+                }
+            }
+            Err(e) => Err(bridge_embex::EmbexError::Other(anyhow::anyhow!(
+                "Failed to call down(): {}",
+                e
+            ))),
         }
     }
 }
