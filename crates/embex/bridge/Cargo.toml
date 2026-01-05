@@ -1,0 +1,40 @@
+[package]
+name = "embex-bridge"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+name = "embex"
+
+[features]
+default = []
+python = ["dep:pyo3-crate", "bridgerust/python"]
+# Added experimental-async to support async fn in impl blocks via macro
+pyo3-crate = ["dep:pyo3-crate", "bridgerust/python"]
+nodejs = ["dep:napi", "dep:napi-derive", "bridgerust/nodejs"]
+
+[dependencies]
+bridgerust = { path = "../../bridgerust", features = ["python", "nodejs"] }
+bridge-embex = { path = "../client", features = ["all"] }
+bridge-embex-infrastructure = { path = "../infrastructure" }
+tokio = { version = "1", features = ["full"] }
+serde_json = "1.0"
+anyhow = "1.0.100"
+async-trait = "0.1.89"
+futures = "0.3.31"
+
+[dependencies.pyo3-crate]
+package = "pyo3"
+version = "0.27"
+features = ["extension-module", "experimental-async"]
+optional = true
+
+[dependencies.napi]
+version = "3"
+features = ["async", "serde-json"]
+optional = true
+
+[dependencies.napi-derive]
+version = "3"
+optional = true

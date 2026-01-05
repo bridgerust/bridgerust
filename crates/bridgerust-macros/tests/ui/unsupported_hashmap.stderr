@@ -1,4 +1,4 @@
-error: return type `HashMap` is not directly supported by BridgeRust. Consider using `Vec<(K, V)>` for HashMap or `Vec<T>` for HashSet. For advanced use cases, implement bindings manually.
+error: Type HashMap not supported in bridge, use Vec instead or custom wrapper
  --> tests/ui/unsupported_hashmap.rs:7:50
   |
 7 | pub fn process_map(map: HashMap<String, i32>) -> HashMap<String, i32> {

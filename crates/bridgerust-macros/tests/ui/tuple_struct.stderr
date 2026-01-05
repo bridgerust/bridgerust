@@ -1,4 +1,4 @@
-error: Tuple structs are not supported by #[bridgerust::export]. Use a regular struct with named fields instead
+error: Tuple structs not supported
  --> tests/ui/tuple_struct.rs:6:12
   |
 6 | pub struct TupleStruct(i32, i32);

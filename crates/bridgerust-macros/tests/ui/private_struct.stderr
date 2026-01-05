@@ -1,4 +1,4 @@
-error: Structs exported with #[bridgerust::export] must be public (use `pub struct`)
+error: Structs exported must be public
  --> tests/ui/private_struct.rs:6:8
   |
 6 | struct PrivateStruct {

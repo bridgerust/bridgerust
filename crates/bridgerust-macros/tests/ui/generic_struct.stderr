@@ -1,31 +1,4 @@
-error: Generic structs (with type parameters like <T>) are not directly supported by BridgeRust.
-
-       PyO3 and napi-rs don't support generic types directly because:
-       1. Rust generics are monomorphized at compile time
-       2. Python and JavaScript use dynamic typing
-       3. Type information is lost at the FFI boundary
-
-       Solutions:
-       1. **Specialize for concrete types** (Recommended): Create separate structs for each type
-       2. **Use trait objects**: Convert generics to trait objects at the boundary
-       3. **Use enums**: Represent different types with an enum
-       4. **Manual bindings**: Implement target-specific bindings manually
-
-       Example - Specialization:
-       // Instead of:
-       // #[export]
-       // pub struct Container<T> { value: T }
-
-       // Use:
-       #[export]
-       pub struct ContainerI32 { value: i32 }
-
-       #[export]
-       pub struct ContainerString { value: String }
-
-       // Or use a macro to generate specializations
-
-       See docs/GENERICS.md for more details and examples.
+error: Generics not supported
  --> tests/ui/generic_struct.rs:5:21
   |
 5 | pub struct Container<T> {

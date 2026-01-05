@@ -85,6 +85,12 @@ jobs:
       - name: Build and test workspace
         run: cargo test --workspace --no-fail-fast
 
+      - name: Check embex-bridge (Python)
+        run: cargo check -p embex-bridge --features python
+
+      - name: Check embex-bridge (Node.js)
+        run: cargo check -p embex-bridge --features nodejs
+
       - name: Check disk space after
         if: always()
         run: df -h

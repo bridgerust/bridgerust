@@ -1,4 +1,4 @@
-error: field `data` `HashMap` is not directly supported by BridgeRust. Consider using `Vec<(K, V)>` for HashMap or `Vec<T>` for HashSet. For advanced use cases, implement bindings manually.
+error: Type HashMap not supported in bridge, use Vec instead or custom wrapper
  --> tests/ui/struct_field_validation.rs:6:15
   |
 6 |     pub data: std::collections::HashMap<String, i32>,
