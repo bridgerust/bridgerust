@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-01-05
+
+### Fixed
+
+- **CI/CD**: Fixed multiple issues in the publish workflow:
+  - Resolved `cargo metadata` failure by preserving `path` dependencies during version bump.
+  - Added `protobuf-compiler` installation for `lance-encoding` dependency.
+  - Corrected `bridge` CLI test command (removed `--lib` flag).
+  - Fixed crate verification URLs to use correct `api/v1` endpoints.
+- **Lints**: Resolved `clippy::collapsible_if` warnings across crates (`bridgerust-macros`, `bridge` CLI).
+- **Metadata**: Fixed output filename collision between `embex-bridge` crate and `embex` python binding.
+
+### Changed
+
+- **Metadata**: Refactored `Cargo.toml` files to inherit `authors`, `license`, `repository`, and `homepage` from workspace.
+- **Documentation**: Updated `README.md` with new status tables, badges, and "BridgeRust (Framework)" section.
+
 ### Added - Embex
 
 #### Performance Optimizations
