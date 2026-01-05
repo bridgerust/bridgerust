@@ -1,10 +1,14 @@
 [package]
 name = "bridgerust"
 version = "0.1.0"
-edition = "2021"
+edition.workspace = true
 description = "Write Rust once, deploy to Python and Node.js"
-authors = ["BridgeRust Team"]
-license = "MIT OR Apache-2.0"
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+keywords = ["ffi", "python", "nodejs", "bindings", "macros"]
+categories = ["api-bindings", "development-tools::ffi"]
 readme = "README.md"
 
 [dependencies]

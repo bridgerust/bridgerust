@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, DeriveInput, ImplItem, ItemEnum, ItemFn, ItemImpl, ItemStruct};
+use syn::{DeriveInput, ImplItem, ItemEnum, ItemFn, ItemImpl, ItemStruct, parse_macro_input};
 
 // Helper to parse arguments like #[export(object)]
 struct ExportArgs {
@@ -92,26 +92,26 @@ fn export_function(input_fn: ItemFn) -> TokenStream {
         false
     };
 
-    if is_iterator {
-        if let syn::ReturnType::Type(_, return_type) = &input_fn.sig.output {
-            return syn::Error::new_spanned(
-                return_type,
-                "Iterator return types used in export are not yet supported. Return Vec<T> instead.",
-            ).to_compile_error().into();
-        }
+    if is_iterator && let syn::ReturnType::Type(_, return_type) = &input_fn.sig.output {
+        return syn::Error::new_spanned(
+            return_type,
+            "Iterator return types used in export are not yet supported. Return Vec<T> instead.",
+        )
+        .to_compile_error()
+        .into();
     }
 
-    if let syn::ReturnType::Type(_, return_type) = &input_fn.sig.output {
-        if let Err(err) = validate_type(return_type, "return type") {
-            return err;
-        }
+    if let syn::ReturnType::Type(_, return_type) = &input_fn.sig.output
+        && let Err(err) = validate_type(return_type, "return type")
+    {
+        return err;
     }
 
     for input in &input_fn.sig.inputs {
-        if let syn::FnArg::Typed(pat_type) = input {
-            if let Err(err) = validate_type(&pat_type.ty, "parameter type") {
-                return err;
-            }
+        if let syn::FnArg::Typed(pat_type) = input
+            && let Err(err) = validate_type(&pat_type.ty, "parameter type")
+        {
+            return err;
         }
     }
 
@@ -183,37 +183,36 @@ fn export_async_function(input_fn: ItemFn) -> TokenStream {
 
 fn is_iterator_type(ty: &syn::Type) -> bool {
     // Simplified check
-    if let syn::Type::Path(type_path) = ty {
-        if let Some(segment) = type_path.path.segments.last() {
-            let name = segment.ident.to_string();
-            return name == "Iterator" || name == "IntoIterator";
-        }
+    if let syn::Type::Path(type_path) = ty
+        && let Some(segment) = type_path.path.segments.last()
+    {
+        let name = segment.ident.to_string();
+        return name == "Iterator" || name == "IntoIterator";
     }
     false
 }
 
 fn validate_type(ty: &syn::Type, _context: &str) -> Result<(), TokenStream> {
-    if let syn::Type::Path(type_path) = ty {
-        if let Some(segment) = type_path.path.segments.last() {
-            let name = segment.ident.to_string();
-            if matches!(name.as_str(), "HashMap" | "HashSet" | "BTreeMap") {
-                return Err(syn::Error::new_spanned(
-                    ty,
-                    format!(
-                        "Type {} not supported in bridge, use Vec instead or custom wrapper",
-                        name
-                    ),
-                )
-                .to_compile_error()
-                .into());
-            }
-            if name == "Vec" || name == "Option" {
-                if let syn::PathArguments::AngleBracketed(args) = &segment.arguments {
-                    if let Some(syn::GenericArgument::Type(inner)) = args.args.first() {
-                        return validate_type(inner, _context);
-                    }
-                }
-            }
+    if let syn::Type::Path(type_path) = ty
+        && let Some(segment) = type_path.path.segments.last()
+    {
+        let name = segment.ident.to_string();
+        if matches!(name.as_str(), "HashMap" | "HashSet" | "BTreeMap") {
+            return Err(syn::Error::new_spanned(
+                ty,
+                format!(
+                    "Type {} not supported in bridge, use Vec instead or custom wrapper",
+                    name
+                ),
+            )
+            .to_compile_error()
+            .into());
+        }
+        if (name == "Vec" || name == "Option")
+            && let syn::PathArguments::AngleBracketed(args) = &segment.arguments
+            && let Some(syn::GenericArgument::Type(inner)) = args.args.first()
+        {
+            return validate_type(inner, _context);
         }
     }
     Ok(())

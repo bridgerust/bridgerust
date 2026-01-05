@@ -40,50 +40,46 @@ fn is_build_up_to_date(project_root: &Path, target: &str, cache_file: &PathBuf) 
 
     // Check source files
     let src_dir = project_root.join("src");
-    if src_dir.exists() {
-        if let Ok(entries) = fs::read_dir(&src_dir) {
-            for entry in entries.flatten() {
-                if entry.path().extension().map(|e| e == "rs").unwrap_or(false) {
-                    if let Ok(src_time) = get_last_modified(&entry.path()) {
-                        if src_time > cache_time {
-                            return false;
-                        }
-                    }
-                }
+    if src_dir.exists()
+        && let Ok(entries) = fs::read_dir(&src_dir)
+    {
+        for entry in entries.flatten() {
+            if entry.path().extension().map(|e| e == "rs").unwrap_or(false)
+                && let Ok(src_time) = get_last_modified(&entry.path())
+                && src_time > cache_time
+            {
+                return false;
             }
         }
     }
 
     // Check Cargo.toml
     let cargo_toml = project_root.join("Cargo.toml");
-    if cargo_toml.exists() {
-        if let Ok(cargo_time) = get_last_modified(&cargo_toml) {
-            if cargo_time > cache_time {
-                return false;
-            }
-        }
+    if cargo_toml.exists()
+        && let Ok(cargo_time) = get_last_modified(&cargo_toml)
+        && cargo_time > cache_time
+    {
+        return false;
     }
 
     // Check target-specific config files
     match target {
         "python" => {
             let pyproject = project_root.join("python").join("pyproject.toml");
-            if pyproject.exists() {
-                if let Ok(py_time) = get_last_modified(&pyproject) {
-                    if py_time > cache_time {
-                        return false;
-                    }
-                }
+            if pyproject.exists()
+                && let Ok(py_time) = get_last_modified(&pyproject)
+                && py_time > cache_time
+            {
+                return false;
             }
         }
         "nodejs" => {
             let package_json = project_root.join("nodejs").join("package.json");
-            if package_json.exists() {
-                if let Ok(pkg_time) = get_last_modified(&package_json) {
-                    if pkg_time > cache_time {
-                        return false;
-                    }
-                }
+            if package_json.exists()
+                && let Ok(pkg_time) = get_last_modified(&package_json)
+                && pkg_time > cache_time
+            {
+                return false;
             }
         }
         _ => {}
@@ -138,10 +134,10 @@ fn find_nodejs_dir(project_root: &Path) -> Option<PathBuf> {
         let package_json = candidate.join("package.json");
         if package_json.exists() {
             // Check if it has napi config (basic check)
-            if let Ok(content) = std::fs::read_to_string(&package_json) {
-                if content.contains("\"napi\"") || content.contains("napi-rs") {
-                    return Some(candidate);
-                }
+            if let Ok(content) = std::fs::read_to_string(&package_json)
+                && (content.contains("\"napi\"") || content.contains("napi-rs"))
+            {
+                return Some(candidate);
             }
         }
     }

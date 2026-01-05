@@ -20,11 +20,7 @@ pub async fn async_greet(name: String) -> String {
 
 #[export]
 pub async fn async_maybe_divide(a: f64, b: f64) -> Option<f64> {
-    if b == 0.0 {
-        None
-    } else {
-        Some(a / b)
-    }
+    if b == 0.0 { None } else { Some(a / b) }
 }
 
 // Note: This test file verifies that async functions can be exported
