@@ -1139,7 +1139,7 @@ dependencies = [
 
 [[package]]
 name = "bridge"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "clap",
@@ -1331,7 +1331,7 @@ dependencies = [
 
 [[package]]
 name = "bridgerust"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "bridgerust-macros",
  "futures",
@@ -1363,7 +1363,7 @@ dependencies = [
 
 [[package]]
 name = "bridgerust-macros"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "bridgerust",
  "proc-macro2",

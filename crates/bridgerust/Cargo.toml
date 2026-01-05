@@ -1,6 +1,6 @@
 [package]
 name = "bridgerust"
-version = "0.1.0"
+version = "0.1.1"
 edition.workspace = true
 description = "Write Rust once, deploy to Python and Node.js"
 authors.workspace = true
@@ -12,7 +12,7 @@ categories = ["api-bindings", "development-tools::ffi"]
 readme = "README.md"
 
 [dependencies]
-bridgerust-macros = { path = "../bridgerust-macros", version = "0.1.0" }
+bridgerust-macros = { path = "../bridgerust-macros", version = "0.1.1" }
 
 # Optional dependencies for actual bindings
 pyo3 = { version = "0.27", optional = true, features = ["extension-module"] }
