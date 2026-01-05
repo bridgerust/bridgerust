@@ -37,6 +37,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Create test directory
+        shell: bash
         run: |
           mkdir -p test-npm-package
           cd test-npm-package
@@ -49,6 +50,7 @@ jobs:
 
       - name: Install @bridgerust/embex from npm
         working-directory: test-npm-package
+        shell: bash
         run: |
           if [ -n "${{ github.event.inputs.npm_version }}" ]; then
             npm install @bridgerust/embex@${{ github.event.inputs.npm_version }}
@@ -59,6 +61,7 @@ jobs:
 
       - name: Verify package installation
         working-directory: test-npm-package
+        shell: bash
         run: |
           echo "📦 Installed package info:"
           npm list @bridgerust/embex
@@ -68,6 +71,7 @@ jobs:
 
       - name: Check package structure
         working-directory: test-npm-package
+        shell: bash
         run: |
           cat > check-package.js << 'EOF'
           const fs = require('fs');
@@ -133,6 +137,7 @@ jobs:
 
       - name: Create test script
         working-directory: test-npm-package
+        shell: bash
         run: |
           cat > test-package.js << 'EOF'
           const fs = require('fs');
@@ -267,11 +272,13 @@ jobs:
 
       - name: Run npm package tests
         working-directory: test-npm-package
+        shell: bash
         run: |
           node test-package.js || (sleep 2 && exit 1)
 
       - name: Test TypeScript usage (if available)
         working-directory: test-npm-package
+        shell: bash
         run: |
           if command -v npx &> /dev/null; then
             npm install --save-dev typescript @types/node || true
@@ -357,6 +364,7 @@ jobs:
 
       - name: Create test script
         working-directory: test-pypi-package
+        shell: bash
         run: |
           cat > test_package.py << 'EOF'
           """Test script to verify embex package from PyPI works correctly."""
