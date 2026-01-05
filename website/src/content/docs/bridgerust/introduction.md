@@ -20,3 +20,13 @@ It abstracts away the complexities of FFI (Foreign Function Interface), allowing
 Building cross-language extensions traditionally requires maintaining separate binding layers for each target language. BridgeRust solves this by generating the necessary glue code at compile time, reducing maintenance burden and potential for errors.
 
 Whether you are building a high-performance database client, a heavy computation library, or a system utility, BridgeRust streamlines the process of bringing Rust's performance to the Python and JavaScript ecosystems.
+
+## Get Started
+
+The best way to start is using the **Bridge CLI**:
+
+1. **Install**: `cargo install bridge`
+2. **Initialize**: `bridge init my-project`
+3. **Build**: `bridge build --all`
+
+[**View full CLI documentation**](/bridgerust/cli)

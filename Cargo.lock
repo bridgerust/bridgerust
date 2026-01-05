@@ -3039,6 +3039,7 @@ dependencies = [
  "napi",
  "napi-derive",
  "pyo3",
+ "serde",
  "serde_json",
  "tokio",
 ]

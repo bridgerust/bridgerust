@@ -19,7 +19,8 @@ bridgerust = { path = "../../bridgerust", features = ["python", "nodejs"] }
 bridge-embex = { path = "../client", features = ["all"] }
 bridge-embex-infrastructure = { path = "../infrastructure" }
 tokio = { version = "1", features = ["full"] }
-serde_json = "1.0"
+serde = { version = "1.0.226", features = ["derive"] }
+serde_json = "1.0.147"
 anyhow = "1.0.100"
 async-trait = "0.1.89"
 futures = "0.3.31"
