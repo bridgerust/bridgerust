@@ -40,6 +40,9 @@ jobs:
         with:
           components: rustfmt, clippy
 
+      - name: Install dependencies
+        run: sudo apt-get install -y protobuf-compiler
+
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
@@ -84,10 +87,8 @@ jobs:
 
           # Update bridgerust (main crate) - both package version and dependency version
           sed -i "s/^version = \".*\"/version = \"$VERSION\"/" crates/bridgerust/Cargo.toml
-          # Update the path dependency to version dependency for publishing
-          # Handle both formats: with and without trailing comma
-          sed -i "s|path = \"../bridgerust-macros\", version = \".*\"|version = \"$VERSION\"|" crates/bridgerust/Cargo.toml
-          sed -i "s|path = \"../bridgerust-macros\", version = \".*\",|version = \"$VERSION\",|" crates/bridgerust/Cargo.toml
+          # Update the dependency version but KEEP path for workspace resolution
+          sed -i "s|path = \"../bridgerust-macros\", version = \".*\"|path = \"../bridgerust-macros\", version = \"$VERSION\"|" crates/bridgerust/Cargo.toml
 
           # Update bridge (cli)
           sed -i "s/^version = \".*\"/version = \"$VERSION\"/" cli/bridge/Cargo.toml
@@ -128,7 +129,8 @@ jobs:
         run: |
           cargo test --package bridgerust-macros --lib
           cargo test --package bridgerust --lib
-          cargo test --package bridge --lib
+          # bridge is a binary crate, so we don't pass --lib
+          cargo test --package bridge
 
       - name: Check if packages already exist
         id: check_existing
