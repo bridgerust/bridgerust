@@ -1,0 +1,5 @@
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> tests/ui/async_function.rs:8:2
+  |
+8 | }
+  |  ^ consider adding a `main` function to `$DIR/tests/ui/async_function.rs`

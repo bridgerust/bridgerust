@@ -118,6 +118,34 @@ If you find Embex useful, please star the repository! It helps others discover t
 
 ⭐[Star on GitHub](https://github.com/bridgerust/bridgerust)
 
+## BridgeRust Framework
+
+This repository also contains the **BridgeRust** framework - a unified system for building cross-language Rust libraries.
+
+### Quick Start with BridgeRust
+
+```bash
+# Install CLI
+cargo install --path cli/bridge
+
+# Create new project
+bridge init my-library
+
+# Build for Python and Node.js
+bridge build --all
+```
+
+### Documentation
+
+- [Quick Reference](docs/QUICK_REFERENCE.md) - Cheat sheet for common patterns
+- [Getting Started Guide](docs/getting-started-bridgerust.md) - Complete tutorial
+- [Migration Guide](docs/MIGRATION_GUIDE.md) - Migrate from PyO3/napi-rs
+- [Examples](docs/EXAMPLES.md) - Code patterns and examples
+- [Troubleshooting](docs/TROUBLESHOOTING.md) - Common issues and solutions
+- [Comprehensive Example](examples/bridgerust-example/) - Full-featured example project
+
+**🎉 Phase 1 MVP Complete!** See [Implementation Status](.internal/IMPLEMENTATION_STATUS.md) for details.
+
 ## Contributing
 
 See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for development setup and guidelines.

@@ -1,0 +1,19 @@
+error: Type HashMap not supported in bridge, use Vec instead or custom wrapper
+ --> tests/ui/unsupported_hashmap.rs:7:50
+  |
+7 | pub fn process_map(map: HashMap<String, i32>) -> HashMap<String, i32> {
+  |                                                  ^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+ --> tests/ui/unsupported_hashmap.rs:4:5
+  |
+4 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> tests/ui/unsupported_hashmap.rs:9:2
+  |
+9 | }
+  |  ^ consider adding a `main` function to `$DIR/tests/ui/unsupported_hashmap.rs`

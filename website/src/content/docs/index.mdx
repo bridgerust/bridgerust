@@ -10,6 +10,10 @@ hero:
     - text: Get Started with Embex
       link: /embex/introduction
       icon: rocket
+    - text: Read Documentation
+      link: /bridgerust/introduction
+      icon: open-book
+      variant: minimal
     - text: View on GitHub
       link: https://github.com/bridgerust/bridgerust
       icon: github
@@ -51,53 +55,67 @@ import { Card, CardGrid, Tabs, TabItem } from "@astrojs/starlight/components";
 
 ## The Framework for Universal Bindings
 
-**BridgeRust** is a framework that unifies `PyO3` and `napi-rs` into a single, zero-cost macro system. Write your logic once in Rust, and deploy native high-performance bindings to Python, Node.js, and beyond.
+**[BridgeRust](/bridgerust/introduction)** is a framework that unifies `PyO3` and `napi-rs` into a single, zero-cost macro system. Write your logic once in Rust, and deploy native high-performance bindings to Python, Node.js, and beyond.
 
 ---
 
-## Showcase: Embex (Built with BridgeRust)
-
-**Embex** is the flagship product built on the BridgeRust framework. It is a universal client for vector databases like Qdrant, Pinecone, and Milvus.
+## What Can You Build?
 
 <CardGrid>
-  <Card title="Start with LanceDB" icon="rocket">
-    Zero setup, runs locally. [**Start Tutorial**](/embex/quickstart)
+  <Card title="Universal SDKs" icon="pencil">
+    Write one client library in Rust and publish it to both **PyPI** and
+    **npm**. Ideal for API clients, database drivers, and service wrappers.
   </Card>
-  <Card title="Scale to Cloud" icon="cloud">
-    Deploy to Qdrant, Pinecone, or Milvus with zero code changes.
+  <Card title="High-Performance Data Pipelines" icon="rocket">
+    Process gigabytes of data with Rust's speed, while letting your users script
+    the logic in approachable Python or JavaScript.
+  </Card>
+  <Card title="Cross-Platform CLIs" icon="laptop">
+    Build powerful command-line tools that integrate deeply with native
+    ecosystems.
   </Card>
 </CardGrid>
+
+---
+
+## Seamless Integration
+
+BridgeRust is designed to drop into **any** existing Rust project. It works alongside your existing crates and dependencies.
+
+<Tabs>
+  <TabItem label="1. Install CLI">```bash cargo install bridge ```</TabItem>
+  <TabItem label="2. Add Verification">
+    ```bash # Check your project for readiness bridge check ```
+  </TabItem>
+  <TabItem label="3. Build All">
+    ```bash # Build Python wheels and Node.js binaries bridge build --all ```
+  </TabItem>
+</Tabs>
 
 ---
 
 ## Why Developers Choose BridgeRust
 
 <CardGrid>
-  <Card title="Unified Workflow" icon="pencil">
-    Single source of truth. No more duplicate wrapper code for each language.
+  <Card title="Unified Workflow" icon="puzzle">
+    **DRY (Don't Repeat Yourself)**. Define your structs and functions once with `#[export]`. We handle the FFI boilerplate for you.
   </Card>
   <Card title="Native Performance" icon="rocket">
-    Zero runtime overhead. Powered by best-in-class Rust tools.
+    Zero runtime overhead. Powered by best-in-class Rust tools (`PyO3` and `napi-rs`) under the hood.
   </Card>
   <Card title="Type Safety" icon="approve-check-circle">
-    Automatic type mapping: `Vec<T>` → `List[T]` / `T[]`.
+    Automatic type mapping: `Vec<T>` → `List[T]` / `T[]`. Compile-time guarantees across language boundaries.
   </Card>
 </CardGrid>
 
 ---
 
-## How It Works
+## Showcase: Embex (Built with BridgeRust)
 
-Embex is built on the **BridgeRust** framework, which unifies `PyO3` and `napi-rs` into a single, high-performance core.
+**Embex** is the flagship product built on the BridgeRust framework. It proves that you can build complex, production-ready universal clients today.
 
-<Tabs>
-  <TabItem label="The BridgeRust Advantage">
-    ```rust
-    // BridgeRust allows us to write the core logic ONCE in Rust...
-    #[bridgerust::export]
-    fn insert(vectors: Vec<Vec<f32>>) -> Result<()> {
-        // ...and deploy high-performance bindings to every ecosystem.
-    }
-    ```
-  </TabItem>
-</Tabs>
+<CardGrid>
+  <Card title="Start with Embex" icon="rocket">
+    See BridgeRust in action. [**View Embex Documentation**](/embex/quickstart)
+  </Card>
+</CardGrid>

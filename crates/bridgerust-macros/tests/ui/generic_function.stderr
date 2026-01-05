@@ -1,0 +1,11 @@
+error: Generic functions are not supported by BridgeRust export
+ --> tests/ui/generic_function.rs:5:15
+  |
+5 | pub fn process<T>(item: T) -> T {
+  |               ^^^
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> tests/ui/generic_function.rs:7:2
+  |
+7 | }
+  |  ^ consider adding a `main` function to `$DIR/tests/ui/generic_function.rs`

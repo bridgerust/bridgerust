@@ -1,0 +1,247 @@
+name: Publish to crates.io
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish (e.g., 0.1.0)"
+        required: true
+        type: string
+      dry_run:
+        description: "Dry run (validate only, do not publish)"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+  push:
+    tags:
+      - "bridgerust-v*" # e.g., bridgerust-v0.1.0
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+
+jobs:
+  publish:
+    name: Publish to crates.io
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/bridgerust-v')
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Need full history for version detection
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+          cache-targets: false
+          shared-key: "bridgerust-publish-v1"
+
+      - name: Extract version from tag
+        if: startsWith(github.ref, 'refs/tags/bridgerust-v')
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/bridgerust-v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+
+      - name: Set version
+        id: set_version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${{ steps.version.outputs.version }}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Publishing version: $VERSION"
+
+      - name: Verify version format
+        run: |
+          VERSION="${{ steps.set_version.outputs.version }}"
+          if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9-]+)?$'; then
+            echo "Error: Invalid version format: $VERSION"
+            echo "Expected format: X.Y.Z or X.Y.Z-pre"
+            exit 1
+          fi
+
+      - name: Update version in Cargo.toml files
+        run: |
+          VERSION="${{ steps.set_version.outputs.version }}"
+
+          # Update bridgerust-macros
+          sed -i "s/^version = \".*\"/version = \"$VERSION\"/" crates/bridgerust-macros/Cargo.toml
+
+          # Update bridgerust (main crate) - both package version and dependency version
+          sed -i "s/^version = \".*\"/version = \"$VERSION\"/" crates/bridgerust/Cargo.toml
+          # Update the path dependency to version dependency for publishing
+          # Handle both formats: with and without trailing comma
+          sed -i "s|path = \"../bridgerust-macros\", version = \".*\"|version = \"$VERSION\"|" crates/bridgerust/Cargo.toml
+          sed -i "s|path = \"../bridgerust-macros\", version = \".*\",|version = \"$VERSION\",|" crates/bridgerust/Cargo.toml
+
+          # Update bridge (cli)
+          sed -i "s/^version = \".*\"/version = \"$VERSION\"/" cli/bridge/Cargo.toml
+
+          echo "Updated versions to $VERSION"
+          echo "Note: Path dependencies converted to version dependencies for publishing"
+
+          # Verify the changes
+          echo "Verifying Cargo.toml changes:"
+          grep -A 2 "bridgerust-macros" crates/bridgerust/Cargo.toml || true
+
+      - name: Verify Cargo.toml syntax
+        run: |
+          cargo metadata --format-version 1 > /dev/null
+          echo "Cargo.toml files are valid"
+
+      - name: Check formatting
+        run: |
+          cargo fmt --check --manifest-path crates/bridgerust-macros/Cargo.toml
+          cargo fmt --check --manifest-path crates/bridgerust/Cargo.toml
+          cargo fmt --check --manifest-path cli/bridge/Cargo.toml
+
+      - name: Clippy check
+        run: |
+          cargo clippy --workspace --manifest-path Cargo.toml \
+            --package bridgerust-macros \
+            --package bridgerust \
+            --package bridge \
+            -- -D warnings
+
+      - name: Build all packages
+        run: |
+          cargo build --package bridgerust-macros --release
+          cargo build --package bridgerust --release --features python,nodejs
+          cargo build --package bridge --release
+
+      - name: Run tests
+        run: |
+          cargo test --package bridgerust-macros --lib
+          cargo test --package bridgerust --lib
+          cargo test --package bridge --lib
+
+      - name: Check if packages already exist
+        id: check_existing
+        run: |
+          VERSION="${{ steps.set_version.outputs.version }}"
+
+          # Check if versions already exist on crates.io
+          MACROS_EXISTS=$(curl -s "https://crates.io/api/v1/crates/bridgerust-macros/$VERSION" | jq -r '.version // empty')
+          MAIN_EXISTS=$(curl -s "https://crates.io/api/v1/crates/bridgerust/$VERSION" | jq -r '.version // empty')
+          CLI_EXISTS=$(curl -s "https://crates.io/api/v1/crates/bridge/$VERSION" | jq -r '.version // empty')
+
+          if [ -n "$MACROS_EXISTS" ] || [ -n "$MAIN_EXISTS" ] || [ -n "$CLI_EXISTS" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Warning: Some packages already exist on crates.io"
+            [ -n "$MACROS_EXISTS" ] && echo "  - bridgerust-macros@$VERSION exists"
+            [ -n "$MAIN_EXISTS" ] && echo "  - bridgerust@$VERSION exists"
+            [ -n "$CLI_EXISTS" ] && echo "  - bridge@$VERSION exists"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "All packages are new versions"
+          fi
+
+      - name: Publish bridgerust-macros
+        if: steps.check_existing.outputs.exists == 'false' && github.event.inputs.dry_run != 'true'
+        run: |
+          cd crates/bridgerust-macros
+          cargo publish --token ${{ secrets.CRATES_IO_TOKEN }}
+        continue-on-error: true
+
+      - name: Wait for macros to be available
+        if: steps.check_existing.outputs.exists == 'false' && github.event.inputs.dry_run != 'true'
+        run: |
+          echo "Waiting for bridgerust-macros to be available on crates.io..."
+          for i in {1..30}; do
+            if curl -s "https://crates.io/api/v1/crates/bridgerust-macros/${{ steps.set_version.outputs.version }}" | jq -e '.version' > /dev/null 2>&1; then
+              echo "bridgerust-macros is now available!"
+              break
+            fi
+            echo "Attempt $i/30: Waiting 10 seconds..."
+            sleep 10
+          done
+
+      - name: Publish bridgerust
+        if: steps.check_existing.outputs.exists == 'false' && github.event.inputs.dry_run != 'true'
+        run: |
+          cd crates/bridgerust
+          cargo publish --token ${{ secrets.CRATES_IO_TOKEN }}
+        continue-on-error: true
+
+      - name: Wait for main crate to be available
+        if: steps.check_existing.outputs.exists == 'false' && github.event.inputs.dry_run != 'true'
+        run: |
+          echo "Waiting for bridgerust to be available on crates.io..."
+          for i in {1..30}; do
+            if curl -s "https://crates.io/api/v1/crates/bridgerust/${{ steps.set_version.outputs.version }}" | jq -e '.version' > /dev/null 2>&1; then
+              echo "bridgerust is now available!"
+              break
+            fi
+            echo "Attempt $i/30: Waiting 10 seconds..."
+            sleep 10
+          done
+
+      - name: Publish bridge
+        if: steps.check_existing.outputs.exists == 'false' && github.event.inputs.dry_run != 'true'
+        run: |
+          cd cli/bridge
+          cargo publish --token ${{ secrets.CRATES_IO_TOKEN }}
+        continue-on-error: true
+
+      - name: Dry run summary
+        if: github.event.inputs.dry_run == 'true'
+        run: |
+          echo "## Dry Run Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ All checks passed!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Would publish:" >> $GITHUB_STEP_SUMMARY
+          echo "- bridgerust-macros@${{ steps.set_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- bridgerust@${{ steps.set_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- bridge@${{ steps.set_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "To publish, run the workflow again with dry_run=false" >> $GITHUB_STEP_SUMMARY
+
+      - name: Verify published packages
+        if: steps.check_existing.outputs.exists == 'false' && github.event.inputs.dry_run != 'true'
+        run: |
+          VERSION="${{ steps.set_version.outputs.version }}"
+          echo "Verifying packages are available on crates.io..."
+
+          # Wait a bit for indexing
+          sleep 30
+
+          # Check each package
+          for pkg in bridgerust-macros bridgerust bridge; do
+            if curl -s "https://crates.io/api/v1/crates/$pkg/$VERSION" | jq -e '.version' > /dev/null 2>&1; then
+              echo "✅ $pkg@$VERSION is available"
+            else
+              echo "⚠️  $pkg@$VERSION not yet available (may need more time)"
+            fi
+          done
+
+      - name: Publish summary
+        if: steps.check_existing.outputs.exists == 'false' && github.event.inputs.dry_run != 'true'
+        run: |
+          VERSION="${{ steps.set_version.outputs.version }}"
+          echo "## Publish Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Published to crates.io:" >> $GITHUB_STEP_SUMMARY
+          echo "- [bridgerust-macros@$VERSION](https://crates.io/crates/bridgerust-macros/$VERSION)" >> $GITHUB_STEP_SUMMARY
+          echo "- [bridgerust@$VERSION](https://crates.io/crates/bridgerust/$VERSION)" >> $GITHUB_STEP_SUMMARY
+          echo "- [bridge@$VERSION](https://crates.io/crates/bridge/$VERSION)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Next steps:**" >> $GITHUB_STEP_SUMMARY
+          echo "1. Commit version changes to Cargo.toml files" >> $GITHUB_STEP_SUMMARY
+          echo "2. Restore path dependencies in crates/bridgerust/Cargo.toml for local development" >> $GITHUB_STEP_SUMMARY
+          echo "3. Create a GitHub release (optional)" >> $GITHUB_STEP_SUMMARY

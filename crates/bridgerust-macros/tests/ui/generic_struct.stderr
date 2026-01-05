@@ -1,0 +1,11 @@
+error: Generics not supported
+ --> tests/ui/generic_struct.rs:5:21
+  |
+5 | pub struct Container<T> {
+  |                     ^^^
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> tests/ui/generic_struct.rs:7:2
+  |
+7 | }
+  |  ^ consider adding a `main` function to `$DIR/tests/ui/generic_struct.rs`

@@ -1,0 +1,11 @@
+error: Tuple structs not supported
+ --> tests/ui/tuple_struct.rs:6:12
+  |
+6 | pub struct TupleStruct(i32, i32);
+  |            ^^^^^^^^^^^
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> tests/ui/tuple_struct.rs:6:34
+  |
+6 | pub struct TupleStruct(i32, i32);
+  |                                  ^ consider adding a `main` function to `$DIR/tests/ui/tuple_struct.rs`

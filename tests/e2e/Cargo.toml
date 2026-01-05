@@ -1,0 +1,31 @@
+[package]
+name = "bridgerust-e2e-test"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "bridgerust_e2e_test"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+bridgerust = { path = "../../crates/bridgerust", version = "0.1" }
+
+[features]
+default = []
+python = ["dep:pyo3", "bridgerust/python"]
+nodejs = ["dep:napi", "dep:napi-derive", "bridgerust/nodejs"]
+
+[dependencies.pyo3]
+version = "0.27"
+optional = true
+features = ["extension-module"]
+
+[dependencies.napi]
+version = "3"
+optional = true
+features = ["napi4"]
+
+[dependencies.napi-derive]
+version = "3"
+optional = true
+

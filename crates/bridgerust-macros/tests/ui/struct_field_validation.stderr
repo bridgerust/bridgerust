@@ -1,0 +1,11 @@
+error: Type HashMap not supported in bridge, use Vec instead or custom wrapper
+ --> tests/ui/struct_field_validation.rs:6:15
+  |
+6 |     pub data: std::collections::HashMap<String, i32>,
+  |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> tests/ui/struct_field_validation.rs:7:2
+  |
+7 | }
+  |  ^ consider adding a `main` function to `$DIR/tests/ui/struct_field_validation.rs`

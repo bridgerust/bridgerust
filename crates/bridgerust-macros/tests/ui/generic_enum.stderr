@@ -1,0 +1,11 @@
+error: Generic enums not supported
+ --> tests/ui/generic_enum.rs:5:16
+  |
+5 | pub enum Result<T, E> {
+  |                ^^^^^^
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> tests/ui/generic_enum.rs:8:2
+  |
+8 | }
+  |  ^ consider adding a `main` function to `$DIR/tests/ui/generic_enum.rs`

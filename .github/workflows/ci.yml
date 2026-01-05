@@ -13,10 +13,16 @@ on:
       - ".github/ISSUE_TEMPLATE/**"
       - ".github/workflows/release*.yml"
       - ".github/workflows/benchmarks.yml"
+      - ".github/workflows/bridgerust-framework.yml"
       - "benchmarks/**"
       - "bindings/node/**/package.json"
       - "website/**"
       - "showcase/playground/**"
+      - "crates/bridgerust/**"
+      - "crates/bridgerust-macros/**"
+      - "cli/bridge/**"
+      - "tests/e2e/**"
+      - "examples/bridgerust-example/**"
   pull_request:
     paths-ignore:
       - "**.md"
@@ -28,9 +34,15 @@ on:
       - ".github/ISSUE_TEMPLATE/**"
       - ".github/workflows/release*.yml"
       - ".github/workflows/benchmarks.yml"
+      - ".github/workflows/bridgerust-framework.yml"
       - "benchmarks/**"
       - "website/**"
       - "showcase/playground/**"
+      - "crates/bridgerust/**"
+      - "crates/bridgerust-macros/**"
+      - "cli/bridge/**"
+      - "tests/e2e/**"
+      - "examples/bridgerust-example/**"
 
 env:
   CARGO_TERM_COLOR: always
@@ -72,6 +84,12 @@ jobs:
 
       - name: Build and test workspace
         run: cargo test --workspace --no-fail-fast
+
+      - name: Check embex-bridge (Python)
+        run: cargo check -p embex-bridge --features python
+
+      - name: Check embex-bridge (Node.js)
+        run: cargo check -p embex-bridge --features nodejs
 
       - name: Check disk space after
         if: always()

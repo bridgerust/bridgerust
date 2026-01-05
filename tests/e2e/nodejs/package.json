@@ -1,0 +1,24 @@
+{
+  "name": "@bridgerust/e2e-test",
+  "version": "0.1.0",
+  "description": "BridgeRust E2E Test Package",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "napi": {
+    "name": "bridgerust_e2e_test",
+    "binaryName": "bridgerust_e2e_test",
+    "targets": [
+      "x86_64-unknown-linux-gnu",
+      "x86_64-apple-darwin",
+      "aarch64-apple-darwin",
+      "x86_64-pc-windows-msvc"
+    ]
+  },
+  "scripts": {
+    "test": "node test_bindings.js",
+    "build": "napi build --release --manifest-path ../Cargo.toml --features nodejs"
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "^3.5.0"
+  }
+}

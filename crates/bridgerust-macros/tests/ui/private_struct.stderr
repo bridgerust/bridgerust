@@ -1,0 +1,11 @@
+error: Structs exported must be public
+ --> tests/ui/private_struct.rs:6:8
+  |
+6 | struct PrivateStruct {
+  |        ^^^^^^^^^^^^^
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> tests/ui/private_struct.rs:8:2
+  |
+8 | }
+  |  ^ consider adding a `main` function to `$DIR/tests/ui/private_struct.rs`
