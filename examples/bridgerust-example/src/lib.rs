@@ -453,7 +453,7 @@ impl Calculator {
 
 #[cfg(feature = "python")]
 #[pymodule]
-fn bridgerust_example(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn bridgerust_example(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Functions
     m.add_function(wrap_pyfunction!(greet, m)?)?;
     m.add_function(wrap_pyfunction!(add, m)?)?;
@@ -476,5 +476,12 @@ fn bridgerust_example(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Rectangle>()?;
     m.add_class::<Calculator>()?;
 
+    // Exceptions
+    m.add("CustomError", py.get_type::<CustomError>())?;
+
     Ok(())
 }
+
+// Custom exception for the example module
+#[bridgerust::exception(module = "bridgerust_example")]
+pub struct CustomError;

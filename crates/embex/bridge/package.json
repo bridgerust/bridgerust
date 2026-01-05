@@ -1,0 +1,16 @@
+{
+  "name": "@bridgerust/embex-bridge",
+  "version": "0.1.0",
+  "main": "index.js",
+  "napi": {
+    "name": "embex",
+    "binaryName": "embex"
+  },
+  "scripts": {
+    "build": "napi build --platform --release --features nodejs",
+    "test": "node test_embex.js"
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "^3.0.0"
+  }
+}

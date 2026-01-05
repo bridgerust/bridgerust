@@ -47,6 +47,14 @@ cargo fmt --all
 cargo clippy --all -- -D warnings
 ```
 
+### Build Efficiency
+
+- **Node.js Bindings**: The `npm run build` command performs a release build which links against heavy libraries (LanceDB, DataFusion). This can take 5-10+ minutes.
+  - Use `npm run build:debug` for faster development builds.
+- **Rust Features**: The `embex-bridge` crate has mutually exclusive features (`python` and `nodejs`).
+  - Do NOT run `cargo check --all-features` on the entire workspace.
+  - Instead, check specific features: `cargo check -p embex-bridge --features python`.
+
 ### Python Bindings Setup
 
 ```bash

@@ -12,10 +12,12 @@ bridgerust-macros = { path = "../bridgerust-macros", version = "0.1.0" }
 
 # Optional dependencies for actual bindings
 pyo3 = { version = "0.27", optional = true, features = ["extension-module"] }
+pyo3-async-runtimes = { version = "0.27", optional = true, features = ["tokio-runtime"] }
 napi = { version = "3", optional = true, features = ["default"] }
 napi-derive = { version = "3", optional = true }
+futures = "0.3.31"
 
 [features]
 default = []
-python = ["dep:pyo3"]
+python = ["dep:pyo3", "dep:pyo3-async-runtimes"]
 nodejs = ["dep:napi", "dep:napi-derive"]

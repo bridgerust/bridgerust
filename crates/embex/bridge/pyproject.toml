@@ -1,0 +1,23 @@
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "embex"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+]
+dynamic = ["version"]
+dependencies = [
+    "annotated-types>=0.5.0",
+    "pydantic>=2.0.0",
+    "pydantic-core>=2.0.0",
+    "typing-extensions>=4.0.0",
+]
+
+[tool.maturin]
+features = ["python"]
+module-name = "embex"   # Requires lib.name = "embex" in Cargo.toml
