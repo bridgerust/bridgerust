@@ -8,6 +8,9 @@ export default defineConfig({
   integrations: [
     starlight({
       title: "BridgeRust",
+      components: {
+        Head: "./src/components/AnalyticsHead.astro",
+      },
       social: [
         {
           icon: "github",
