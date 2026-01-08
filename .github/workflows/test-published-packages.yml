@@ -324,11 +324,6 @@ jobs:
         shell: bash
         run: |
           python -m venv venv
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            source venv/Scripts/activate || . venv/Scripts/activate
-          else
-            source venv/bin/activate
-          fi
           echo "✅ Virtual environment created"
 
       - name: Install embex from PyPI
@@ -336,14 +331,17 @@ jobs:
         shell: bash
         run: |
           if [[ "$RUNNER_OS" == "Windows" ]]; then
-            source venv/Scripts/activate || . venv/Scripts/activate
+            PYTHON_BIN="venv/Scripts/python"
           else
-            source venv/bin/activate
+            PYTHON_BIN="venv/bin/python"
           fi
+
+          echo "Using Python at: $PYTHON_BIN"
+
           if [ -n "${{ github.event.inputs.pypi_version }}" ]; then
-            pip install embex==${{ github.event.inputs.pypi_version }}
+            "$PYTHON_BIN" -m pip install embex==${{ github.event.inputs.pypi_version }}
           else
-            pip install embex
+            "$PYTHON_BIN" -m pip install embex
           fi
           echo "✅ Package installed from PyPI"
 
@@ -352,15 +350,43 @@ jobs:
         shell: bash
         run: |
           if [[ "$RUNNER_OS" == "Windows" ]]; then
-            source venv/Scripts/activate || . venv/Scripts/activate
+            PYTHON_BIN="venv/Scripts/python"
           else
-            source venv/bin/activate
+            PYTHON_BIN="venv/bin/python"
           fi
+
           echo "📦 Installed package info:"
-          pip show embex
+          "$PYTHON_BIN" -m pip show embex
           echo ""
           echo "📂 Package location:"
-          python -c "import embex; print(embex.__file__)"
+          # Use a robust check script that provides better debugging info
+          "$PYTHON_BIN" -c "
+          import sys
+          import os
+          try:
+              import embex
+              print(f'✅ Import successful: {embex.__file__}')
+          except ImportError as e:
+              print(f'❌ Import failed: {e}')
+              print(f'   sys.path: {sys.path}')
+              try:
+                  import site
+                  packages = site.getsitepackages()
+                  print(f'   site-packages: {packages}')
+                  for p in packages:
+                      if os.path.exists(p):
+                          print(f'   Contents of {p}:')
+                          try:
+                             # Limit output
+                             files = os.listdir(p)
+                             embex_files = [f for f in files if 'embex' in f]
+                             print(f'     Embex related: {embex_files}')
+                          except Exception as list_err:
+                             print(f'     Error listing: {list_err}')
+              except Exception as debug_err:
+                  print(f'   Debug error: {debug_err}')
+              sys.exit(1)
+          "
 
       - name: Create test script
         working-directory: test-pypi-package
@@ -484,22 +510,22 @@ jobs:
         shell: bash
         run: |
           if [[ "$RUNNER_OS" == "Windows" ]]; then
-            source venv/Scripts/activate || . venv/Scripts/activate
+            PYTHON_BIN="venv/Scripts/python"
           else
-            source venv/bin/activate
+            PYTHON_BIN="venv/bin/python"
           fi
-          python test_package.py
+          "$PYTHON_BIN" test_package.py
 
       - name: Test package metadata
         working-directory: test-pypi-package
         shell: bash
         run: |
           if [[ "$RUNNER_OS" == "Windows" ]]; then
-            source venv/Scripts/activate || . venv/Scripts/activate
+            PYTHON_BIN="venv/Scripts/python"
           else
-            source venv/bin/activate
+            PYTHON_BIN="venv/bin/python"
           fi
-          python -c "
+          "$PYTHON_BIN" -c "
           import embex
           print('📋 Package metadata:')
           print(f'   - Version: {getattr(embex, \"__version__\", \"unknown\")}')
