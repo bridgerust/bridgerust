@@ -46,7 +46,7 @@ jobs:
         working-directory: test-npm-package
         run: |
           npm init -y
-          echo "✅ npm project initialized"
+          echo "[OK] npm project initialized"
 
       - name: Install @bridgerust/embex from npm
         working-directory: test-npm-package
@@ -57,16 +57,16 @@ jobs:
           else
             npm install @bridgerust/embex
           fi
-          echo "✅ Package installed from npm"
+          echo "[OK] Package installed from npm"
 
       - name: Verify package installation
         working-directory: test-npm-package
         shell: bash
         run: |
-          echo "📦 Installed package info:"
+          echo "[INFO] Installed package info:"
           npm list @bridgerust/embex
           echo ""
-          echo "📂 Package contents:"
+          echo "[INFO] Package contents:"
           ls -la node_modules/@bridgerust/embex/ || dir node_modules\@bridgerust\embex\
 
       - name: Check package structure
@@ -82,38 +82,38 @@ jobs:
             const packageDir = path.dirname(packagePath);
             const packageJson = require(packagePath);
             
-            console.log('📋 Package information:');
+            console.log('[INFO] Package information:');
             console.log('   - Main entry:', packageJson.main);
             console.log('   - Types entry:', packageJson.types);
             console.log('   - Package directory:', packageDir);
             
-            console.log('\n📂 Package contents:');
+            console.log('\n[INFO] Package contents:');
             const files = fs.readdirSync(packageDir);
             files.forEach(file => {
               const filePath = path.join(packageDir, file);
               const stat = fs.statSync(filePath);
               if (stat.isDirectory()) {
-                console.log(`   📁 ${file}/`);
+                console.log(`   [DIR] ${file}/`);
               } else {
-                console.log(`   📄 ${file}`);
+                console.log(`   [FILE] ${file}`);
               }
             });
             
             // Check for dist folder
             const distPath = path.join(packageDir, 'dist');
             if (fs.existsSync(distPath)) {
-              console.log('\n📦 dist/ folder exists');
+              console.log('\n[INFO] dist/ folder exists');
             } else {
-              console.log('\n⚠️  dist/ folder not found - this may cause import issues');
+              console.log('\n[WARN]  dist/ folder not found - this may cause import issues');
             }
             
             // Check main entry point
             if (packageJson.main) {
               const mainPath = path.join(packageDir, packageJson.main);
               if (fs.existsSync(mainPath)) {
-                console.log(`\n✅ Main entry point exists: ${packageJson.main}`);
+                console.log(`\n[OK] Main entry point exists: ${packageJson.main}`);
               } else {
-                console.log(`\n❌ Main entry point missing: ${packageJson.main}`);
+                console.log(`\n[ERR] Main entry point missing: ${packageJson.main}`);
                 console.log('   This indicates the package may not be properly built.');
               }
             }
@@ -122,14 +122,14 @@ jobs:
             if (packageJson.types) {
               const typesPath = path.join(packageDir, packageJson.types);
               if (fs.existsSync(typesPath)) {
-                console.log(`✅ Types entry point exists: ${packageJson.types}`);
+                console.log(`[OK] Types entry point exists: ${packageJson.types}`);
               } else {
-                console.log(`⚠️  Types entry point missing: ${packageJson.types}`);
+                console.log(`[WARN]  Types entry point missing: ${packageJson.types}`);
                 console.log('   TypeScript users may not get proper type definitions.');
               }
             }
           } catch (error) {
-            console.error('❌ Error checking package:', error.message);
+            console.error('[ERR] Error checking package:', error.message);
             process.exit(1);
           }
           EOF
@@ -148,7 +148,7 @@ jobs:
             // This will be called after sync tests
           }
 
-          console.log('🧪 Testing @bridgerust/embex package...\n');
+          console.log('[TEST] Testing @bridgerust/embex package...\n');
 
           // Test 1: Try to require the package
           let EmbexClient;
@@ -166,18 +166,18 @@ jobs:
                   throw new Error(`Package imported but EmbexClient not found. Available exports: ${Object.keys(pkg).join(', ')}`);
                 }
                 EmbexClient = pkg.EmbexClient;
-                console.log('✅ Test 1: Import successful via main entry');
+                console.log('[OK] Test 1: Import successful via main entry');
                 console.log(`   - Found exports: ${Object.keys(pkg).join(', ')}`);
               } else {
                 // Try alternative entry points
-                console.log('⚠️  Main entry not found, trying alternatives...');
+                console.log('[WARN]  Main entry not found, trying alternatives...');
                 try {
                   const pkg = require('@bridgerust/embex');
                   if (!pkg.EmbexClient) {
                     throw new Error(`Package imported but EmbexClient not found. Available exports: ${Object.keys(pkg).join(', ')}`);
                   }
                   EmbexClient = pkg.EmbexClient;
-                  console.log('✅ Test 1: Import successful via alternative');
+                  console.log('[OK] Test 1: Import successful via alternative');
                 } catch (e) {
                   throw new Error(`Cannot import package. Main entry (${packageJson.main}) not found. Error: ${e.message}`);
                 }
@@ -188,10 +188,10 @@ jobs:
                 throw new Error(`Package imported but EmbexClient not found. Available exports: ${Object.keys(pkg).join(', ')}`);
               }
               EmbexClient = pkg.EmbexClient;
-              console.log('✅ Test 1: Import successful');
+              console.log('[OK] Test 1: Import successful');
             }
           } catch (error) {
-            console.error('❌ Test 1 failed:', error.message);
+            console.error('[ERR] Test 1 failed:', error.message);
             console.error('   This might indicate the package is missing required files.');
             console.error('   Check that dist/ folder is built and included in the published package.');
             process.exit(1);
@@ -200,11 +200,11 @@ jobs:
           // Test 2: Client can be instantiated
           try {
             const client = new EmbexClient('qdrant', 'http://localhost:6333', null);
-            console.log('✅ Test 2: Client instantiation successful');
+            console.log('[OK] Test 2: Client instantiation successful');
             console.log('   - Client type:', typeof client);
             console.log('   - Has collection method:', typeof client.collection === 'function');
           } catch (error) {
-            console.error('❌ Test 2 failed:', error.message);
+            console.error('[ERR] Test 2 failed:', error.message);
             process.exit(1);
           }
 
@@ -212,13 +212,13 @@ jobs:
           try {
             const client = new EmbexClient('qdrant', 'http://localhost:6333', null);
             const collection = client.collection('test_collection');
-            console.log('✅ Test 3: Collection creation successful');
+            console.log('[OK] Test 3: Collection creation successful');
             console.log('   - Collection type:', typeof collection);
             console.log('   - Has insert method:', typeof collection.insert === 'function');
             console.log('   - Has search method:', typeof collection.search === 'function');
             console.log('   - Has query method:', typeof collection.query === 'function');
           } catch (error) {
-            console.error('❌ Test 3 failed:', error.message);
+            console.error('[ERR] Test 3 failed:', error.message);
             process.exit(1);
           }
 
@@ -226,10 +226,10 @@ jobs:
           try {
             const packagePath = require.resolve('@bridgerust/embex/package.json');
             const packageDir = path.dirname(packagePath);
-            console.log('✅ Test 4: Package structure verified');
+            console.log('[OK] Test 4: Package structure verified');
             console.log('   - Package path:', packageDir);
           } catch (error) {
-            console.error('❌ Test 4 failed:', error.message);
+            console.error('[ERR] Test 4 failed:', error.message);
             process.exit(1);
           }
 
@@ -238,10 +238,10 @@ jobs:
             if (typeof EmbexClient.newAsync !== 'function') {
               throw new Error('EmbexClient.newAsync is not a function');
             }
-            console.log('✅ Test 5: Async initialization method exists');
+            console.log('[OK] Test 5: Async initialization method exists');
             console.log('   - newAsync type:', typeof EmbexClient.newAsync);
           } catch (error) {
-            console.error('❌ Test 5 failed:', error.message);
+            console.error('[ERR] Test 5 failed:', error.message);
             process.exit(1);
           }
 
@@ -252,19 +252,19 @@ jobs:
             if (!(clientPromise instanceof Promise)) {
               throw new Error('newAsync does not return a Promise');
             }
-            console.log('✅ Test 6: Async initialization syntax correct');
+            console.log('[OK] Test 6: Async initialization syntax correct');
             console.log('   - newAsync returns Promise');
             console.log('   - Method signature is correct');
             
             // Note: We don't await here to avoid hanging, but we've verified the Promise exists
             // In a real scenario with a DB, this would work: const client = await EmbexClient.newAsync(...)
           } catch (error) {
-            console.error('❌ Test 6 failed:', error.message);
+            console.error('[ERR] Test 6 failed:', error.message);
             process.exit(1);
           }
 
-          console.log('\n🎉 All basic tests passed!');
-          console.log('\n💡 Note: Full integration tests require a running database server.');
+          console.log('\n[DONE] All basic tests passed!');
+          console.log('\n[NOTE] Note: Full integration tests require a running database server.');
           console.log('   To test with a real database, start Qdrant:');
           console.log('   docker run -p 6333:6333 qdrant/qdrant');
           EOF
@@ -285,16 +285,16 @@ jobs:
             cat > test-package.ts << 'EOF'
           import { EmbexClient } from '@bridgerust/embex';
 
-          console.log('🧪 Testing TypeScript usage...\n');
+          console.log('[TEST] Testing TypeScript usage...\n');
 
           const client = new EmbexClient('qdrant', 'http://localhost:6333', null);
           const collection = client.collection('test');
 
-          console.log('✅ TypeScript import and usage successful');
+          console.log('[OK] TypeScript import and usage successful');
           EOF
-            npx tsc --noEmit test-package.ts 2>&1 || echo "⚠️ TypeScript check skipped (types may not be available)"
+            npx tsc --noEmit test-package.ts 2>&1 || echo "[WARN] TypeScript check skipped (types may not be available)"
           else
-            echo "⚠️ npx not available, skipping TypeScript test"
+            echo "[WARN] npx not available, skipping TypeScript test"
           fi
 
   test-pypi:
@@ -324,7 +324,7 @@ jobs:
         shell: bash
         run: |
           python -m venv venv
-          echo "✅ Virtual environment created"
+          echo "[OK] Virtual environment created"
 
       - name: Install embex from PyPI
         working-directory: test-pypi-package
@@ -343,7 +343,7 @@ jobs:
           else
             "$PYTHON_BIN" -m pip install embex
           fi
-          echo "✅ Package installed from PyPI"
+          echo "[OK] Package installed from PyPI"
 
       - name: Verify package installation
         working-directory: test-pypi-package
@@ -355,19 +355,19 @@ jobs:
             PYTHON_BIN="venv/bin/python"
           fi
 
-          echo "📦 Installed package info:"
+          echo "[INFO] Installed package info:"
           "$PYTHON_BIN" -m pip show embex
           echo ""
-          echo "📂 Package location:"
+          echo "[INFO] Package location:"
           # Use a robust check script that provides better debugging info
           "$PYTHON_BIN" -c "
           import sys
           import os
           try:
               import embex
-              print(f'✅ Import successful: {embex.__file__}')
+              print(f'[OK] Import successful: {embex.__file__}')
           except ImportError as e:
-              print(f'❌ Import failed: {e}')
+              print(f'[ERR] Import failed: {e}')
               print(f'   sys.path: {sys.path}')
               try:
                   import site
@@ -527,7 +527,7 @@ jobs:
           fi
           "$PYTHON_BIN" -c "
           import embex
-          print('📋 Package metadata:')
+          print('[INFO] Package metadata:')
           print(f'   - Version: {getattr(embex, \"__version__\", \"unknown\")}')
           print(f'   - File: {embex.__file__}')
           print(f'   - Package: {embex.__package__}')
@@ -542,14 +542,14 @@ jobs:
     steps:
       - name: Check test results
         run: |
-          echo "📊 Test Summary"
+          echo "[STATS] Test Summary"
           echo "==============="
           echo "npm tests: ${{ needs.test-npm.result }}"
           echo "PyPI tests: ${{ needs.test-pypi.result }}"
 
           if [ "${{ needs.test-npm.result }}" != "success" ] || [ "${{ needs.test-pypi.result }}" != "success" ]; then
-            echo "❌ Some tests failed!"
+            echo "[ERR] Some tests failed!"
             exit 1
           else
-            echo "✅ All tests passed!"
+            echo "[OK] All tests passed!"
           fi

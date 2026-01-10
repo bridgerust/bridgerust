@@ -199,8 +199,7 @@ LanceDB • Qdrant • Pinecone • Chroma • PgVector • Milvus • Weaviate
 - 💬 **Discord:** Get help, share projects, discuss features → [Join Server](https://discord.gg/ZvNAeaWN)
 - 💡 **GitHub Discussions:** Feature requests and Q&A
 - 🐛 **Issues:** Bug reports
-- 🐦 **Twitter:** [@embex_dev](https://twitter.com/embex_dev) - Updates and tips
-- 📝 **Blog:** Tutorials and case studies → [kologojosias.com](https://kologojosias.com)
+- 📝 **Blog:** Tutorials and case studies → [bridgerust.dev/embex](https://bridgerust.dev/embex/introduction)
 
 **Built something cool with Embex?** Share it in #showcase on Discord or tag us on Twitter!
 
@@ -260,7 +259,6 @@ bridge-embex = { git = "https://github.com/bridgerust/bridgerust", path = "crate
 1. ⭐ **Star this repo** if Embex saves you time
 2. 💬 **Join Discord** for help and to share what you build
 3. 📖 **Try the tutorial:** [Build a chatbot in 10 minutes](https://bridgerust.dev/embex/tutorial)
-4. 🐦 **Follow [@embex_dev](https://twitter.com/embex_dev)** for updates and tips
 
 **Quick links:**
 
