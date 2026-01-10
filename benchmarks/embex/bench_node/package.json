@@ -1,0 +1,18 @@
+{
+  "name": "embex-benchmarks",
+  "version": "1.0.0",
+  "description": "Benchmarks for Embex Node.js",
+  "main": "bench_providers.js",
+  "type": "module",
+  "scripts": {
+    "start": "node bench_providers.js"
+  },
+  "dependencies": {
+    "@bridgerust/embex": "file:../../../bindings/node/@bridgerust/embex",
+    "@qdrant/js-client-rest": "^1.7.0",
+    "chromadb": "^1.8.1",
+    "weaviate-client": "^3.1.4",
+    "pg": "^8.11.3",
+    "uuid": "^9.0.1"
+  }
+}

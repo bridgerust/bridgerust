@@ -34,10 +34,20 @@ export default defineConfig({
           label: "Embex",
           items: [
             { label: "Introduction", link: "/embex/introduction" },
+            { label: "Installation", link: "/embex/installation" },
             { label: "Quickstart", link: "/embex/quickstart" },
+            { label: "Tutorial: Chatbot", link: "/embex/tutorial" },
             { label: "Core Concepts", link: "/embex/core-concepts" },
             { label: "Providers", link: "/embex/providers" },
-            { label: "API Reference", link: "/embex/api-reference" },
+            { label: "Migrations", link: "/embex/migrations" },
+            { label: "Benchmarks", link: "/embex/benchmarks" },
+            {
+              label: "API Reference",
+              items: [
+                { label: "Python API", link: "/embex/api/python" },
+                { label: "Node.js API", link: "/embex/api/nodejs" },
+              ],
+            },
           ],
         },
       ],
