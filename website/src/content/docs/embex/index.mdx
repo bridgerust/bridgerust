@@ -1,0 +1,107 @@
+---
+title: Embex | The Universal Vector Database ORM
+description: Embex is a universal vector database ORM for Python and Node.js. Switch between vector databases with zero code changes.
+template: splash
+hero:
+  tagline: The Universal Vector Database ORM
+  image:
+    file: ../../../assets/houston.webp
+  actions:
+    - text: Get Started
+      link: /embex/quickstart
+      icon: rocket
+    - text: Read Docs
+      link: /embex/introduction
+      icon: open-book
+      variant: minimal
+head:
+  - tag: title
+    content: Embex | The Universal Vector Database ORM
+---
+
+import { Card, CardGrid } from "@astrojs/starlight/components";
+
+<script
+  type="application/ld+json"
+  dangerouslySetInnerHTML={{
+    __html: `
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Embex",
+  "applicationCategory": "DeveloperApplication",
+  "description": "Universal vector database ORM for Python and Node.js",
+  "url": "https://bridgerust.dev/embex",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "sameAs": [
+    "https://github.com/bridgerust/bridgerust",
+    "https://pypi.org/project/embex/",
+    "https://www.npmjs.com/package/@bridgerust/embex"
+  ]
+}
+`,
+  }}
+/>
+<div class="hero-content">
+  <p class="hero-description">
+    Embex is a **vector database ORM** that provides one API across Pinecone,
+    Qdrant, LanceDB, Milvus, Chroma, Weaviate, and PgVector.
+  </p>
+</div>
+## Why Vector Database ORM?
+<CardGrid>
+  <Card title="Traditional Approach" icon="close">
+    Learn 7 different APIs. Rewrite code every time you switch providers.
+  </Card>
+  <Card title="Modern Approach" icon="approve-check-circle">
+    Use a vector database ORM. Write once, run anywhere.
+  </Card>
+</CardGrid>
+<br />
+Embex is the universal vector database ORM that eliminates vendor lock-in and provides
+a unified, high-performance interface for all your vector needs.
+<CardGrid>
+  <Card title="Universal API" icon="puzzle">
+    Switch between LanceDB, Qdrant, Pinecone, and more with just one line of
+    configuration.
+  </Card>
+  <Card title="Rust Core" icon="rocket">
+    Powered by a Rust core with SIMD acceleration, making operations up to 4x
+    faster than native clients.
+  </Card>
+  <Card title="Production Ready" icon="approve-check-circle">
+    Includes connection pooling, migrations, and observability out of the box.
+  </Card>
+</CardGrid>
+## Supported Providers Embex actively supports and maintains bindings for:
+<CardGrid>
+  <Card title="LanceDB" icon="seti:db">
+    Embedded/Local development
+  </Card>
+  <Card title="Qdrant" icon="seti:db">
+    Scalable vector engine
+  </Card>
+  <Card title="Pinecone" icon="seti:db">
+    Managed serverless
+  </Card>
+  <Card title="Chroma" icon="seti:db">
+    AI-native embedding db
+  </Card>
+  <Card title="Weaviate" icon="seti:db">
+    Cloud-native vector db
+  </Card>
+  <Card title="PgVector" icon="seti:db">
+    PostgreSQL extension
+  </Card>
+  <Card title="Milvus" icon="seti:db">
+    Massive scale vector db
+  </Card>
+</CardGrid>
+<br />
+<div style="text-align: center;">
+  [**View Documentation →**](/embex/introduction)
+</div>

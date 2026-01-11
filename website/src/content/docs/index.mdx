@@ -8,7 +8,7 @@ hero:
     file: ../../assets/houston.webp
   actions:
     - text: Get Started with Embex
-      link: /embex/introduction
+      link: /embex
       icon: rocket
     - text: Read Documentation
       link: /bridgerust/introduction
@@ -20,7 +20,13 @@ hero:
       variant: minimal
 ---
 
-import { Card, CardGrid, Tabs, TabItem } from "@astrojs/starlight/components";
+import {
+  Card,
+  CardGrid,
+  Tabs,
+  TabItem,
+  LinkCard,
+} from "@astrojs/starlight/components";
 
 <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 1rem; margin-bottom: 2rem; flex-wrap: wrap; align-items: center;">
   <a
@@ -115,7 +121,16 @@ BridgeRust is designed to drop into **any** existing Rust project. It works alon
 **Embex** is the flagship product built on the BridgeRust framework. It proves that you can build complex, production-ready universal clients today.
 
 <CardGrid>
-  <Card title="Start with Embex" icon="rocket">
-    See BridgeRust in action. [**View Embex Documentation**](/embex/quickstart)
-  </Card>
+  <LinkCard
+    title="Explore Embex"
+    description="The Universal Vector Database ORM."
+    href="/embex"
+    icon="rocket"
+  />
+  <LinkCard
+    title="What is a Vector DB ORM?"
+    description="Learn why you need an abstraction layer."
+    href="/vector-database-orm"
+    icon="open-book"
+  />
 </CardGrid>

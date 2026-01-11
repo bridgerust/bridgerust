@@ -1,0 +1,132 @@
+---
+title: Vector Database ORM | Embex
+description: Embex is the universal vector database ORM for Python and Node.js. Switch between Pinecone, Qdrant, LanceDB, and more with one line of code.
+template: splash
+---
+
+import {
+  Tabs,
+  TabItem,
+  CardGrid,
+  LinkCard,
+} from "@astrojs/starlight/components";
+
+<div
+  style={{
+    textAlign: "center",
+    maxWidth: "800px",
+    margin: "0 auto",
+    paddingBottom: "3rem",
+  }}
+>
+  <h1>Embex: The Universal Vector Database ORM</h1>
+  <p style={{ fontSize: "1.25rem", color: "var(--sl-color-text-accent)" }}>
+    Switch between Pinecone, Qdrant, LanceDB, Milvus, Chroma, Weaviate, and
+    PgVector with **one line of code**.
+  </p>
+</div>
+
+## What is a Vector Database ORM?
+
+A **Vector Database ORM** (Object-Relational Mapping) provides a unified interface to interact with various **AI databases** and vector stores. Just as traditional ORMs like Sequelize or TypeORM abstract SQL differences, Embex abstracts the specific API calls of different vector engines.
+
+This is crucial for modern **RAG (Retrieval Augmented Generation)** stacks, where the choice of database might change from local prototyping (LanceDB) to cloud production (Qdrant/Pinecone).
+
+Instead of learning 7 different APIs, you learn **one**:
+
+```python
+# Works with ANY provider (Pinecone, Qdrant, LanceDB, etc.)
+await client.collection("knowledge_base").insert(documents)
+results = await client.collection("knowledge_base").search(query_vector, top_k=5)
+```
+
+## Why Use Embex as Your Vector Database ORM?
+
+<CardGrid>
+  <LinkCard
+    title="✅ Universal API"
+    description="One interface for 7+ databases. Stop rewriting code."
+  />
+  <LinkCard
+    title="✅ Zero Vendor Lock-in"
+    description="Switch providers in one line of configuration."
+  />
+  <LinkCard
+    title="✅ 4x Faster"
+    description="Rust core with SIMD acceleration for critical operations."
+  />
+  <LinkCard
+    title="✅ Production Ready"
+    description="Connection pooling, migrations, and type safety built-in."
+  />
+</CardGrid>
+
+## Quick Start
+
+<Tabs>
+  <TabItem label="Python">
+    ```bash
+    pip install embex lancedb
+    ```
+
+    ```python
+    from embex import EmbexClient
+    import asyncio
+
+    async def main():
+        # Start with LanceDB (Embedded)
+        client = await EmbexClient.new_async("lancedb", "./data")
+
+        # Switch to Qdrant later by changing just this line:
+        # client = await EmbexClient.new_async("qdrant", "http://localhost:6333")
+
+    asyncio.run(main())
+    ```
+
+  </TabItem>
+  <TabItem label="Node.js">
+    ```bash
+    npm install @bridgerust/embex lancedb
+    ```
+
+    ```typescript
+    import { EmbexClient } from "@bridgerust/embex";
+
+    // Start with LanceDB (Embedded)
+    const client = await EmbexClient.newAsync("lancedb", "./data");
+    ```
+
+  </TabItem>
+</Tabs>
+
+## Supported Vector Databases
+
+Embex supports the most popular vector databases out of the box:
+
+- **LanceDB**: Best for local development and embedded applications.
+- **Qdrant**: High-performance, scalable vector engine.
+- **Pinecone**: Fully managed, serverless vector database.
+- **Chroma**: Open-source, developer-friendly.
+- **Milvus**: Built for massive scale.
+- **PgVector**: Vector search within PostgreSQL.
+- **Weaviate**: AI-native vector database.
+
+## Vector Database ORM vs Raw Clients
+
+| Feature                | Raw SDKs (Pinecone/Qdrant)   | Embex (Vector Database ORM) |
+| :--------------------- | :--------------------------- | :-------------------------- |
+| **API Consistency**    | Different for every provider | **Unified API**             |
+| **Vendor Switch Cost** | High (Rewrite code)          | **Zero (Config change)**    |
+| **Performance**        | Varies (often pure Python)   | **High (Rust + SIMD)**      |
+| **Local Development**  | Difficult (mocks/docker)     | **Easy (LanceDB embedded)** |
+
+## Documentation
+
+- [**Getting Started**](/embex/quickstart) - Build your first app in 5 minutes.
+- [**API Reference**](/embex/api/python) - Full API documentation.
+- [**Migration Guides**](/embex/migrations) - How to switch providers.
+
+## Community
+
+- [**GitHub**](https://github.com/bridgerust/bridgerust) - Star us on GitHub!
+- [**Discord**](https://discord.gg/ZvNAeaWN) - Join the community.
