@@ -197,7 +197,8 @@ LanceDB • Qdrant • Pinecone • Chroma • PgVector • Milvus • Weaviate
 ## Community
 
 - 💬 **Discord:** Get help, share projects, discuss features → [Join Server](https://discord.gg/ZvNAeaWN)
-- 💡 **GitHub Discussions:** Feature requests and Q&A
+- � **Reddit:** Join the discussion → [r/embex](https://www.reddit.com/r/embex/)
+- �💡 **GitHub Discussions:** Feature requests and Q&A
 - 🐛 **Issues:** Bug reports
 - 📝 **Blog:** Tutorials and case studies → [bridgerust.dev/embex](https://bridgerust.dev/embex/introduction)
 

@@ -22,6 +22,11 @@ export default defineConfig({
           label: "Discord",
           href: "https://discord.gg/ZvNAeaWN",
         },
+        {
+          icon: "reddit",
+          label: "Reddit",
+          href: "https://www.reddit.com/r/embex/",
+        },
       ],
       sidebar: [
         {
