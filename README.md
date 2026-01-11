@@ -52,8 +52,8 @@ Switch from LanceDB to Qdrant? **Change one line**:
 
 **👇 See it in action:**
 
-![Embex Demo](https://raw.githubusercontent.com/bridgerust/bridgerust/main/assets/demo.gif)
-_(Note: Add a 10-second terminal recording showing: install → create collection → insert → search → results)_
+<!-- ![Embex Demo](https://raw.githubusercontent.com/bridgerust/bridgerust/main/assets/demo.gif)
+_(Note: Add a 10-second terminal recording showing: install → create collection → insert → search → results)_ -->
 
 ## Real Migration Example
 
