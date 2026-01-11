@@ -17,6 +17,11 @@ export default defineConfig({
           label: "GitHub",
           href: "https://github.com/bridgerust/bridgerust",
         },
+        {
+          icon: "discord",
+          label: "Discord",
+          href: "https://discord.gg/ZvNAeaWN",
+        },
       ],
       sidebar: [
         {

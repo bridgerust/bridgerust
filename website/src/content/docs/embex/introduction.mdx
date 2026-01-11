@@ -1,39 +1,113 @@
 ---
 title: Introduction
-description: Introduction to Embex, the universal vector database client.
+description: Embex is the universal vector database client that lets you switch providers without rewriting code.
 ---
 
-import { Tabs, TabItem } from "@astrojs/starlight/components";
+import {
+  Tabs,
+  TabItem,
+  CardGrid,
+  LinkCard,
+} from "@astrojs/starlight/components";
 
-**Embex** is the universal vector database client.
+**Embex** is a high-performance, universal client for vector databases. It allows you to write your code once and run it with any supported provider (LanceDB, Qdrant, Pinecone, and more).
 
-## The Recommended Path
+## The Problem
 
-We recommend starting with **LanceDB** for development. It runs embedded (no Docker, no cloud setup), stores data locally, and is production-ready.
+Every vector database currently has a different API. If you start with one provider and want to switch later—maybe for better performance, lower costs, or different features—you have to **rewrite your entire codebase**.
 
-When you're ready to scale or need a managed service, you can switch to Qdrant, Pinecone, or others **without rewriting your code**.
+### Without Embex
 
-## Why Async Initialization?
+You're locked into vendor-specific APIs:
 
 <Tabs>
-  <TabItem label="Python">
-    ```python 
-    # Initialize properly for ANY provider (local or cloud)
-    client = await EmbexClient.new_async(provider="lancedb", url="./data") 
+  <TabItem label="Pinecone">
+
+    ```python
+    # Pinecone specific code
+    index.upsert(vectors=[(id, values, metadata)])
+    results = index.query(vector=query, top_k=5)
     ```
 
   </TabItem>
-  <TabItem label="Node.js">
-    ```typescript 
-    // Initialize properly for ANY provider (local or cloud)
-    const client = await EmbexClient.newAsync("lancedb", "./data"); 
+  <TabItem label="Qdrant">
+
+    ```python
+    # Qdrant specific code - completely different!
+    client.upsert(collection_name=name, points=points)
+    results = client.search(collection_name=name, query_vector=query, limit=5)
     ```
-    
+
   </TabItem>
 </Tabs>
 
-## Features
+## The Solution
 
-- **Unified API**: Switch providers (Qdrant, Pinecone, LanceDB, Chroma, etc.) with a single line of config.
-- **High Performance**: Powered by a shared Rust core with SIMD acceleration.
-- **Production Ready**: Connection pooling, migrations, and observability built-in.
+Embex provides **one unified API** that works with seven different databases.
+
+### With Embex
+
+Your core logic stays exactly the same. To switch providers, you only change **one configuration line**.
+
+```python
+# Works with ANY provider
+await client.collection("products").insert(vectors)
+results = await client.collection("products").search(vector=query, top_k=5)
+```
+
+Switching from development (LanceDB) to production (Qdrant) is trivial:
+
+```diff
+- client = await EmbexClient.new_async(provider="lancedb", url="./data")
++ client = await EmbexClient.new_async(provider="qdrant", url="http://localhost:6333")
+```
+
+## Key Benefits
+
+### 1. Unified API
+
+Stop writing vendor-specific adapter code. Embex abstracts the differences between providers so you can focus on building your application.
+
+### 2. High Performance
+
+Embex isn't just a wrapper. The core is written in **Rust** with SIMD acceleration, making vector operations up to **4x faster** than native Python clients for tasks like normalization and cosine similarity.
+
+### 3. Production Ready
+
+Built for scale with features that many native clients miss:
+
+- **Connection Pooling**: Efficiently manage database connections.
+- **Built-in Migrations**: Manage schema changes across any provider.
+- **Observability**: Hooks for monitoring and metrics.
+
+## Supported Providers
+
+Embex currently supports:
+
+- **LanceDB**: Perfect for local development and embedded apps (No Docker required).
+- **Qdrant**: High-performance, scalable vector search engine.
+- **Pinecone**: Fully managed vector database.
+- **Chroma**: Open-source embedding database.
+- **Weaviate**: AI-native vector database.
+- **PgVector**: Vector similarity search for PostgreSQL.
+- **Milvus**: Cloud-native vector database for massive scale.
+
+## Next Steps
+
+<CardGrid>
+  <LinkCard
+    title="📥 Installation"
+    description="Get Embex installed in seconds."
+    href="/embex/installation"
+  />
+  <LinkCard
+    title="⚡ Quick Start"
+    description="Build your first vector app in 5 minutes."
+    href="/embex/quickstart"
+  />
+  <LinkCard
+    title="📖 Tutorial"
+    description="Step-by-step guide to building a semantic search engine."
+    href="/embex/tutorial"
+  />
+</CardGrid>
