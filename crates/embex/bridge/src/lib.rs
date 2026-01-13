@@ -1,264 +1,25 @@
 #![allow(deprecated)]
 #[allow(unused_imports)]
-use bridgerust::{export, new, staticmethod};
+use bridgerust::{export, new, staticmethod, BridgeError, JsonValue, Result as BridgeResult};
 
 #[cfg(feature = "python")]
 extern crate pyo3_crate as pyo3;
+
+#[cfg(feature = "python")]
+use bridgerust::pyo3::prelude::*;
+
+#[cfg(feature = "nodejs")]
+use bridgerust::napi;
+#[cfg(feature = "nodejs")]
+use bridgerust::napi::bindgen_prelude::*;
+#[cfg(feature = "nodejs")]
+use bridgerust::napi_derive::napi;
+
 use bridge_embex::types::CollectionSchema;
 use bridge_embex::types::Point as RustPoint;
 use bridge_embex::EmbexClient as RustClient;
 use bridge_embex_infrastructure::config::EmbexConfig;
-use serde_json::Value as SerdeValue;
 use std::collections::HashMap;
-
-#[cfg(feature = "python")]
-use pyo3_crate::prelude::*;
-#[cfg(feature = "python")]
-use pyo3_crate::types::{PyDict, PyList};
-
-#[cfg(feature = "nodejs")]
-use napi::bindgen_prelude::*;
-#[cfg(feature = "nodejs")]
-use napi_derive::napi;
-
-#[derive(Debug)]
-pub struct BridgeError(String);
-
-impl std::fmt::Display for BridgeError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl std::error::Error for BridgeError {}
-
-impl AsRef<str> for BridgeError {
-    fn as_ref(&self) -> &str {
-        &self.0
-    }
-}
-
-impl From<String> for BridgeError {
-    fn from(s: String) -> Self {
-        BridgeError(s)
-    }
-}
-
-#[cfg(feature = "python")]
-impl From<BridgeError> for PyErr {
-    fn from(e: BridgeError) -> Self {
-        use pyo3_crate::exceptions::PyRuntimeError;
-        PyRuntimeError::new_err(e.0)
-    }
-}
-
-#[cfg(feature = "nodejs")]
-impl From<BridgeError> for napi::Error {
-    fn from(e: BridgeError) -> Self {
-        napi::Error::from_reason(e.0)
-    }
-}
-
-impl BridgeError {
-    #[cfg(all(feature = "python", not(feature = "nodejs")))]
-    pub fn into_platform(self) -> PyErr {
-        self.into()
-    }
-
-    #[cfg(all(feature = "nodejs", not(feature = "python")))]
-    pub fn into_platform(self) -> napi::Error {
-        self.into()
-    }
-
-    #[cfg(any(
-        all(feature = "python", feature = "nodejs"),
-        not(any(feature = "python", feature = "nodejs"))
-    ))]
-    pub fn into_platform(self) -> BridgeError {
-        self
-    }
-}
-
-// Helper removed (unused)
-
-// Result alias for cross-platform support
-#[cfg(all(feature = "python", not(feature = "nodejs")))]
-pub type BridgeResult<T> = PyResult<T>;
-
-#[cfg(all(feature = "nodejs", not(feature = "python")))]
-pub type BridgeResult<T> = napi::Result<T>;
-
-#[cfg(any(
-    all(feature = "python", feature = "nodejs"),
-    not(any(feature = "python", feature = "nodejs"))
-))]
-pub type BridgeResult<T> = std::result::Result<T, BridgeError>;
-
-#[derive(Clone, Debug)]
-pub struct JsonValue(pub SerdeValue);
-
-#[cfg(feature = "python")]
-fn py_to_json<'py>(ob: &Bound<'py, PyAny>) -> PyResult<SerdeValue> {
-    if ob.is_none() {
-        return Ok(SerdeValue::Null);
-    }
-
-    if let Ok(b) = ob.extract::<bool>() {
-        return Ok(SerdeValue::Bool(b));
-    }
-
-    if let Ok(i) = ob.extract::<i64>() {
-        return Ok(SerdeValue::Number(serde_json::Number::from(i)));
-    }
-
-    if let Ok(f) = ob.extract::<f64>() {
-        if let Some(n) = serde_json::Number::from_f64(f) {
-            return Ok(SerdeValue::Number(n));
-        }
-    }
-
-    if let Ok(s) = ob.extract::<String>() {
-        return Ok(SerdeValue::String(s));
-    }
-
-    // Using downcast (deprecated but works) or cast implies trait availability
-    if let Ok(list) = ob.downcast::<PyList>() {
-        let mut arr = Vec::new();
-        for item in list.iter() {
-            arr.push(py_to_json(&item)?);
-        }
-        return Ok(SerdeValue::Array(arr));
-    }
-
-    if let Ok(dict) = ob.downcast::<PyDict>() {
-        let mut map = serde_json::Map::new();
-        for (k, v) in dict.iter() {
-            let key = k.extract::<String>()?;
-            map.insert(key, py_to_json(&v)?);
-        }
-        return Ok(SerdeValue::Object(map));
-    }
-
-    // Fallback: try string conversion
-    Ok(SerdeValue::String(ob.to_string()))
-}
-
-#[cfg(feature = "python")]
-fn json_to_py<'py>(py: Python<'py>, v: &SerdeValue) -> PyResult<Bound<'py, PyAny>> {
-    use pyo3_crate::types::{PyFloat, PyString};
-    match v {
-        SerdeValue::Null => Ok(py.None().into_bound(py)),
-        SerdeValue::Bool(b) => Ok(b.into_pyobject(py)?.to_owned().into_any()),
-        SerdeValue::Number(n) => {
-            if let Some(i) = n.as_i64() {
-                Ok(i.into_pyobject(py)?.into_any())
-            } else if let Some(f) = n.as_f64() {
-                Ok(PyFloat::new(py, f).into_any())
-            } else {
-                Ok(PyString::new(py, &n.to_string()).into_any())
-            }
-        }
-        SerdeValue::String(s) => Ok(PyString::new(py, s.as_str()).into_any()),
-        SerdeValue::Array(arr) => {
-            let list = PyList::empty(py);
-            for item in arr {
-                list.append(json_to_py(py, item)?)?;
-            }
-            Ok(list.into_any())
-        }
-        SerdeValue::Object(map) => {
-            let dict = PyDict::new(py);
-            for (k, v) in map {
-                dict.set_item(k, json_to_py(py, v)?)?;
-            }
-            Ok(dict.into_any())
-        }
-    }
-}
-
-#[cfg(feature = "python")]
-impl<'a, 'py> FromPyObject<'a, 'py> for JsonValue {
-    type Error = PyErr;
-    fn extract(ob: pyo3_crate::Borrowed<'a, 'py, PyAny>) -> PyResult<Self> {
-        let bound = ob.as_borrowed().to_owned();
-        let v = py_to_json(&bound)?;
-        Ok(JsonValue(v))
-    }
-}
-
-#[cfg(feature = "python")]
-impl<'py> IntoPyObject<'py> for JsonValue {
-    type Target = PyAny;
-    type Output = Bound<'py, PyAny>;
-    type Error = PyErr;
-
-    fn into_pyobject(self, py: Python<'py>) -> std::result::Result<Self::Output, Self::Error> {
-        json_to_py(py, &self.0)
-    }
-}
-
-#[cfg(feature = "nodejs")]
-impl TypeName for JsonValue {
-    fn type_name() -> &'static str {
-        "any"
-    }
-    fn value_type() -> napi::ValueType {
-        napi::ValueType::Object
-    }
-}
-
-#[cfg(feature = "nodejs")]
-impl FromNapiValue for JsonValue {
-    unsafe fn from_napi_value(
-        env: napi::sys::napi_env,
-        napi_val: napi::sys::napi_value,
-    ) -> napi::Result<Self> {
-        let val: SerdeValue = FromNapiValue::from_napi_value(env, napi_val)?;
-        Ok(JsonValue(val))
-    }
-}
-
-#[cfg(feature = "nodejs")]
-impl ToNapiValue for JsonValue {
-    unsafe fn to_napi_value(
-        env: napi::sys::napi_env,
-        val: Self,
-    ) -> napi::Result<napi::sys::napi_value> {
-        ToNapiValue::to_napi_value(env, val.0)
-    }
-}
-
-#[cfg(feature = "nodejs")]
-impl ToNapiValue for &JsonValue {
-    unsafe fn to_napi_value(
-        env: napi::sys::napi_env,
-        val: Self,
-    ) -> napi::Result<napi::sys::napi_value> {
-        ToNapiValue::to_napi_value(env, &val.0)
-    }
-}
-
-#[cfg(feature = "nodejs")]
-impl ToNapiValue for &mut JsonValue {
-    unsafe fn to_napi_value(
-        env: napi::sys::napi_env,
-        val: Self,
-    ) -> napi::Result<napi::sys::napi_value> {
-        ToNapiValue::to_napi_value(env, &val.0)
-    }
-}
-
-// Implement From/Into for Rust <-> Bridge conversions
-impl From<SerdeValue> for JsonValue {
-    fn from(v: SerdeValue) -> Self {
-        JsonValue(v)
-    }
-}
-impl From<JsonValue> for SerdeValue {
-    fn from(val: JsonValue) -> Self {
-        val.0
-    }
-}
 
 pub enum MigrationItem {
     #[cfg(feature = "python")]
@@ -1011,8 +772,10 @@ pub async fn cli(_args: Vec<String>) -> napi::Result<()> {
 }
 
 #[cfg(feature = "python")]
-#[pyo3::pymodule]
-fn embex(m: &pyo3::Bound<'_, pyo3::types::PyModule>) -> pyo3::PyResult<()> {
+#[bridgerust::pyo3::pymodule]
+fn embex(
+    m: &bridgerust::pyo3::Bound<'_, bridgerust::pyo3::types::PyModule>,
+) -> bridgerust::pyo3::PyResult<()> {
     m.add_class::<EmbexClient>()?;
     m.add_class::<Collection>()?;
     m.add_class::<Point>()?;

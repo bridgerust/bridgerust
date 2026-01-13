@@ -8,10 +8,17 @@ pub use pyo3_async_runtimes;
 
 pub mod stream;
 
+pub mod convert;
+pub mod error;
+pub mod types;
+
 #[cfg(feature = "nodejs")]
 pub use napi;
 
 #[cfg(feature = "nodejs")]
 pub use napi_derive;
 
-pub mod convert;
+pub use error::BridgeError;
+pub use types::JsonValue;
+
+pub type Result<T> = std::result::Result<T, BridgeError>;

@@ -173,7 +173,7 @@ fn export_async_function(input_fn: ItemFn) -> TokenStream {
         ) -> bridgerust::pyo3::PyResult<bridgerust::pyo3::PyObject> {
             use bridgerust::pyo3::IntoPy;
             bridgerust::pyo3_async_runtimes::tokio::future_into_py(py, async move {
-                #fn_name(#(#call_args),*).await.into_py(py)
+                #fn_name(#(#call_args),*).await.map_err(Into::into)
             })
         }
     };

@@ -1,6 +1,6 @@
 [package]
 name = "bridgerust-macros"
-version = "0.1.1"
+version = "0.1.2"
 edition.workspace = true
 description = "Procedural macros for BridgeRust framework"
 authors.workspace = true

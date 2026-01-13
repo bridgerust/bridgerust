@@ -21,6 +21,14 @@ Building cross-language extensions traditionally requires maintaining separate b
 
 Whether you are building a high-performance database client, a heavy computation library, or a system utility, BridgeRust streamlines the process of bringing Rust's performance to the Python and JavaScript ecosystems.
 
+## When to use BridgeRust?
+
+BridgeRust is **SDK-Ready** and shines in these scenarios:
+
+- **Unified SDKs & API Clients**: Perfect for things like database drivers (e.g., Embex). It robustly handles `async/await` (mapping Rust Futures to Promises/Awaitables) and complex JSON objects.
+- **Data Processing Libraries**: Ideal for CPU-intensive tasks like parsing, encryption, or image manipulation where you want to drop down to Rust for speed but keep the API native.
+- **Cross-Platform Logic**: Great for sharing core business logic or validation rules between a Node.js web service and Python data tools without rewriting code.
+
 ## Get Started
 
 The best way to start is using the **Bridge CLI**:

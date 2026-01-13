@@ -12,6 +12,14 @@ BridgeRust is a unified framework for building cross-language Rust libraries. It
 - **Zero Config**: No need to manually configure PyO3 or napi-rs builds.
 - **Type Safety**: Automatic type mapping between Rust, Python, and TypeScript.
 
+## 🎯 Best Use Cases
+
+BridgeRust is currently **SDK-Ready** and ideal for:
+
+1. **Unified SDKs / Clients**: Perfect for database drivers (like Embex) or API clients. Seamlessly handles `async/await` and complex JSON objects.
+2. **CPU-Intensive Data Processing**: Expose high-performance Rust logic (parsers, encryption, image processing) to interpreted languages with minimal overhead.
+3. **Shared Logic Cores**: Write business validation rules once in Rust structs/enums and reuse them across your Node.js backend and Python data pipelines.
+
 ## 📦 Usage
 
 Add to your `Cargo.toml`:

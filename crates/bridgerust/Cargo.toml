@@ -1,6 +1,6 @@
 [package]
 name = "bridgerust"
-version = "0.1.1"
+version = "0.1.2"
 edition.workspace = true
 description = "Write Rust once, deploy to Python and Node.js"
 authors.workspace = true
@@ -12,14 +12,17 @@ categories = ["api-bindings", "development-tools::ffi"]
 readme = "README.md"
 
 [dependencies]
-bridgerust-macros = { path = "../bridgerust-macros", version = "0.1.1" }
+bridgerust-macros = { path = "../bridgerust-macros", version = "0.1.2" }
 
 # Optional dependencies for actual bindings
 pyo3 = { version = "0.27", optional = true, features = ["extension-module"] }
 pyo3-async-runtimes = { version = "0.27", optional = true, features = ["tokio-runtime"] }
-napi = { version = "3", optional = true, features = ["default"] }
+napi = { version = "3", optional = true, features = ["default", "serde-json"] }
 napi-derive = { version = "3", optional = true }
 futures = "0.3.31"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.147"
+anyhow = "1.0.100"
 
 [features]
 default = []

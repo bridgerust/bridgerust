@@ -1139,7 +1139,7 @@ dependencies = [
 
 [[package]]
 name = "bridge"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "clap",
@@ -1331,14 +1331,17 @@ dependencies = [
 
 [[package]]
 name = "bridgerust"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
+ "anyhow",
  "bridgerust-macros",
  "futures",
  "napi",
  "napi-derive",
  "pyo3",
  "pyo3-async-runtimes",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -1363,7 +1366,7 @@ dependencies = [
 
 [[package]]
 name = "bridgerust-macros"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "bridgerust",
  "proc-macro2",

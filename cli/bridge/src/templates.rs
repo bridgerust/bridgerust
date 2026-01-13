@@ -26,7 +26,7 @@ license = "MIT OR Apache-2.0"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-bridgerust = {{ path = "../../crates/bridgerust", version = "0.1" }}
+bridgerust = {{ path = "../../crates/bridgerust", version = "0.1.2" }}
 
 [features]
 default = []
@@ -41,6 +41,8 @@ features = ["extension-module"]
 [dependencies.napi]
 version = "3"
 optional = true
+features = ["serde-json"]
+
 
 [dependencies.napi-derive]
 version = "3"
@@ -50,18 +52,30 @@ optional = true
     );
     fs::write(project_dir.join("Cargo.toml"), cargo_toml)?;
 
-    let lib_rs = r#"use bridgerust::export;
+    let module_name = name.replace("-", "_");
+    let lib_rs = format!(
+        r#"use bridgerust::export;
 
 #[export]
-pub fn greet(name: String) -> String {
-    format!("Hello, {}!", name)
-}
+pub fn greet(name: String) -> String {{
+    format!("Hello, {{}}!", name)
+}}
 
 #[export]
-pub fn add(a: i32, b: i32) -> i32 {
+pub fn add(a: i32, b: i32) -> i32 {{
     a + b
-}
-"#;
+}}
+
+#[cfg(feature = "python")]
+#[bridgerust::pyo3::pymodule]
+fn {}(m: &bridgerust::pyo3::Bound<'_, bridgerust::pyo3::types::PyModule>) -> bridgerust::pyo3::PyResult<()> {{
+    m.add_function(bridgerust::pyo3::wrap_pyfunction!(greet, m)?)?;
+    m.add_function(bridgerust::pyo3::wrap_pyfunction!(add, m)?)?;
+    Ok(())
+}}
+"#,
+        module_name
+    );
     fs::write(project_dir.join("src/lib.rs"), lib_rs)?;
 
     let config_toml = format!(
