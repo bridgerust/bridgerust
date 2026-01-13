@@ -51,6 +51,18 @@ impl VectorDatabase for MockDatabase {
     ) -> Result<()> {
         Ok(())
     }
+
+    async fn scroll(
+        &self,
+        _collection: &str,
+        _offset: Option<String>,
+        _limit: usize,
+    ) -> Result<bridge_embex::types::ScrollResponse> {
+        Ok(bridge_embex::types::ScrollResponse {
+            points: vec![],
+            next_offset: None,
+        })
+    }
 }
 
 #[tokio::test]

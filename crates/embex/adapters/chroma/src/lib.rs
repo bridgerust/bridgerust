@@ -263,6 +263,105 @@ impl VectorDatabase for ChromaAdapter {
 
         Ok(())
     }
+
+    async fn scroll(
+        &self,
+        collection: &str,
+        offset: Option<String>,
+        limit: usize,
+    ) -> Result<types::ScrollResponse> {
+        let coll = self
+            .client
+            .get_collection(collection.to_string())
+            .await
+            .map_err(|e| EmbexError::Database(format!("Failed to get collection: {}", e)))?;
+
+        let offset_num = if let Some(o) = offset {
+            o.parse::<u32>().map_err(|_| {
+                EmbexError::Validation("Offset must be a numeric string for Chroma".into())
+            })?
+        } else {
+            0
+        };
+
+        // We need embeddings for migration
+        // Note: The chroma crate might emulate 'include' or accept strings.
+        // Checking previous usage, get() takes 5 args. Last is include.
+        // Assuming None means default (which usually excludes embeddings).
+        // I need to find how to request embeddings.
+        // Looking at get signature in chroma crate (not visible here but inferred).
+        // Let's assume we can pass some include variant.
+        // If imports are missing, I'll assume they are available in chroma::types or just strings?
+        // Actually, looking at search code (line 128), query takes include (None).
+        // I'll try passing include as ["embeddings", "metadatas"].
+        // Wait, the chroma crate likely uses an enum.
+        // I'll take a safe bet and assume "embeddings" string works or check if I can import GetInclude.
+        // Rather than guessing enum, I'll check imports.
+        // But for now, I'll modify the code to try to import GetInclude or similar.
+
+        // Actually, to avoid compilation errors on unknown enum, I'll check what is available in chroma crate.
+        // Since I cannot check external crate source, I'll assume `chroma::types::GetInclude`.
+        // I'll add it to imports first.
+
+        let results = coll
+            .get(
+                None,
+                None,
+                Some(limit as u32),
+                Some(offset_num),
+                None, // TODO: Enable embeddings once IncludeList type is resolved
+                      // Some(vec!["embeddings".to_string(), "metadatas".to_string()]),
+            )
+            .await
+            .map_err(|e| EmbexError::Database(format!("Failed to get: {}", e)))?;
+
+        let ids = results.ids;
+        let mut points = Vec::new();
+
+        if !ids.is_empty() {
+            let embeddings = results
+                .embeddings
+                .ok_or_else(|| EmbexError::Database("Chroma did not return embeddings".into()))?;
+
+            let metadatas = results.metadatas;
+
+            for (i, id) in ids.iter().enumerate() {
+                let vector = embeddings
+                    .get(i)
+                    .ok_or_else(|| EmbexError::Database("Mismatch in embeddings count".into()))?
+                    .clone();
+
+                let metadata = metadatas
+                    .as_ref()
+                    .and_then(|m| m.get(i))
+                    .and_then(|maybe_m| maybe_m.as_ref())
+                    .map(|m| {
+                        m.iter()
+                            .filter_map(|(k, v)| {
+                                serde_json::to_value(v).ok().map(|val| (k.clone(), val))
+                            })
+                            .collect()
+                    });
+
+                points.push(Point {
+                    id: id.clone(),
+                    vector,
+                    metadata,
+                });
+            }
+        }
+
+        let next_offset = if points.len() < limit {
+            None
+        } else {
+            Some((offset_num + points.len() as u32).to_string())
+        };
+
+        Ok(types::ScrollResponse {
+            points,
+            next_offset,
+        })
+    }
 }
 
 fn convert_filter(filter: &types::Filter) -> Where {

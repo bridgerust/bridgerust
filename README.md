@@ -2,14 +2,12 @@
 
 <div align="center">
 
-[![PyPI Downloads](https://img.shields.io/pypi/dm/embex?label=PyPI%20downloads)](https://pypi.org/project/embex/)
+[![PyPI Downloads](<https://img.shields.io/badge/dynamic/xml?url=https%3A%2F%2Fstatic.pepy.tech%2Fbadge%2Fembex%2Fmonth&query=%2F%2F*%5Blocal-name()%20%3D%20%27text%27%5D%5Blast()%5D&label=PyPI%20downloads&suffix=%2Fmonth&color=blue>)](https://pepy.tech/projects/embex)
 [![npm Downloads](https://img.shields.io/npm/dm/@bridgerust/embex?label=npm%20downloads)](https://www.npmjs.com/package/@bridgerust/embex)
 [![GitHub Stars](https://img.shields.io/github/stars/bridgerust/bridgerust?style=social)](https://github.com/bridgerust/bridgerust)
 [![Discord](https://img.shields.io/badge/Discord-Join%20Server-5865F2?logo=discord&logoColor=white)](https://discord.gg/ZvNAeaWN)
 
-**7,000+ PyPI downloads • 2,000+ npm downloads • First 2 weeks**
-
-[Why Embex?](#the-problem) • [Quick Start](#get-started-in-60-seconds) • [Docs](https://bridgerust.dev/embex) • [Discord](https://discord.gg/ZvNAeaWN) • [Examples](#what-developers-are-building)
+[Why Embex?](#the-problem) - [Quick Start](#get-started-in-60-seconds) - [Docs](https://bridgerust.dev/embex) - [Discord](https://discord.gg/ZvNAeaWN) - [Examples](#what-developers-are-building)
 
 </div>
 

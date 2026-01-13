@@ -271,6 +271,90 @@ impl VectorDatabase for LanceDBAdapter {
 
         Ok(())
     }
+
+    #[tracing::instrument(skip(self), fields(collection = %collection, limit = limit, provider = "lancedb"))]
+    async fn scroll(
+        &self,
+        collection: &str,
+        offset: Option<String>,
+        limit: usize,
+    ) -> Result<bridge_embex_core::types::ScrollResponse> {
+        let table = self
+            .connection
+            .open_table(collection)
+            .execute()
+            .await
+            .map_err(|e| EmbexError::Database(format!("Failed to open table: {}", e)))?;
+
+        // LanceDB uses numeric offset, so we parse offset string as usize
+        let offset_num: usize = offset.as_ref().and_then(|s| s.parse().ok()).unwrap_or(0);
+
+        let mut query = table.query();
+        query = query.limit(limit).offset(offset_num);
+
+        let mut stream = query
+            .execute()
+            .await
+            .map_err(|e| EmbexError::Database(format!("Failed to execute query: {}", e)))?;
+
+        let mut points = Vec::new();
+
+        while let Some(batch_result) = stream.next().await {
+            let batch = batch_result
+                .map_err(|e| EmbexError::Database(format!("Failed to read batch: {}", e)))?;
+
+            let id_col = batch
+                .column_by_name("id")
+                .and_then(|c| c.as_any().downcast_ref::<StringArray>());
+            let vector_col = batch.column_by_name("vector");
+            let metadata_col = batch
+                .column_by_name("metadata")
+                .and_then(|c| c.as_any().downcast_ref::<StringArray>());
+
+            for i in 0..batch.num_rows() {
+                let id = id_col.map(|c| c.value(i).to_string()).unwrap_or_default();
+
+                let vector: Vec<f32> = vector_col
+                    .and_then(|c| c.as_any().downcast_ref::<FixedSizeListArray>())
+                    .map(|arr| {
+                        let values = arr.value(i);
+                        values
+                            .as_any()
+                            .downcast_ref::<arrow_array::Float32Array>()
+                            .map(|a| a.values().to_vec())
+                            .unwrap_or_default()
+                    })
+                    .unwrap_or_default();
+
+                let metadata: Option<HashMap<String, serde_json::Value>> =
+                    metadata_col.and_then(|c| {
+                        if c.is_null(i) {
+                            None
+                        } else {
+                            serde_json::from_str(c.value(i)).ok()
+                        }
+                    });
+
+                points.push(Point {
+                    id,
+                    vector,
+                    metadata,
+                });
+            }
+        }
+
+        // If we got `limit` points, there might be more
+        let next_offset = if points.len() == limit {
+            Some((offset_num + limit).to_string())
+        } else {
+            None
+        };
+
+        Ok(bridge_embex_core::types::ScrollResponse {
+            points,
+            next_offset,
+        })
+    }
 }
 
 fn convert_filter(filter: &bridge_embex_core::types::Filter) -> String {

@@ -182,7 +182,7 @@ struct UpsertRequest {
     namespace: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 struct PineconeVector {
     id: String,
     values: Vec<f32>,
@@ -484,6 +484,132 @@ impl VectorDatabase for PineconeAdapter {
         }
 
         Ok(())
+    }
+
+    async fn scroll(
+        &self,
+        collection: &str,
+        offset: Option<String>,
+        limit: usize,
+    ) -> Result<bridge_embex_core::types::ScrollResponse> {
+        let host = self.get_index_host(collection).await?;
+
+        // 1. List IDs
+        // GET /vectors/list?limit={limit}&paginationToken={offset}&namespace={namespace}
+        let mut list_url = format!("https://{}/vectors/list?limit={}", host, limit);
+        if !self.namespace.is_empty() {
+            list_url.push_str(&format!("&namespace={}", self.namespace));
+        }
+        if let Some(token) = &offset {
+            list_url.push_str(&format!("&paginationToken={}", token));
+        }
+
+        let list_res = self
+            .http
+            .get(&list_url)
+            .headers(self.data_headers())
+            .send()
+            .await
+            .map_err(|e| EmbexError::Database(format!("HTTP error (list): {}", e)))?;
+
+        if !list_res.status().is_success() {
+            let status = list_res.status();
+            let text = list_res.text().await.unwrap_or_default();
+            return Err(EmbexError::Database(format!(
+                "List failed ({:?}): {}",
+                status, text
+            )));
+        }
+
+        #[derive(Deserialize)]
+        struct ListResponse {
+            vectors: Option<Vec<ListVector>>,
+            pagination: Option<Pagination>,
+        }
+        #[derive(Deserialize)]
+        struct ListVector {
+            id: String,
+        }
+        #[derive(Deserialize)]
+        struct Pagination {
+            next: String,
+        }
+
+        let list_body: ListResponse = list_res
+            .json()
+            .await
+            .map_err(|e| EmbexError::Database(format!("Parse list error: {}", e)))?;
+
+        let ids: Vec<String> = list_body
+            .vectors
+            .unwrap_or_default()
+            .into_iter()
+            .map(|v| v.id)
+            .collect();
+
+        if ids.is_empty() {
+            return Ok(bridge_embex_core::types::ScrollResponse {
+                points: vec![],
+                next_offset: None,
+            });
+        }
+
+        // 2. Fetch Details
+        // GET /vectors/fetch?ids=...&namespace=...
+        let ids_param = ids.join(",");
+        let mut fetch_url = format!("https://{}/vectors/fetch?ids={}", host, ids_param);
+        if !self.namespace.is_empty() {
+            fetch_url.push_str(&format!("&namespace={}", self.namespace));
+        }
+
+        let fetch_res = self
+            .http
+            .get(&fetch_url)
+            .headers(self.data_headers())
+            .send()
+            .await
+            .map_err(|e| EmbexError::Database(format!("HTTP error (fetch): {}", e)))?;
+
+        if !fetch_res.status().is_success() {
+            let text = fetch_res.text().await.unwrap_or_default();
+            return Err(EmbexError::Database(format!("Fetch failed: {}", text)));
+        }
+
+        #[derive(Deserialize)]
+        struct FetchResponse {
+            vectors: HashMap<String, PineconeVector>,
+        }
+
+        let fetch_body: FetchResponse = fetch_res
+            .json()
+            .await
+            .map_err(|e| EmbexError::Database(format!("Parse fetch error: {}", e)))?;
+
+        let mut points = Vec::new();
+        // Preserve order of IDs from list?
+        for id in ids {
+            if let Some(pv) = fetch_body.vectors.get(&id) {
+                let metadata = pv.metadata.as_ref().and_then(|v| {
+                    serde_json::from_value::<HashMap<String, serde_json::Value>>(v.clone()).ok()
+                });
+
+                points.push(Point {
+                    id: pv.id.clone(),
+                    vector: pv.values.clone(),
+                    metadata,
+                });
+            }
+        }
+
+        let next_offset = list_body
+            .pagination
+            .map(|p| p.next)
+            .filter(|s| !s.is_empty());
+
+        Ok(bridge_embex_core::types::ScrollResponse {
+            points,
+            next_offset,
+        })
     }
 }
 

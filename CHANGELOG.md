@@ -5,9 +5,15 @@ All notable changes to BridgeRust projects will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.17] - 2026-01-13
 
-## [0.1.1] - 2026-01-05
+### Added
+
+- **Data Migration**: Added `DataMigrator` utility for moving data between providers.
+- **Pagination**: Added `scroll()` method to `Collection` and `VectorDatabase` trait.
+- **Adapters**: Implemented `scroll` support for all adapters (Chroma, Pinecone, Milvus, Weaviate, PgVector, LanceDB, Qdrant).
+
+## [0.1.16] - 2026-01-05
 
 ### Fixed
 

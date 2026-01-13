@@ -52,3 +52,20 @@ Search for similar vectors.
 #### `delete_collection()`
 
 Delete the collection.
+
+#### `async scroll(offset: Optional[str] = None, limit: int = 100) -> ScrollResponse`
+
+Paginated export of points.
+
+## DataMigrator
+
+Utility for migrating data between providers.
+
+```python
+from embex import DataMigrator
+
+migrator = DataMigrator(source_client, dest_client)
+
+# Migrate with auto-inferred schema
+await migrator.migrate_simple("source_col", "dest_col")
+```

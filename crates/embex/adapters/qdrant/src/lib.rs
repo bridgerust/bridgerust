@@ -283,6 +283,80 @@ impl VectorDatabase for QdrantAdapter {
 
         Ok(())
     }
+
+    #[tracing::instrument(skip(self), fields(collection = %collection, limit = limit, provider = "qdrant"))]
+    async fn scroll(
+        &self,
+        collection: &str,
+        offset: Option<String>,
+        limit: usize,
+    ) -> Result<types::ScrollResponse> {
+        use qdrant_client::qdrant::ScrollPointsBuilder;
+
+        let mut builder = ScrollPointsBuilder::new(collection)
+            .limit(limit as u32)
+            .with_payload(true)
+            .with_vectors(true);
+
+        // Set offset if provided (UUID string)
+        if let Some(offset_id) = offset {
+            builder = builder.offset(qdrant_client::qdrant::PointId::from(offset_id));
+        }
+
+        let result = self
+            .client
+            .scroll(builder)
+            .await
+            .map_err(|e| EmbexError::Database(e.to_string()))?;
+
+        let points: Vec<Point> = result
+            .result
+            .into_iter()
+            .map(|p| {
+                let id = p
+                    .id
+                    .and_then(|id| id.point_id_options)
+                    .map(|opt| match opt {
+                        qdrant_client::qdrant::point_id::PointIdOptions::Num(n) => n.to_string(),
+                        qdrant_client::qdrant::point_id::PointIdOptions::Uuid(u) => u,
+                    })
+                    .unwrap_or_default();
+
+                #[allow(deprecated)]
+                let vector = p
+                    .vectors
+                    .and_then(|v| match v.vectors_options {
+                        Some(qdrant_client::qdrant::vectors_output::VectorsOptions::Vector(v)) => {
+                            Some(v.data)
+                        }
+                        _ => None,
+                    })
+                    .unwrap_or_default();
+
+                let metadata: Option<std::collections::HashMap<String, serde_json::Value>> =
+                    Some(p.payload.into_iter().map(|(k, v)| (k, v.into())).collect());
+
+                Point {
+                    id,
+                    vector,
+                    metadata,
+                }
+            })
+            .collect();
+
+        // next_offset from Qdrant scroll response
+        let next_offset = result.next_page_offset.and_then(|pid| {
+            pid.point_id_options.map(|opt| match opt {
+                qdrant_client::qdrant::point_id::PointIdOptions::Num(n) => n.to_string(),
+                qdrant_client::qdrant::point_id::PointIdOptions::Uuid(u) => u,
+            })
+        });
+
+        Ok(types::ScrollResponse {
+            points,
+            next_offset,
+        })
+    }
 }
 
 fn convert_filter(filter: &types::Filter) -> qdrant_client::qdrant::Filter {

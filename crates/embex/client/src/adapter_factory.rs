@@ -125,7 +125,9 @@ impl AdapterFactory {
     pub async fn create_async(config: &EmbexConfig) -> Result<Arc<dyn VectorDatabase>> {
         #[cfg(feature = "lancedb")]
         if config.provider == "lancedb" {
-            return Ok(Arc::new(LanceDBAdapter::new(&config.url).await?));
+            let adapter: Arc<dyn VectorDatabase> =
+                Arc::new(LanceDBAdapter::new(&config.url).await?);
+            return Ok(adapter);
         }
 
         #[cfg(feature = "pgvector")]
@@ -135,21 +137,21 @@ impl AdapterFactory {
                 .get("pool_size")
                 .and_then(|s| s.parse().ok())
                 .or(Some(config.pool_size));
-            return Ok(Arc::new(
-                PgVectorAdapter::new(&config.url, pool_size).await?,
-            ));
+            let adapter: Arc<dyn VectorDatabase> =
+                Arc::new(PgVectorAdapter::new(&config.url, pool_size).await?);
+            return Ok(adapter);
         }
 
         #[cfg(feature = "milvus")]
         if config.provider == "milvus" {
             let token = config.api_key.as_deref();
-            return Ok(Arc::new(
+            let adapter: Arc<dyn VectorDatabase> = Arc::new(
                 MilvusAdapter::new_with_pool_size(&config.url, token, Some(config.pool_size))
                     .await?,
-            ));
+            );
+            return Ok(adapter);
         }
 
-        // Fallback to sync init for other providers
         Self::create(config)
     }
 }

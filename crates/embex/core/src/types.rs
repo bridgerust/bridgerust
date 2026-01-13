@@ -246,6 +246,15 @@ pub struct MetadataUpdate {
     pub updates: HashMap<String, Value>,
 }
 
+/// Response from scroll/scan operation for paginated point retrieval.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ScrollResponse {
+    /// Points retrieved in this batch
+    pub points: Vec<Point>,
+    /// Cursor for next batch. None means no more data.
+    pub next_offset: Option<String>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

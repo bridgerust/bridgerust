@@ -189,6 +189,11 @@ jobs:
               }
               EmbexClient = pkg.EmbexClient;
               console.log('[OK] Test 1: Import successful');
+              // Check DataMigrator
+              if (!pkg.DataMigrator) {
+                 throw new Error(`Package imported but DataMigrator not found.`);
+              }
+              console.log('[OK] DataMigrator exported');
             }
           } catch (error) {
             console.error('[ERR] Test 1 failed:', error.message);
@@ -217,6 +222,7 @@ jobs:
             console.log('   - Has insert method:', typeof collection.insert === 'function');
             console.log('   - Has search method:', typeof collection.search === 'function');
             console.log('   - Has query method:', typeof collection.query === 'function');
+            console.log('   - Has scroll method:', typeof collection.scroll === 'function');
           } catch (error) {
             console.error('[ERR] Test 3 failed:', error.message);
             process.exit(1);
@@ -400,12 +406,13 @@ jobs:
 
           # Test 1: Import works
           try:
-              from embex import EmbexClient, Point, Collection, SearchResult
+              from embex import EmbexClient, Point, Collection, SearchResult, DataMigrator
               print('Test 1: Import successful')
               print(f'   - EmbexClient: {EmbexClient}')
               print(f'   - Point: {Point}')
               print(f'   - Collection: {Collection}')
               print(f'   - SearchResult: {SearchResult}')
+              print(f'   - DataMigrator: {DataMigrator}')
           except ImportError as e:
               print(f'Test 1 failed: Import error - {e}')
               sys.exit(1)
@@ -440,6 +447,7 @@ jobs:
               print(f'   - Has insert method: {hasattr(collection, "insert")}')
               print(f'   - Has search method: {hasattr(collection, "search")}')
               print(f'   - Has query method: {hasattr(collection, "query")}')
+              print(f'   - Has scroll method: {hasattr(collection, "scroll")}')
           except Exception as e:
               print(f'Test 4 failed: {e}')
               sys.exit(1)

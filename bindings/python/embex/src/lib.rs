@@ -3,7 +3,10 @@ use bridge_embex::Migration;
 use bridge_embex::MigrationManager;
 use bridge_embex::VectorDatabase;
 use bridge_embex::config::EmbexConfig;
-use bridge_embex::types::{Filter, Point, SearchResponse as RustSearchResponse};
+use bridge_embex::types::{
+    CollectionSchema, DistanceMetric, Filter, Point, SearchResponse as RustSearchResponse,
+};
+use bridge_embex::{DataMigrator as RustDataMigrator, MigrationProgress as RustMigrationProgress};
 use pyo3::IntoPyObjectExt;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyIterator, PyList};
@@ -383,6 +386,68 @@ impl SearchBuilder {
     }
 }
 
+#[pyclass]
+struct QueryBuilder {
+    pub inner: Option<bridge_embex::QueryBuilder>,
+}
+
+#[pymethods]
+impl QueryBuilder {
+    fn limit(slf: PyRefMut<'_, Self>, limit: usize) -> PyRefMut<'_, Self> {
+        let mut slf = slf;
+        if let Some(inner) = slf.inner.take() {
+            slf.inner = Some(inner.limit(limit));
+        }
+        slf
+    }
+
+    fn offset(slf: PyRefMut<'_, Self>, offset: usize) -> PyRefMut<'_, Self> {
+        let mut slf = slf;
+        if let Some(inner) = slf.inner.take() {
+            slf.inner = Some(inner.offset(offset));
+        }
+        slf
+    }
+
+    fn include_vector(slf: PyRefMut<'_, Self>, include: bool) -> PyRefMut<'_, Self> {
+        let mut slf = slf;
+        if let Some(inner) = slf.inner.take() {
+            slf.inner = Some(inner.include_vector(include));
+        }
+        slf
+    }
+
+    fn include_metadata(slf: PyRefMut<'_, Self>, include: bool) -> PyRefMut<'_, Self> {
+        let mut slf = slf;
+        if let Some(inner) = slf.inner.take() {
+            slf.inner = Some(inner.include_metadata(include));
+        }
+        slf
+    }
+}
+
+#[pyclass]
+struct MetadataUpdate {
+    pub inner: bridge_embex::types::MetadataUpdate,
+}
+
+#[pymethods]
+impl MetadataUpdate {
+    #[new]
+    fn new(py: Python, id: String, metadata: HashMap<String, Py<PyAny>>) -> PyResult<Self> {
+        let mut meta_map = HashMap::new();
+        for (k, v) in metadata {
+            meta_map.insert(k, py_to_json(py, &v)?);
+        }
+        Ok(Self {
+            inner: bridge_embex::types::MetadataUpdate {
+                id,
+                updates: meta_map,
+            },
+        })
+    }
+}
+
 #[pymethods]
 impl Collection {
     /// Insert points into the collection.
@@ -464,6 +529,20 @@ impl Collection {
         })
     }
 
+    fn update_metadata<'p>(
+        &self,
+        py: Python<'p>,
+        updates: Vec<PyRef<'p, MetadataUpdate>>,
+    ) -> PyResult<Bound<'p, PyAny>> {
+        let inner = self.inner.clone();
+        let rust_updates: Vec<bridge_embex::types::MetadataUpdate> =
+            updates.iter().map(|u| u.inner.clone()).collect();
+
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            inner.update_metadata(rust_updates).await.map_err(to_py_err)
+        })
+    }
+
     /// Search for similar vectors.
     ///
     ///Args:
@@ -500,6 +579,33 @@ impl Collection {
 
             Python::attach(|py| convert_search_response(py, res))
         })
+    }
+
+    fn query<'p>(
+        &self,
+        py: Python<'p>,
+        builder: PyRefMut<'p, QueryBuilder>,
+    ) -> PyResult<Bound<'p, PyAny>> {
+        let mut builder = builder;
+        let inner = builder.inner.take().ok_or_else(|| {
+            PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("QueryBuilder already used")
+        })?;
+
+        let collection_inner = self.inner.clone();
+
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            collection_inner
+                .query(inner)
+                .await
+                .map_err(to_py_err)
+                .and_then(|res| Python::attach(|py| convert_search_response(py, res)))
+        })
+    }
+
+    fn build_query(&self) -> QueryBuilder {
+        QueryBuilder {
+            inner: Some(self.inner.build_query()),
+        }
     }
 
     fn build_search(&self, vector: Vec<f32>) -> SearchBuilder {
@@ -648,6 +754,50 @@ impl Collection {
             Ok(())
         })
     }
+
+    /// Scroll through all points in the collection with pagination.
+    ///
+    /// Args:
+    ///     offset: Optional offset from previous scroll (None for first page).
+    ///     limit: Number of points to return per page.
+    ///
+    /// Returns:
+    ///     ScrollResponse with points and next_offset.
+    #[pyo3(signature = (offset=None, limit=100))]
+    fn scroll<'p>(
+        &self,
+        py: Python<'p>,
+        offset: Option<String>,
+        limit: usize,
+    ) -> PyResult<Bound<'p, PyAny>> {
+        let inner = self.inner.clone();
+
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            let res = inner.scroll(offset, limit).await.map_err(to_py_err)?;
+
+            Python::attach(|py| {
+                let points: Vec<EmbexPoint> = res
+                    .points
+                    .into_iter()
+                    .map(|p| {
+                        let metadata = p
+                            .metadata
+                            .map(|m| m.into_iter().map(|(k, v)| (k, json_to_py(py, v))).collect());
+                        EmbexPoint {
+                            id: p.id,
+                            vector: p.vector,
+                            metadata,
+                        }
+                    })
+                    .collect();
+
+                Ok(ScrollResponse {
+                    points,
+                    next_offset: res.next_offset,
+                })
+            })
+        })
+    }
 }
 
 // Convert PyObject to serde_json::Value
@@ -753,6 +903,172 @@ fn convert_search_response(py: Python, res: RustSearchResponse) -> PyResult<Sear
     })
 }
 
+/// Response from scroll() method.
+#[pyclass]
+struct ScrollResponse {
+    points: Vec<EmbexPoint>,
+    next_offset: Option<String>,
+}
+
+#[pymethods]
+impl ScrollResponse {
+    #[getter]
+    fn points(&self) -> Vec<EmbexPoint> {
+        Python::attach(|py| {
+            self.points
+                .iter()
+                .map(|p| EmbexPoint {
+                    id: p.id.clone(),
+                    vector: p.vector.clone(),
+                    metadata: p.metadata.as_ref().map(|m| {
+                        let mut new_map = HashMap::with_capacity(m.len());
+                        for (k, v) in m {
+                            new_map.insert(k.clone(), v.clone_ref(py));
+                        }
+                        new_map
+                    }),
+                })
+                .collect()
+        })
+    }
+
+    #[getter]
+    fn next_offset(&self) -> Option<String> {
+        self.next_offset.clone()
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "ScrollResponse(points={}, next_offset={:?})",
+            self.points.len(),
+            self.next_offset
+        )
+    }
+
+    fn __len__(&self) -> usize {
+        self.points.len()
+    }
+}
+
+/// Result of a completed migration.
+#[pyclass]
+#[derive(Clone)]
+struct PyMigrationResult {
+    #[pyo3(get)]
+    points_migrated: usize,
+    #[pyo3(get)]
+    elapsed_ms: u64,
+}
+
+#[pymethods]
+impl PyMigrationResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "MigrationResult(points_migrated={}, elapsed_ms={})",
+            self.points_migrated, self.elapsed_ms
+        )
+    }
+}
+
+/// Migrate data between vector databases.
+///
+/// Example:
+///     source = await EmbexClient.new_async("lancedb", "./source")
+///     dest = EmbexClient("qdrant", "http://localhost:6334")
+///     migrator = DataMigrator(source, dest)
+///     result = await migrator.migrate("products", "products", dimension=128, batch_size=1000)
+#[pyclass]
+struct DataMigrator {
+    source_db: Arc<dyn VectorDatabase>,
+    dest_db: Arc<dyn VectorDatabase>,
+}
+
+#[pymethods]
+impl DataMigrator {
+    #[new]
+    fn new(source: &EmbexClient, dest: &EmbexClient) -> Self {
+        Self {
+            source_db: source.inner.db(),
+            dest_db: dest.inner.db(),
+        }
+    }
+
+    /// Migrate a collection from source to destination.
+    #[pyo3(signature = (source_collection, dest_collection, dimension, batch_size=None, distance=None))]
+    fn migrate<'p>(
+        &self,
+        py: Python<'p>,
+        source_collection: String,
+        dest_collection: String,
+        dimension: usize,
+        batch_size: Option<usize>,
+        distance: Option<String>,
+    ) -> PyResult<Bound<'p, PyAny>> {
+        let migrator = RustDataMigrator::new(self.source_db.clone(), self.dest_db.clone());
+
+        let batch_size = batch_size.unwrap_or(1000);
+        let metric = match distance.as_deref().unwrap_or("cosine") {
+            "cosine" => DistanceMetric::Cosine,
+            "euclidean" => DistanceMetric::Euclidean,
+            "dot" => DistanceMetric::Dot,
+            _ => {
+                return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                    "Invalid distance metric. Use 'cosine', 'euclidean', or 'dot'",
+                ));
+            }
+        };
+
+        let schema = CollectionSchema {
+            name: dest_collection.clone(),
+            dimension,
+            metric,
+        };
+
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            let result = migrator
+                .migrate::<fn(RustMigrationProgress)>(
+                    &source_collection,
+                    &dest_collection,
+                    schema,
+                    batch_size,
+                    None,
+                )
+                .await
+                .map_err(to_py_err)?;
+
+            Ok(PyMigrationResult {
+                points_migrated: result.points_migrated,
+                elapsed_ms: result.elapsed_ms,
+            })
+        })
+    }
+
+    /// Migrate a collection using auto-detected settings.
+    #[pyo3(signature = (source_collection, dest_collection, batch_size=None))]
+    fn migrate_simple<'p>(
+        &self,
+        py: Python<'p>,
+        source_collection: String,
+        dest_collection: String,
+        batch_size: Option<usize>,
+    ) -> PyResult<Bound<'p, PyAny>> {
+        let migrator = RustDataMigrator::new(self.source_db.clone(), self.dest_db.clone());
+        let batch_size = batch_size.unwrap_or(1000);
+
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            let result = migrator
+                .migrate_simple(&source_collection, &dest_collection, batch_size)
+                .await
+                .map_err(to_py_err)?;
+
+            Ok(PyMigrationResult {
+                points_migrated: result.points_migrated,
+                elapsed_ms: result.elapsed_ms,
+            })
+        })
+    }
+}
+
 #[pyfunction]
 fn cli_main<'p>(py: Python<'p>, args: Vec<String>) -> PyResult<Bound<'p, PyAny>> {
     pyo3_async_runtimes::tokio::future_into_py(py, async move {
@@ -768,8 +1084,13 @@ fn embex(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Collection>()?;
     m.add_class::<SearchResult>()?;
     m.add_class::<SearchResponse>()?;
+    m.add_class::<ScrollResponse>()?;
     m.add_class::<SearchBuilder>()?;
+    m.add_class::<QueryBuilder>()?;
+    m.add_class::<MetadataUpdate>()?;
     m.add_class::<EmbexPoint>()?;
+    m.add_class::<DataMigrator>()?;
+    m.add_class::<PyMigrationResult>()?;
     m.add_function(wrap_pyfunction!(cli_main, m)?)?;
     m.add("EmbexError", py.get_type::<EmbexError>())?;
     m.add("ConfigError", py.get_type::<EmbexConfigError>())?;

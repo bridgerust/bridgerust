@@ -35,6 +35,14 @@ export declare class Collection {
    */
   createAuto(dimension?: number | undefined | null, distance?: string | undefined | null): Promise<void>
   insertBatch(points: Array<Point>, batchSize?: number | undefined | null, parallel?: number | undefined | null): Promise<void>
+  /** Scroll through points in the collection (paginated export). */
+  scroll(offset?: string | undefined | null, limit?: number | undefined | null): Promise<ScrollResponse>
+}
+
+export declare class DataMigrator {
+  constructor(source: EmbexClient, dest: EmbexClient)
+  migrate(sourceCollection: string, destCollection: string, dimension: number, batchSize?: number | undefined | null, distance?: string | undefined | null): Promise<MigrationResult>
+  migrateSimple(sourceCollection: string, destCollection: string, batchSize?: number | undefined | null): Promise<MigrationResult>
 }
 
 /** Main client for the Embex vector database. */
@@ -105,11 +113,21 @@ export interface MigrationInput {
   downOperations?: any
 }
 
+export interface MigrationResult {
+  pointsMigrated: number
+  elapsedMs: number
+}
+
 /** A point in the vector database. */
 export interface Point {
   id: string
   vector: Array<number>
   metadata?: Record<string, any>
+}
+
+export interface ScrollResponse {
+  points: Array<Point>
+  nextOffset?: string
 }
 
 export interface SearchOptions {

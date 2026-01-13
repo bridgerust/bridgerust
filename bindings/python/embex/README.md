@@ -96,6 +96,27 @@ client = EmbexClient(
 )
 ```
 
+## 🔄 Data Migration
+
+Move data between providers effortlessly using the built-in `DataMigrator`.
+
+```python
+from embex import DataMigrator, EmbexClient
+
+# 1. Setup clients
+source = await EmbexClient.new_async("lancedb", "./local_data")
+dest = EmbexClient("qdrant", "http://prod-db:6333")
+
+# 2. Migrate
+migrator = DataMigrator(source, dest)
+result = await migrator.migrate_simple(
+    source_collection="products",
+    dest_collection="products_v2"
+)
+
+print(f"Migrated {result.points_migrated} points!")
+```
+
 ## 🔗 Resources
 
 - **Full Documentation**: [bridgerust.dev/embex](https://bridgerust.dev/embex/introduction)

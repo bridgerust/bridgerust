@@ -300,9 +300,32 @@ Delete the entire collection.
 
 **Example:**
 
-```typescript
 await collection.deleteCollection();
-```
+
+````
+
+#### `scroll(offset?: string, limit?: number): Promise<ScrollResponse>`
+
+Paginated export of points from the collection.
+
+**Parameters:**
+
+- `offset`: Pagination token (default: undefined for start)
+- `limit`: Number of points to return (default: 100)
+
+**Example:**
+
+```typescript
+// Initial scroll
+let res = await collection.scroll(undefined, 100);
+let points = res.points;
+
+// Continue scrolling
+while (res.nextOffset) {
+  res = await collection.scroll(res.nextOffset);
+  points.push(...res.points);
+}
+````
 
 ## Types
 
@@ -490,6 +513,63 @@ const results = await builder
   })
   .execute();
 ```
+
+## DataMigrator
+
+Utility for migrating data between two Embex clients.
+
+### Constructor
+
+```typescript
+new DataMigrator(
+  source: EmbexClient,
+  destination: EmbexClient
+)
+```
+
+### Methods
+
+#### `migrateSimple(sourceCollection: string, destCollection: string, batchSize?: number): Promise<MigrationResult>`
+
+Simple migration that infers schema from the first point in the source.
+
+**Parameters:**
+
+- `sourceCollection`: Name of source collection
+- `destCollection`: Name of destination collection
+- `batchSize`: Number of points per batch (default: 100)
+
+**Returns:** `Promise<MigrationResult>`
+
+#### `migrate(sourceCollection: string, destCollection: string, dimension: number, batchSize?: number, distance?: string): Promise<MigrationResult>`
+
+Migration with explicit schema creation.
+
+**Parameters:**
+
+- `dimension`: Vector dimension
+- `distance`: Distance metric (default: "cosine")
+
+**Example:**
+
+```typescript
+import { DataMigrator } from "@bridgerust/embex";
+
+const migrator = new DataMigrator(sourceClient, destClient);
+const result = await migrator.migrateSimple("prod_data", "backup_data");
+console.log(
+  `Migrated ${result.pointsMigrated} points in ${result.elapsedMs}ms`
+);
+```
+
+## MigrationResult
+
+Result of a data migration.
+
+### Attributes
+
+- `pointsMigrated: number` - Total points migrated
+- `elapsedMs: number` - Time taken in milliseconds
 
 ## Filters
 

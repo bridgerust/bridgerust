@@ -286,6 +286,74 @@ impl VectorDatabase for PgVectorAdapter {
 
         Ok(())
     }
+
+    async fn scroll(
+        &self,
+        collection: &str,
+        offset: Option<String>,
+        limit: usize,
+    ) -> Result<bridge_embex_core::types::ScrollResponse> {
+        let offset_num = if let Some(o) = offset {
+            o.parse::<i64>().map_err(|_| {
+                EmbexError::Validation("Offset must be a numeric string for PgVector".into())
+            })?
+        } else {
+            0
+        };
+
+        // Ensure we explicitly select columns and order by ID for stable pagination
+        let sql = format!(
+            r#"
+            SELECT id, vector, metadata 
+            FROM "{}" 
+            ORDER BY id 
+            LIMIT $1 OFFSET $2
+            "#,
+            collection
+        );
+
+        let rows = sqlx::query(&sql)
+            .bind(limit as i64)
+            .bind(offset_num)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| EmbexError::Database(format!("Failed to scroll: {}", e)))?;
+
+        let mut points = Vec::new();
+        for row in rows {
+            let id: String = row
+                .try_get("id")
+                .map_err(|e| EmbexError::Database(e.to_string()))?;
+
+            let vector: Vector = row
+                .try_get("vector")
+                .map_err(|e| EmbexError::Database(e.to_string()))?;
+
+            let vector_vec: Vec<f32> = vector.to_vec();
+
+            let metadata: Option<serde_json::Value> = row.try_get("metadata").ok();
+
+            let metadata_map: Option<HashMap<String, serde_json::Value>> =
+                metadata.and_then(|v| serde_json::from_value(v).ok());
+
+            points.push(Point {
+                id,
+                vector: vector_vec,
+                metadata: metadata_map,
+            });
+        }
+
+        let next_offset = if points.len() < limit {
+            None
+        } else {
+            Some((offset_num + points.len() as i64).to_string())
+        };
+
+        Ok(bridge_embex_core::types::ScrollResponse {
+            points,
+            next_offset,
+        })
+    }
 }
 
 fn convert_filter(filter: &bridge_embex_core::types::Filter) -> String {

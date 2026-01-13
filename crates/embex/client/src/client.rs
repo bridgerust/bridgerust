@@ -306,6 +306,25 @@ impl Collection {
 
         Ok(())
     }
+
+    /// Scrolls through all points in the collection with pagination.
+    ///
+    /// This method retrieves points in batches for data export and migration.
+    ///
+    /// # Arguments
+    /// * `offset` - Optional cursor from previous scroll response (None for first page)
+    /// * `limit` - Number of points to return per page
+    ///
+    /// # Returns
+    /// A `ScrollResponse` containing points and an optional `next_offset` for pagination.
+    #[tracing::instrument(skip(self), fields(collection = %self.name, limit))]
+    pub async fn scroll(
+        &self,
+        offset: Option<String>,
+        limit: usize,
+    ) -> Result<bridge_embex_core::types::ScrollResponse> {
+        self.db.scroll(&self.name, offset, limit).await
+    }
 }
 
 pub struct SearchBuilder {

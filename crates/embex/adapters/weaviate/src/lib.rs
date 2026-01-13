@@ -275,6 +275,101 @@ impl VectorDatabase for WeaviateAdapter {
         }
         Ok(())
     }
+
+    async fn scroll(
+        &self,
+        collection: &str,
+        offset: Option<String>,
+        limit: usize,
+    ) -> Result<bridge_embex_core::types::ScrollResponse, EmbexError> {
+        // Use REST API for object retrieval which includes vector and properties
+        // GET /v1/objects?class={className}&limit={limit}&include=vector
+        // Pagination: Use 'after' cursor (UUID) if offset is provided.
+        // offset string represents the UUID of the last object.
+
+        let mut url = format!(
+            "{}/v1/objects?class={}&limit={}&include=vector",
+            self.url, collection, limit
+        );
+
+        if let Some(after_uuid) = offset {
+            url.push_str(&format!("&after={}", after_uuid));
+        }
+
+        let res = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| EmbexError::Connection(e.to_string()))?;
+
+        if !res.status().is_success() {
+            let text = res.text().await.unwrap_or_default();
+            return Err(EmbexError::Database(format!("Scroll failed: {}", text)));
+        }
+
+        let body: serde_json::Value = res
+            .json()
+            .await
+            .map_err(|e| EmbexError::Database(e.to_string()))?;
+
+        // Response format: { "objects": [ ... ], "totalResults": ... }
+        let mut points = Vec::new();
+
+        if let Some(objects) = body.get("objects")
+            && let Some(arr) = objects.as_array()
+        {
+            for item in arr {
+                let id = item
+                    .get("id")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or_default()
+                    .to_string();
+
+                let vector = item
+                    .get("vector")
+                    .and_then(|v| v.as_array())
+                    .map(|arr| {
+                        arr.iter()
+                            .filter_map(|x| x.as_f64().map(|f| f as f32))
+                            .collect()
+                    })
+                    .unwrap_or_default();
+
+                let metadata = item
+                    .get("properties")
+                    .and_then(|v| v.as_object())
+                    .map(|obj| {
+                        let mut map = std::collections::HashMap::new();
+                        for (k, v) in obj {
+                            map.insert(k.clone(), v.clone());
+                        }
+                        map
+                    });
+
+                points.push(Point {
+                    id,
+                    vector,
+                    metadata,
+                });
+            }
+        }
+
+        let next_offset = if let Some(last) = points.last() {
+            if points.len() >= limit {
+                Some(last.id.clone())
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        Ok(bridge_embex_core::types::ScrollResponse {
+            points,
+            next_offset,
+        })
+    }
 }
 
 #[cfg(test)]

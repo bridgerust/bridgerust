@@ -21,4 +21,13 @@ pub trait VectorDatabase: Send + Sync {
 
     /// Update metadata for points
     async fn update_metadata(&self, collection: &str, updates: Vec<MetadataUpdate>) -> Result<()>;
+
+    /// Scroll through all points in a collection for data migration.
+    /// Returns points in batches with a cursor for pagination.
+    async fn scroll(
+        &self,
+        collection: &str,
+        offset: Option<String>,
+        limit: usize,
+    ) -> Result<ScrollResponse>;
 }

@@ -1,6 +1,7 @@
 pub mod adapter_factory;
 pub mod adapters;
 pub mod client;
+pub mod data_migrator;
 pub mod query;
 
 // Re-export core types and traits
@@ -22,3 +23,6 @@ pub use query::QueryBuilder;
 pub mod migration;
 pub use bridge_embex_core::migration::Migration;
 pub use migration::MigrationManager;
+
+// Re-export data migration
+pub use data_migrator::{DataMigrator, MigrationProgress, MigrationResult};

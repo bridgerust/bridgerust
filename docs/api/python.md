@@ -231,6 +231,28 @@ Delete the entire collection.
 await collection.delete_collection()
 ```
 
+#### `scroll(offset: Optional[str] = None, limit: int = 100) -> ScrollResponse`
+
+Paginated export of points from the collection.
+
+**Parameters:**
+
+- `offset`: Pagination token (default: None for start)
+- `limit`: Number of points to return (default: 100)
+
+**Example:**
+
+```python
+# Initial scroll
+res = await collection.scroll(limit=100)
+points = res.points
+
+# Continue scrolling
+while res.next_offset:
+    res = await collection.scroll(offset=res.next_offset)
+    points.extend(res.points)
+```
+
 ## Point
 
 Represents a point in the vector database.
@@ -280,6 +302,15 @@ Result from a search query.
 - `results: List[SearchResult]` - List of search results
 - `aggregations: Dict[str, Any]` - Aggregation results
 
+## ScrollResponse
+
+Result from a scroll operation.
+
+### Attributes
+
+- `points: List[Point]` - List of points
+- `next_offset: Optional[str]` - Offset for next page (None if finished)
+
 ### Methods
 
 #### `dict() -> Dict[str, Any]`
@@ -314,6 +345,61 @@ Individual search result.
 #### `dict() -> Dict[str, Any]`
 
 Convert to dictionary.
+
+## DataMigrator
+
+Utility for migrating data between two Embex clients.
+
+### Constructor
+
+```python
+DataMigrator(
+    source: EmbexClient,
+    destination: EmbexClient
+)
+```
+
+### Methods
+
+#### `migrate_simple(source_collection: str, dest_collection: str, batch_size: int = 100) -> PyMigrationResult`
+
+Simple migration that infers schema from the first point in the source.
+
+**Parameters:**
+
+- `source_collection`: Name of source collection
+- `dest_collection`: Name of destination collection
+- `batch_size`: Number of points per batch (default: 100)
+
+**Returns:** `PyMigrationResult`
+
+#### `migrate(source_collection: str, dest_collection: str, dimension: int, batch_size: int = 100, distance: str = "cosine") -> PyMigrationResult`
+
+Migration with explicit schema creation.
+
+**Parameters:**
+
+- `dimension`: Vector dimension
+- `distance`: Distance metric (default: "cosine")
+
+**Example:**
+
+```python
+from embex import DataMigrator
+
+migrator = DataMigrator(source_client, dest_client)
+result = await migrator.migrate_simple("prod_data", "backup_data")
+print(f"Migrated {result.points_migrated} points in {result.elapsed_ms}ms")
+```
+
+## MigrationResult
+
+Result of a data migration.
+
+### Attributes
+
+- `points_migrated: int` - Total points migrated
+- `elapsed_ms: int` - Time taken in milliseconds
 
 ## Filters
 

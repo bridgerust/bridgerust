@@ -54,3 +54,20 @@ Search for similar vectors. Returns an array of results.
 #### `async deleteCollection()`
 
 Delete the collection.
+
+#### `async scroll(offset?: string, limit?: number)`
+
+Paginated export of points. Returns `{ points: Point[], nextOffset?: string }`.
+
+## DataMigrator
+
+Utility for migrating data between providers.
+
+```javascript
+import { DataMigrator } from "@bridgerust/embex";
+
+const migrator = new DataMigrator(sourceClient, destClient);
+
+// Migrate with auto-inferred schema
+await migrator.migrateSimple("source_col", "dest_col");
+```

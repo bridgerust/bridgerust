@@ -3,6 +3,9 @@ import {
   EmbexClient,
   QueryBuilder,
   SearchBuilder,
+  DataMigrator,
+  ScrollResponse,
+  MigrationResult,
   // @ts-ignore
   cli,
   Point,
@@ -39,4 +42,14 @@ declare module "../native" {
   }
 };
 
-export { Collection, EmbexClient, QueryBuilder, SearchBuilder, cli, Point };
+export {
+  Collection,
+  EmbexClient,
+  QueryBuilder,
+  SearchBuilder,
+  DataMigrator,
+  ScrollResponse,
+  MigrationResult,
+  cli,
+  Point,
+};

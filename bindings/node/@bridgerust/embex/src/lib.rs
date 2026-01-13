@@ -5,8 +5,10 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 use bridge_embex::{
-    config::EmbexConfig, types::Point as RustPoint, EmbexClient as RustClient, Migration,
-    MigrationManager, QueryBuilder as RustQueryBuilder, VectorDatabase,
+    config::EmbexConfig,
+    types::{CollectionSchema, DistanceMetric, Point as RustPoint},
+    DataMigrator as RustDataMigrator, EmbexClient as RustClient, Migration, MigrationManager,
+    MigrationProgress as RustMigrationProgress, QueryBuilder as RustQueryBuilder, VectorDatabase,
 };
 
 use napi_derive::napi;
@@ -225,6 +227,98 @@ pub struct MetadataUpdate {
     pub id: String,
     /// Metadata updates to apply.
     pub updates: HashMap<String, serde_json::Value>,
+}
+
+#[napi(object)]
+pub struct ScrollResponse {
+    pub points: Vec<Point>,
+    pub next_offset: Option<String>,
+}
+
+#[napi(object)]
+pub struct MigrationResult {
+    pub points_migrated: u32,
+    pub elapsed_ms: f64,
+}
+
+#[napi]
+pub struct DataMigrator {
+    source_db: Arc<dyn VectorDatabase>,
+    dest_db: Arc<dyn VectorDatabase>,
+}
+
+#[napi]
+impl DataMigrator {
+    #[napi(constructor)]
+    pub fn new(source: &EmbexClient, dest: &EmbexClient) -> Self {
+        Self {
+            source_db: source.inner.db(),
+            dest_db: dest.inner.db(),
+        }
+    }
+
+    #[napi]
+    pub async fn migrate(
+        &self,
+        source_collection: String,
+        dest_collection: String,
+        dimension: u32,
+        batch_size: Option<u32>,
+        distance: Option<String>,
+    ) -> Result<MigrationResult> {
+        let migrator = RustDataMigrator::new(self.source_db.clone(), self.dest_db.clone());
+
+        let batch_size = batch_size.unwrap_or(1000) as usize;
+        let metric = match distance.as_deref().unwrap_or("cosine") {
+            "cosine" => DistanceMetric::Cosine,
+            "euclidean" => DistanceMetric::Euclidean,
+            "dot" => DistanceMetric::Dot,
+            _ => return Err(Error::from_reason("Invalid distance metric")),
+        };
+
+        let schema = CollectionSchema {
+            name: dest_collection.clone(),
+            dimension: dimension as usize,
+            metric,
+        };
+
+        let result = migrator
+            .migrate::<fn(RustMigrationProgress)>(
+                &source_collection,
+                &dest_collection,
+                schema,
+                batch_size,
+                None,
+            )
+            .await
+            .map_err(to_napi_err)?;
+
+        Ok(MigrationResult {
+            points_migrated: result.points_migrated as u32,
+            elapsed_ms: result.elapsed_ms as f64,
+        })
+    }
+
+    #[napi]
+    pub async fn migrate_simple(
+        &self,
+        source_collection: String,
+        dest_collection: String,
+        batch_size: Option<u32>,
+    ) -> Result<MigrationResult> {
+        let migrator = RustDataMigrator::new(self.source_db.clone(), self.dest_db.clone());
+        let batch_size = batch_size.unwrap_or(1000) as usize;
+
+        let result = migrator
+            .migrate_simple(&source_collection, &dest_collection, batch_size)
+            .await
+            .map_err(to_napi_err)?;
+
+        Ok(MigrationResult {
+            points_migrated: result.points_migrated as u32,
+            elapsed_ms: result.elapsed_ms as f64,
+        })
+    }
 }
 
 #[napi]
@@ -501,6 +595,34 @@ impl Collection {
     // Note: insert_stream is not yet implemented for Node.js.
     // The Python version uses async iterables which require complex napi-rs interop.
     // For now, use insert_batch for bulk operations.
+
+    /// Scroll through points in the collection (paginated export).
+    #[napi]
+    pub async fn scroll(
+        &self,
+        offset: Option<String>,
+        limit: Option<u32>,
+    ) -> Result<ScrollResponse> {
+        let inner = self.inner.clone();
+        let limit = limit.unwrap_or(100) as usize;
+
+        let res = inner.scroll(offset, limit).await.map_err(to_napi_err)?;
+
+        let points = res
+            .points
+            .into_iter()
+            .map(|p| Point {
+                id: p.id,
+                vector: p.vector.into_iter().map(|v| v as f64).collect(),
+                metadata: p.metadata,
+            })
+            .collect();
+
+        Ok(ScrollResponse {
+            points,
+            next_offset: res.next_offset,
+        })
+    }
 }
 
 #[napi]

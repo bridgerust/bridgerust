@@ -1158,7 +1158,7 @@ dependencies = [
 
 [[package]]
 name = "bridge-core"
-version = "0.1.16"
+version = "0.1.17"
 dependencies = [
  "anyhow",
  "serde",
@@ -1168,7 +1168,7 @@ dependencies = [
 
 [[package]]
 name = "bridge-embex"
-version = "0.1.16"
+version = "0.1.17"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1192,7 +1192,7 @@ dependencies = [
 
 [[package]]
 name = "bridge-embex-chroma"
-version = "0.1.16"
+version = "0.1.17"
 dependencies = [
  "async-trait",
  "bridge-embex-core",
@@ -1206,7 +1206,7 @@ dependencies = [
 
 [[package]]
 name = "bridge-embex-core"
-version = "0.1.16"
+version = "0.1.17"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1221,7 +1221,7 @@ dependencies = [
 
 [[package]]
 name = "bridge-embex-infrastructure"
-version = "0.1.16"
+version = "0.1.17"
 dependencies = [
  "anyhow",
  "bridge-embex",
@@ -1238,7 +1238,7 @@ dependencies = [
 
 [[package]]
 name = "bridge-embex-lancedb"
-version = "0.1.16"
+version = "0.1.17"
 dependencies = [
  "arrow-array",
  "arrow-schema",
@@ -1255,7 +1255,7 @@ dependencies = [
 
 [[package]]
 name = "bridge-embex-milvus"
-version = "0.1.16"
+version = "0.1.17"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1271,7 +1271,7 @@ dependencies = [
 
 [[package]]
 name = "bridge-embex-pgvector"
-version = "0.1.16"
+version = "0.1.17"
 dependencies = [
  "async-trait",
  "bridge-embex-core",
@@ -1286,7 +1286,7 @@ dependencies = [
 
 [[package]]
 name = "bridge-embex-pinecone"
-version = "0.1.16"
+version = "0.1.17"
 dependencies = [
  "async-trait",
  "bridge-embex-core",
@@ -1301,7 +1301,7 @@ dependencies = [
 
 [[package]]
 name = "bridge-embex-qdrant"
-version = "0.1.16"
+version = "0.1.17"
 dependencies = [
  "async-trait",
  "bridge-embex-core",
@@ -1315,7 +1315,7 @@ dependencies = [
 
 [[package]]
 name = "bridge-embex-weaviate"
-version = "0.1.16"
+version = "0.1.17"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2989,7 +2989,7 @@ dependencies = [
 
 [[package]]
 name = "embex"
-version = "0.1.16"
+version = "0.1.17"
 dependencies = [
  "async-trait",
  "bridge-embex",

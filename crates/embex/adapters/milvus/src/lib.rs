@@ -310,6 +310,103 @@ impl VectorDatabase for MilvusAdapter {
         }
         Ok(())
     }
+
+    async fn scroll(
+        &self,
+        collection: &str,
+        offset: Option<String>,
+        limit: usize,
+    ) -> Result<bridge_embex_core::types::ScrollResponse, EmbexError> {
+        let url = format!("{}/v2/vectordb/entities/query", self.url);
+
+        let offset_num = if let Some(o) = offset {
+            o.parse::<u32>().map_err(|_| {
+                EmbexError::Validation("Offset must be a numeric string for Milvus".into())
+            })?
+        } else {
+            0
+        };
+
+        // Milvus Query requires a filter. Since we use VarChar IDs, id != '' serves as "all"
+        // provided ids are not empty.
+        let payload = json!({
+            "collectionName": collection,
+            "filter": "id != ''",
+            "outputFields": ["*"],
+            "limit": limit,
+            "offset": offset_num
+        });
+
+        let mut req = self.client.post(&url).json(&payload);
+        if let Some(ref token) = self.token {
+            req = req.bearer_auth(token);
+        }
+        let res = req
+            .send()
+            .await
+            .map_err(|e| EmbexError::Connection(e.to_string()))?;
+
+        let body: serde_json::Value = res
+            .json()
+            .await
+            .map_err(|e| EmbexError::Database(e.to_string()))?;
+
+        if let Some(code) = body.get("code")
+            && code.as_i64().unwrap_or(0) != 0
+        {
+            return Err(EmbexError::Database(format!("Milvus Error: {:?}", body)));
+        }
+
+        let mut points = Vec::new();
+        if let Some(data) = body.get("data")
+            && let Some(arr) = data.as_array()
+        {
+            for item in arr {
+                if let Some(obj) = item.as_object() {
+                    let id = obj
+                        .get("id")
+                        .and_then(|v| v.as_str().map(|s| s.to_string()))
+                        .unwrap_or_default();
+
+                    // Milvus returns vector as "vector" field if requested in outputFields (*)
+                    let vector = obj
+                        .get("vector")
+                        .and_then(|v| v.as_array())
+                        .map(|arr| {
+                            arr.iter()
+                                .filter_map(|x| x.as_f64().map(|f| f as f32))
+                                .collect()
+                        })
+                        .unwrap_or_default(); // Should we error if no vector?
+
+                    // Metadata is everything else
+                    let mut metadata = std::collections::HashMap::new();
+                    for (k, v) in obj {
+                        if k != "id" && k != "vector" {
+                            metadata.insert(k.clone(), v.clone());
+                        }
+                    }
+
+                    points.push(Point {
+                        id,
+                        vector,
+                        metadata: Some(metadata),
+                    });
+                }
+            }
+        }
+
+        let next_offset = if points.len() < limit {
+            None
+        } else {
+            Some((offset_num + points.len() as u32).to_string())
+        };
+
+        Ok(bridge_embex_core::types::ScrollResponse {
+            points,
+            next_offset,
+        })
+    }
 }
 
 #[cfg(test)]

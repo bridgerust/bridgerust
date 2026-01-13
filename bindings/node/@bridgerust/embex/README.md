@@ -106,6 +106,27 @@ const client = new EmbexClient(
 );
 ```
 
+## 🔄 Data Migration
+
+Move data between providers effortlessly using the built-in `DataMigrator`.
+
+```typescript
+import { EmbexClient, DataMigrator } from "@bridgerust/embex";
+
+// 1. Setup clients
+const source = await EmbexClient.newAsync("lancedb", "./local_data");
+const dest = new EmbexClient("qdrant", "http://prod-db:6333");
+
+// 2. Migrate
+const migrator = new DataMigrator(source, dest);
+const result = await migrator.migrateSimple(
+  "products", // source
+  "products_v2" // destination
+);
+
+console.log(`Migrated ${result.pointsMigrated} points!`);
+```
+
 ## 🔗 Resources
 
 - **Full Documentation**: [bridgerust.dev/embex](https://bridgerust.dev/embex/introduction)
