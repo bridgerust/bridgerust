@@ -44,6 +44,7 @@ import {
 {" "}
 
 {" "}
+
 <div style="display: flex; flex-direction: column; justify-content: center; height: 100%; padding: 1.5rem; background: var(--sl-color-gray-6); border: 1px solid var(--sl-color-gray-5); border-radius: 12px; text-align: center;">
   <div style="font-size: 2.5rem; font-weight: 800; color: var(--sl-color-accent); line-height: 1;">
     10x
@@ -120,7 +121,7 @@ import {
 Write once in Rust. Use everywhere.
 
 <Tabs>
-  <TabItem label="1️⃣ Write Once (Rust)">
+  <TabItem label="Write Once (Rust)">
 ```rust
     use bridgerust::prelude::*;
 
@@ -150,7 +151,7 @@ Write once in Rust. Use everywhere.
 ````
   </TabItem>
 
-  <TabItem label="2️⃣ Use in Python">
+  <TabItem label="Use in Python">
 ```python
     from calculator import Calculator
 
@@ -195,24 +196,37 @@ Write once in Rust. Use everywhere.
 ## Replace Your Slowest Code
 
 <CardGrid>
-  <Card title="🐌 Before: Python Image Processing" icon="warning">
+  <Card title="Before: Python Image Processing" icon="warning">
     **Pillow:** 50 images/sec **Memory:** 500 MB **Problem:** Users complain
-    about timeouts ```python # Slow pure Python for img in images: process(img)
-    # 20ms each ```
+    about timeouts
+
+    ```python
+    # Slow pure Python
+    for img in images:
+        process(img)
+    # 20ms each
+    ```
+
   </Card>
-  <Card title="⚡ After: Rust + BridgeRust" icon="rocket">
+  <Card title="After: Rust + BridgeRust" icon="rocket">
     **Your Library:** 2,500 images/sec **Memory:** 50 MB **Result:** Happy
-    users, 80% lower costs ```python # Fast Rust core process_batch(images) #
-    0.4ms each ```
+    users, 80% lower costs
+
+    ```python
+    # Fast Rust core
+    process_batch(images)
+    # 0.4ms each
+    ```
+
   </Card>
 </CardGrid>
 
 <CardGrid>
-  <Card title="🐌 Before: Celery Task Queue" icon="warning">
+  <Card title="Before: Celery Task Queue" icon="warning">
     **Celery:** 1,000 tasks/sec **Latency:** 50ms per task **Problem:** Can't
     scale without more servers
   </Card>
-  <Card title="⚡ After: Rust + BridgeRust" icon="rocket">
+  <Card title="After: Rust + BridgeRust" icon="rocket">
     **Your Queue:** 50,000 tasks/sec **Latency:** 1ms per task **Result:** Same
     servers, 50x throughput
   </Card>
@@ -227,19 +241,19 @@ Write once in Rust. Use everywhere.
 ## Get Started in 5 Minutes
 
 <Tabs>
-  <TabItem label="1️⃣ Install (30 sec)">
+  <TabItem label="Install (30 sec)">
     ```bash
     # Install the BridgeRust CLI
     cargo install bridge
     
     # Verify installation
     bridge --version
-    # ✅ bridge 0.1.2
+    # bridge 0.1.2
     ```
 
   </TabItem>
 
-<TabItem label="2️⃣ Create (1 min)">
+<TabItem label="Create (1 min)">
   ```bash
   # Create a new BridgeRust project
   bridge new my-fast-lib
@@ -247,12 +261,12 @@ Write once in Rust. Use everywhere.
   
   # Start the development server (Live Reload)
   bridge dev
-  # 🔄 Watching for changes...
+  # Watching for changes...
   ```
 
 </TabItem>
 
-<TabItem label="3️⃣ Build & Docs (2 min)">
+<TabItem label="Build & Docs (2 min)">
   ```bash
   # Build bindings for both Python & Node.js
   bridge build --all
@@ -263,16 +277,16 @@ Write once in Rust. Use everywhere.
 
 </TabItem>
 
-  <TabItem label="4️⃣ Test & Benchmark (1 min)">
+  <TabItem label="Test & Benchmark (1 min)">
     ```bash
     # Run tests
     cargo test
     
     # Run benchmarks across languages
     bridge benchmark
-    # 🚀 Running benchmarks...
-    # 🦀 Rust: 100ns/iter
-    # 🐍 Python: 5000ns/iter (50x slower)
+    # Running benchmarks...
+    # Rust: 100ns/iter
+    # Python: 5000ns/iter (50x slower)
     ```
 
   </TabItem>
@@ -280,7 +294,7 @@ Write once in Rust. Use everywhere.
 
 <div style="text-align: center; margin-top: 2rem; padding: 1.5rem; background: var(--sl-color-gray-6); border: 1px solid var(--sl-color-gray-5); border-radius: 8px;">
   <strong style="font-size: 1.2rem;">
-    🎉 You just built a universal library!
+    You just built a universal library!
   </strong>
   <div style="margin-top: 0.5rem;">
     <a
@@ -348,15 +362,11 @@ Write once in Rust. Use everywhere.
     Authentication libraries
   </Card>
 
-{" "}
-
 <Card title="High-Performance Data Processing" icon="seti:javascript">
   Process gigabytes of data with Rust's speed. Let users script in
   Python/JavaScript: - ETL pipelines - Data transformations - Analytics engines
   - Machine learning preprocessing
 </Card>
-
-{" "}
 
 <Card title="System Tools & Utilities" icon="laptop">
   Build powerful system-level tools that integrate with both ecosystems: - File
@@ -377,22 +387,22 @@ See what's possible with the framework:
 
 <CardGrid>
   <LinkCard
-    title="📦 Embex - Vector Database ORM"
+    title="Embex - Vector Database ORM"
     description="Universal vector database client. First production library built with BridgeRust."
     href="/embex"
   />
   <LinkCard
-    title="🚀 Coming Soon: bridgews"
+    title="Coming Soon: bridgews"
     description="WebSocket Server - Watch the build series on YouTube as I create it."
-    href="https://youtube.com/@yourchannel"
+    href="#"
   />
   <LinkCard
-    title="⚙️ Planned: bridgeq"
+    title="Planned: bridgeq"
     description="Task Queue - Coming after bridgews. Subscribe for updates."
     href="/roadmap"
   />
   <LinkCard
-    title="🎨 Your Library Here?"
+    title="Your Library Here?"
     description="Built something with BridgeRust? We'd love to feature it."
     href="/showcase"
   />
@@ -496,7 +506,7 @@ Watch the framework being built in public. Follow along as real libraries are cr
   <LinkCard
     title="📺 YouTube: Building BridgeRust"
     description="Building real libraries with BridgeRust. New videos weekly."
-    href="https://youtube.com/@yourchannel"
+    href="#"
   />
   <LinkCard
     title="📝 Blog: Why BridgeRust"
@@ -506,7 +516,7 @@ Watch the framework being built in public. Follow along as real libraries are cr
   <LinkCard
     title="💬 Discord Community"
     description="Join developers building universal libraries. Get help, share projects."
-    href="https://discord.gg/bridgerust"
+    href="https://discord.gg/ZvNAeaWN"
   />
   <LinkCard
     title="📖 Documentation"
