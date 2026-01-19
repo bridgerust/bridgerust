@@ -1,4 +1,6 @@
-error: Generic functions are not supported by BridgeRust export
+error: Generic functions are not supported by BridgeRust yet.
+
+       Workaround: Use dynamic dispatch with Box<dyn Trait> or enum variants instead.
  --> tests/ui/generic_function.rs:5:15
   |
 5 | pub fn process<T>(item: T) -> T {

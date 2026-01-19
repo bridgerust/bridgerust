@@ -1,4 +1,19 @@
-error: Type HashMap not supported in bridge, use Vec instead or custom wrapper
+error: Type HashMap requires a wrapper for cross-language use.
+
+       Workaround: Use bridgerust::collections::HashMapWrapper or convert to Vec<(K,V)>.
+
+       Example:
+       use bridgerust::collections::HashMapWrapper;
+
+       #[bridge]
+       pub fn get_map() -> HashMapWrapper<String, i32> {
+       // ...
+       }
+
+       Or convert:
+       pub fn get_map() -> Vec<(String, i32)> {
+       my_hashmap.into_iter().collect()
+       }
  --> tests/ui/unsupported_hashmap.rs:7:50
   |
 7 | pub fn process_map(map: HashMap<String, i32>) -> HashMap<String, i32> {

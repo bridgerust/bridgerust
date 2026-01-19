@@ -1,5 +1,6 @@
 pub use bridgerust_macros::{
-    bridge, error, exception, export, new, pyo3_dummy, staticmethod, validate,
+    bridge, bridge_async, bridge_module, error, exception, export, new, pyo3_dummy, staticmethod,
+    validate,
 };
 
 #[cfg(feature = "python")]

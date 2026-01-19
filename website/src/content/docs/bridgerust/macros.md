@@ -37,7 +37,9 @@ struct User {
 }
 ```
 
-## #[bridge_methods]
+> **Note:** Validation attributes are currently experimental and emit a compile-time warning. Runtime enforcement is planned for a future release.
+
+## Exporting Methods
 
 ### Structs
 

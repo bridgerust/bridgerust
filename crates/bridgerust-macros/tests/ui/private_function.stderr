@@ -1,4 +1,4 @@
-error: Functions exported with #[bridgerust::export] must be public (use `pub fn`)
+error: Functions exported with #[bridge] must be public (use `pub fn`)
  --> tests/ui/private_function.rs:6:4
   |
 6 | fn private_function() -> i32 {

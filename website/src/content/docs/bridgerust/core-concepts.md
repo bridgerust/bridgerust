@@ -7,15 +7,29 @@ description: Type mapping, Async/Await, and Error Handling
 
 BridgeRust automatically converts between Rust types and their target language equivalents.
 
-| Rust Type           | Python Type    | Node.js Type   | Notes                           |
-| :------------------ | :------------- | :------------- | :------------------------------ |
-| `String`            | `str`          | `string`       | Copied on conversion            |
-| `i32`, `f64`, etc.  | `int`, `float` | `number`       |                                 |
-| `bool`              | `bool`         | `boolean`      |                                 |
-| `Vec<T>`            | `List[T]`      | `T[]`          | Converted recursively           |
-| `Option<T>`         | `Optional[T]`  | `T \| null`    | `None` becomes `None`/`null`    |
-| `Result<T, E>`      | `T` (or raise) | `T` (or throw) | `Err` causes an exception       |
-| `struct` (exported) | `class`        | `class`        | Must be marked with `#[export]` |
+### Collections
+
+For `HashMap`, use `bridgerust::collections::HashMapWrapper`. Direct `HashMap` use is not supported across FFI boundaries due to memory layout differences.
+
+```rust
+use bridgerust::collections::HashMapWrapper;
+
+#[bridgerust::export]
+pub fn get_data() -> HashMapWrapper<String, i32> {
+    // ...
+}
+```
+
+| Rust Type             | Python Type    | Node.js Type   | Notes                                     |
+| :-------------------- | :------------- | :------------- | :---------------------------------------- |
+| `String`              | `str`          | `string`       | Copied on conversion                      |
+| `i32`, `f64`, etc.    | `int`, `float` | `number`       |                                           |
+| `bool`                | `bool`         | `boolean`      |                                           |
+| `Vec<T>`              | `List[T]`      | `T[]`          | Converted recursively                     |
+| `Option<T>`           | `Optional[T]`  | `T \| null`    | `None` becomes `None`/`null`              |
+| `Result<T, E>`        | `T` (or raise) | `T` (or throw) | `Err` causes an exception                 |
+| `struct` (exported)   | `class`        | `class`        | Must be marked with `#[export]`           |
+| `HashMapWrapper<K,V>` | `dict[K, V]`   | `Record<K, V>` | Use `HashMapWrapper` instead of `HashMap` |
 
 ## Async Support
 
