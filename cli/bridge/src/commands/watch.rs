@@ -128,7 +128,7 @@ pub async fn handle(target: String, test: bool) -> Result<()> {
 
                     println!(
                         "{}",
-                        style("🔄 Change detected, rebuilding...").bold().yellow()
+                        style("Change detected, rebuilding...").bold().yellow()
                     );
 
                     // Build the target(s)

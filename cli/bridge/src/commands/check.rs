@@ -7,7 +7,7 @@ use std::process::Command;
 pub async fn handle(verbose: bool) -> Result<()> {
     println!(
         "{}",
-        style("🔍 Checking BridgeRust project...").bold().cyan()
+        style("🔍 Checking BridgeRust project...\n").bold().cyan()
     );
 
     let project_root = find_project_root()?;
@@ -15,28 +15,53 @@ pub async fn handle(verbose: bool) -> Result<()> {
         println!("  Project root: {}", project_root.display());
     }
 
-    // Check project structure
-    check_project_structure(&project_root, verbose)?;
+    let mut passed = 0;
+    let mut failed = 0;
 
-    // Check configuration
-    check_config(&project_root, verbose)?;
+    // Define checks
+    let checks = vec![
+        (
+            "Project Structure",
+            check_project_structure(&project_root, verbose),
+        ),
+        ("Configuration", check_config(&project_root, verbose)),
+        ("Cargo.toml", check_cargo_toml(&project_root, verbose)),
+        ("Source Code", check_source_code(&project_root, verbose)),
+        ("Python Setup", check_python_setup(&project_root, verbose)),
+        ("Node.js Setup", check_nodejs_setup(&project_root, verbose)),
+        ("Compilation", check_compilation(&project_root, verbose)),
+    ];
 
-    // Check Cargo.toml
-    check_cargo_toml(&project_root, verbose)?;
+    for (name, result) in checks {
+        match result {
+            Ok(()) => {
+                // Individual checks print their own success/info messages
+                passed += 1;
+            }
+            Err(e) => {
+                println!("❌ {} - {}", style(name).bold(), e);
+                failed += 1;
+            }
+        }
+    }
 
-    // Check source code
-    check_source_code(&project_root, verbose)?;
+    println!(
+        "\n{}",
+        style(format!("📊 Results: {} passed, {} failed", passed, failed)).bold()
+    );
 
-    // Check Python setup
-    check_python_setup(&project_root, verbose)?;
+    if failed > 0 {
+        println!(
+            "\n{}",
+            style("💡 Run 'bridge check --verbose' for details").yellow()
+        );
+        std::process::exit(1);
+    }
 
-    // Check Node.js setup
-    check_nodejs_setup(&project_root, verbose)?;
-
-    // Check compilation (without building)
-    check_compilation(&project_root, verbose)?;
-
-    println!("\n{}", style("✅ All checks passed!").bold().green());
+    println!(
+        "\n{}",
+        style("✨ Project is ready for building!").bold().green()
+    );
     Ok(())
 }
 

@@ -1,6 +1,8 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{DeriveInput, ImplItem, ItemEnum, ItemFn, ItemImpl, ItemStruct, parse_macro_input};
+use syn::{
+    DeriveInput, ImplItem, ItemEnum, ItemFn, ItemImpl, ItemMod, ItemStruct, parse_macro_input,
+};
 
 // Helper to parse arguments like #[export(object)]
 struct ExportArgs {
@@ -25,9 +27,108 @@ impl syn::parse::Parse for ExportArgs {
     }
 }
 
+/// Shorthand for #[export] - more ergonomic
+#[proc_macro_attribute]
+pub fn bridge(attr: TokenStream, item: TokenStream) -> TokenStream {
+    process_export(attr, item)
+}
+
+#[proc_macro_attribute]
+pub fn validate(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let warning = quote! {
+        #[allow(dead_code)]
+        const _BRIDGERUST_VALIDATION_TODO: () = {
+            // Validation attributes are recognized but not yet enforced at compile time.
+            // Runtime validation will be added in a future release.
+        };
+    };
+
+    let item_tokens = proc_macro2::TokenStream::from(item);
+    quote! {
+        #warning
+        #item_tokens
+    }
+    .into()
+}
+
+#[proc_macro_attribute]
+pub fn bridge_async(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let input_fn = parse_macro_input!(item as ItemFn);
+
+    if input_fn.sig.asyncness.is_none() {
+        return syn::Error::new_spanned(
+            &input_fn.sig,
+            "#[bridge_async] can only be used on async functions. \
+             Either add 'async' keyword or use #[bridge] instead.",
+        )
+        .to_compile_error()
+        .into();
+    }
+
+    export_async_function(input_fn)
+}
+
+#[proc_macro_attribute]
+pub fn bridge_module(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let mut input = syn::parse_macro_input!(item as ItemMod);
+
+    if let Some((_, items)) = &mut input.content {
+        for item in items {
+            process_item_for_bridge(item);
+        }
+    }
+
+    quote!(#input).into()
+}
+
+fn process_item_for_bridge(item: &mut syn::Item) {
+    match item {
+        syn::Item::Fn(item_fn) => {
+            if matches!(item_fn.vis, syn::Visibility::Public(_)) {
+                add_bridge_if_missing(&mut item_fn.attrs);
+            }
+        }
+        syn::Item::Struct(item_struct) => {
+            if matches!(item_struct.vis, syn::Visibility::Public(_)) {
+                add_bridge_if_missing(&mut item_struct.attrs);
+            }
+        }
+        syn::Item::Enum(item_enum) => {
+            if matches!(item_enum.vis, syn::Visibility::Public(_)) {
+                add_bridge_if_missing(&mut item_enum.attrs);
+            }
+        }
+        syn::Item::Impl(item_impl) => {
+            add_bridge_if_missing(&mut item_impl.attrs);
+        }
+        syn::Item::Mod(item_mod) => {
+            // Recursively process nested modules
+            if let Some((_, items)) = &mut item_mod.content {
+                for nested_item in items {
+                    process_item_for_bridge(nested_item);
+                }
+            }
+        }
+        _ => {}
+    }
+}
+
+fn add_bridge_if_missing(attrs: &mut Vec<syn::Attribute>) {
+    let has_bridge = attrs
+        .iter()
+        .any(|attr| attr.path().is_ident("bridge") || attr.path().is_ident("export"));
+    if !has_bridge {
+        attrs.push(syn::parse_quote!(#[::bridgerust::bridge]));
+    }
+}
+
 /// Enhanced export macro that generates bindings for both Python and Node.js
 #[proc_macro_attribute]
 pub fn export(attr: TokenStream, item: TokenStream) -> TokenStream {
+    process_export(attr, item)
+}
+
+fn process_export(attr: TokenStream, item: TokenStream) -> TokenStream {
     // Parse attributes
     let args = syn::parse_macro_input!(attr as ExportArgs);
 
@@ -55,10 +156,24 @@ pub fn export(attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as DeriveInput);
     syn::Error::new_spanned(
         &input.ident,
-        "#[bridgerust::export] can only be applied to functions, structs, enums, or impl blocks",
+        "#[bridge] / #[export] can only be applied to functions, structs, enums, or impl blocks",
     )
     .to_compile_error()
     .into()
+}
+
+fn helpful_error<T: quote::ToTokens>(
+    span: &T,
+    limitation: &str,
+    workaround: &str,
+    issue: Option<&str>,
+) -> TokenStream {
+    let mut msg = format!("{}\n\nWorkaround: {}", limitation, workaround);
+    if let Some(url) = issue {
+        msg.push_str(&format!("\n\nTrack support: {}", url));
+    }
+
+    syn::Error::new_spanned(span, msg).to_compile_error().into()
 }
 
 fn export_function(input_fn: ItemFn) -> TokenStream {
@@ -66,7 +181,7 @@ fn export_function(input_fn: ItemFn) -> TokenStream {
     if !matches!(input_fn.vis, syn::Visibility::Public(_)) {
         return syn::Error::new_spanned(
             &input_fn.sig.ident,
-            "Functions exported with #[bridgerust::export] must be public (use `pub fn`)",
+            "Functions exported with #[bridge] must be public (use `pub fn`)",
         )
         .to_compile_error()
         .into();
@@ -74,13 +189,12 @@ fn export_function(input_fn: ItemFn) -> TokenStream {
 
     // Check for generic type parameters
     if !input_fn.sig.generics.params.is_empty() {
-        // (Simplify error for brevity)
-        return syn::Error::new_spanned(
+        return helpful_error(
             &input_fn.sig.generics,
-            "Generic functions are not supported by BridgeRust export",
-        )
-        .to_compile_error()
-        .into();
+            "Generic functions are not supported by BridgeRust yet.",
+            "Use dynamic dispatch with Box<dyn Trait> or enum variants instead.",
+            None,
+        );
     }
 
     let is_async = input_fn.sig.asyncness.is_some();
@@ -93,12 +207,12 @@ fn export_function(input_fn: ItemFn) -> TokenStream {
     };
 
     if is_iterator && let syn::ReturnType::Type(_, return_type) = &input_fn.sig.output {
-        return syn::Error::new_spanned(
+        return helpful_error(
             return_type,
-            "Iterator return types used in export are not yet supported. Return Vec<T> instead.",
-        )
-        .to_compile_error()
-        .into();
+            "Iterator return types used in export are not yet supported.",
+            "Return Vec<T> instead.",
+            None,
+        );
     }
 
     if let syn::ReturnType::Type(_, return_type) = &input_fn.sig.output
@@ -198,15 +312,28 @@ fn validate_type(ty: &syn::Type, _context: &str) -> Result<(), TokenStream> {
     {
         let name = segment.ident.to_string();
         if matches!(name.as_str(), "HashMap" | "HashSet" | "BTreeMap") {
-            return Err(syn::Error::new_spanned(
+            return Err(helpful_error(
                 ty,
-                format!(
-                    "Type {} not supported in bridge, use Vec instead or custom wrapper",
+                &format!("Type {} requires a wrapper for cross-language use.", name),
+                &format!(
+                    "Use bridgerust::collections::{}Wrapper or convert to Vec<(K,V)>.\n\
+                     \n\
+                     Example:\n\
+                     use bridgerust::collections::HashMapWrapper;\n\
+                     \n\
+                     #[bridge]\n\
+                     pub fn get_map() -> HashMapWrapper<String, i32> {{\n\
+                         // ...\n\
+                     }}\n\
+                     \n\
+                     Or convert:\n\
+                     pub fn get_map() -> Vec<(String, i32)> {{\n\
+                         my_hashmap.into_iter().collect()\n\
+                     }}",
                     name
                 ),
-            )
-            .to_compile_error()
-            .into());
+                None,
+            ));
         }
         if (name == "Vec" || name == "Option")
             && let syn::PathArguments::AngleBracketed(args) = &segment.arguments
@@ -267,6 +394,15 @@ fn export_struct(mut input_struct: ItemStruct, args: ExportArgs) -> TokenStream 
                     fp.attrs.push(syn::parse_quote!(#[pyo3(get)]));
                 } else {
                     fp.attrs.push(syn::parse_quote!(#[pyo3(get, set)]));
+                }
+
+                // Check for validation
+                for attr in &field.attrs {
+                    if attr.path().is_ident("validate") {
+                        // TODO: Generate validation logic
+                        // parsing attr args is hard here without full context.
+                        // For now we just allow the attribute to exist.
+                    }
                 }
                 // Add Napi attrs if needed (for mixed builds)
                 if is_readonly && !args.is_object {
@@ -383,9 +519,14 @@ fn export_impl(mut input_impl: ItemImpl) -> TokenStream {
     }
 
     let expanded = quote! {
-        #[cfg_attr(feature = "python", ::bridgerust::pyo3::pymethods(crate = "::bridgerust::pyo3"))]
-        #[cfg_attr(feature = "nodejs", ::bridgerust::napi_derive::napi)]
-        #input_impl
+        const _: () = {
+            #[allow(unused_imports)]
+            use ::bridgerust::{new, staticmethod};
+
+            #[cfg_attr(feature = "python", ::bridgerust::pyo3::pymethods(crate = "::bridgerust::pyo3"))]
+            #[cfg_attr(feature = "nodejs", ::bridgerust::napi_derive::napi)]
+            #input_impl
+        };
     };
     TokenStream::from(expanded)
 }

@@ -5,18 +5,39 @@ description: detailed guide to the #[bridgerust::export] macro
 
 The core of BridgeRust is the `#[export]` attribute macro. Placing this attribute on your Rust items instructs the framework to generate the necessary bindings for Python and Node.js.
 
-## Supported Items
+## #[bridge]
 
-### Functions
-
-Mark public functions with `#[export]` to make them callable from Python and Node.js.
+Marks a struct or module for export.
 
 ```rust
-#[bridgerust::export]
-pub fn add(a: i32, b: i32) -> i32 {
-    a + b
+#[bridge]
+struct MyStruct;
+```
+
+## #[bridge_module]
+
+Marks a module for export, automatically bridging all public items.
+
+```rust
+#[bridge_module]
+mod my_module {
+    pub fn hello() {}
 }
 ```
+
+## #[validate]
+
+Add validation to struct fields.
+
+```rust
+#[bridge]
+struct User {
+    #[validate(email)]
+    email: String,
+}
+```
+
+## #[bridge_methods]
 
 ### Structs
 

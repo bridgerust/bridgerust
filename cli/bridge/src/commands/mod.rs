@@ -1,9 +1,14 @@
+pub mod benchmark;
 pub mod build;
 pub mod check;
 pub mod clean;
+pub mod dev;
+pub mod docs;
 pub mod init;
 pub mod integrate;
+pub mod new;
 pub mod publish;
+pub mod template;
 pub mod test;
 pub mod watch;
 pub mod workflows;

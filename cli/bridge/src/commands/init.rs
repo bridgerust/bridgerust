@@ -56,7 +56,7 @@ pub async fn handle(name: String, skip_prompts: bool) -> Result<()> {
 
     println!(
         "\n{}",
-        style("✅ Project created successfully!").bold().green()
+        style("√ Project created successfully!").bold().green()
     );
     println!("\nNext steps:");
     println!("  cd {}", name);

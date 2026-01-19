@@ -23,7 +23,7 @@ pub async fn handle(output: String) -> Result<()> {
     );
     println!("  {} Workflows generated in {}", style("✓").green(), output);
 
-    println!("\n{}", style("📝 Next steps:").bold().cyan());
+    println!("\n{}", style("Next steps:").bold().cyan());
     println!("  1. Review the generated workflow files");
     println!("  2. Add secrets to your GitHub repository:");
     println!("     - PYPI_API_TOKEN (for Python publishing)");
@@ -32,7 +32,7 @@ pub async fn handle(output: String) -> Result<()> {
 
     println!(
         "\n{}",
-        style("✅ Workflow generation completed!").bold().green()
+        style("Workflow generation completed!").bold().green()
     );
     Ok(())
 }

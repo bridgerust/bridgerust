@@ -1,4 +1,6 @@
-pub use bridgerust_macros::{error, exception, export, new, pyo3_dummy, staticmethod};
+pub use bridgerust_macros::{
+    bridge, error, exception, export, new, pyo3_dummy, staticmethod, validate,
+};
 
 #[cfg(feature = "python")]
 pub use pyo3;
@@ -8,6 +10,7 @@ pub use pyo3_async_runtimes;
 
 pub mod stream;
 
+pub mod collections;
 pub mod convert;
 pub mod error;
 pub mod types;

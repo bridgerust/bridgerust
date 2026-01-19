@@ -33,7 +33,15 @@ bridgerust-example/
 
 ```bash
 cd examples/bridgerust-example
-bridge build --all
+
+# Development (Live Reload)
+bridge dev
+
+# Build for Release
+bridge build --all --release
+
+# Run Benchmarks
+bridge benchmark
 ```
 
 ### Build Manually

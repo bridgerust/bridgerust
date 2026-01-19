@@ -6,10 +6,10 @@ A quick reference guide for common BridgeRust patterns and commands.
 
 ```bash
 # Initialize project
-bridge init my-project
+bridge new my-project
 
-# Validate project
-bridge check
+# Development (Live Reload)
+bridge dev
 
 # Build
 bridge build --all              # Build all targets
@@ -19,15 +19,19 @@ bridge build --all --release    # Release build
 
 # Test
 bridge test --all               # Test all targets
-bridge test --target python     # Test Python only
-bridge test --target nodejs     # Test Node.js only
+
+# Benchmark
+bridge benchmark                # Run cross-language benchmarks
+
+# Templates
+bridge template list            # List available templates
+bridge template init --name=basic  # Init from template
+
+# Documentation
+bridge docs --open              # Geneate and open docs
 
 # Publish
 bridge publish --all            # Publish to all registries
-bridge publish --all --dry-run  # Test without publishing
-
-# Generate workflows
-bridge workflows                # Generate CI/CD templates
 ```
 
 ## Macro Usage

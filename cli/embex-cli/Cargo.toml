@@ -1,7 +1,7 @@
 [package]
 name = "embex-cli"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 description = "Command Line Interface for Embex Vector Database Client"
 authors = ["KOLOGO B Josias Yannick <hello@kologojosias.com>"]
 license = "MIT OR Apache-2.0"

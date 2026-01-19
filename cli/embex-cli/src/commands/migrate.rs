@@ -1,5 +1,5 @@
-use crate::declarative::DeclarativeMigration;
 use crate::MigrateAction;
+use crate::declarative::DeclarativeMigration;
 use anyhow::{Context, Result};
 use bridge_embex::client::EmbexClient;
 use bridge_embex::migration::MigrationManager;
@@ -14,7 +14,9 @@ pub async fn handle(action: MigrateAction) -> Result<()> {
     let client = EmbexClient::new(config)?;
     let manager = MigrationManager::new(client.db());
 
-    let mut migrations: Vec<Box<dyn Migration>> = Vec::new();
+    type MigrationData = Box<dyn Migration>;
+
+    let mut migrations: Vec<MigrationData> = Vec::new();
     let migration_dir = Path::new("migrations");
 
     if !migration_dir.exists() {
@@ -22,7 +24,9 @@ pub async fn handle(action: MigrateAction) -> Result<()> {
             println!("No migrations directory found.");
             return Ok(());
         }
-        anyhow::bail!("Migrations directory 'migrations' not found. Run 'embex generate migration <name>' to create one.");
+        anyhow::bail!(
+            "Migrations directory 'migrations' not found. Run 'embex generate migration <name>' to create one."
+        );
     }
 
     let mut entries: Vec<_> = fs::read_dir(migration_dir)?

@@ -31,7 +31,7 @@ pub async fn handle(target: String, dry_run: bool) -> Result<()> {
     if dry_run {
         println!(
             "{}",
-            style("🔍 Dry run mode - no packages will be published").yellow()
+            style("Dry run mode - no packages will be published").yellow()
         );
     } else {
         let confirm = Confirm::new()
@@ -45,7 +45,7 @@ pub async fn handle(target: String, dry_run: bool) -> Result<()> {
         }
     }
 
-    println!("{}", style("📦 Publishing packages...").bold().cyan());
+    println!("{}", style("Publishing packages...").bold().cyan());
 
     let targets: Vec<&str> = match target.as_str() {
         "all" => vec!["python", "nodejs"],
@@ -83,7 +83,7 @@ pub async fn handle(target: String, dry_run: bool) -> Result<()> {
         anyhow::bail!("Publishing failed");
     }
 
-    println!("\n{}", style("✅ Publishing completed!").bold().green());
+    println!("\n{}", style("Publishing completed!").bold().green());
     Ok(())
 }
 

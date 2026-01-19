@@ -51,13 +51,19 @@ BridgeRust creates standard Python wheels and Node.js native modules.
 cargo install --path cli/bridge
 
 # Initialize a new project
-bridge init my-project
+bridge new my-project
+
+# Development (Live Reload)
+bridge dev
 
 # Build for all targets
 bridge build --all
 
 # Run tests
 bridge test --all
+
+# Run benchmarks
+bridge benchmark
 
 # Publish packages
 bridge publish --all

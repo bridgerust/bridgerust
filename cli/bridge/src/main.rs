@@ -18,6 +18,51 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    /// Start development server (watch & rebuild)
+    Dev {
+        /// Dev target: python, nodejs, or all
+        #[arg(short, long, default_value = "all")]
+        target: String,
+
+        /// Port for reload server (placeholder)
+        #[arg(short, long, default_value = "3000")]
+        port: u16,
+    },
+    /// Generate documentation
+    Docs {
+        /// Generate docs for target: rust, python, nodejs, or all
+        #[arg(short, long, default_value = "all")]
+        target: String,
+
+        /// Open docs in browser
+        #[arg(short, long)]
+        open: bool,
+    },
+    /// Run project benchmarks
+    Benchmark {
+        /// Arguments passed to benchmarks
+        #[arg(allow_hyphen_values = true)]
+        params: Option<String>,
+    },
+    /// Manage project templates
+    Template {
+        /// List available templates
+        #[arg(short, long)]
+        list: bool,
+    },
+    /// Create a new BridgeRust project from a template
+    New {
+        /// Project name
+        name: String,
+
+        /// Template to use
+        #[arg(short, long, default_value = "basic")]
+        template: String,
+
+        /// Skip interactive prompts
+        #[arg(short, long)]
+        yes: bool,
+    },
     /// Initialize a new BridgeRust project
     Init {
         /// Project name
@@ -96,6 +141,15 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
+        Commands::Dev { target, port } => dev::handle(target, port).await,
+        Commands::Docs { target, open } => docs::handle(target, open).await,
+        Commands::Benchmark { params } => benchmark::handle(params).await,
+        Commands::Template { list } => template::handle(list).await,
+        Commands::New {
+            name,
+            template,
+            yes,
+        } => new::handle(name, template, yes).await,
         Commands::Init { name, yes } => init::handle(name, yes).await,
         Commands::Integrate { yes, example } => integrate::handle(yes, example).await,
         Commands::Build { target, release } => build::handle(target, release).await,
