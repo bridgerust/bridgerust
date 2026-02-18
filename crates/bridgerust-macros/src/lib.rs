@@ -34,21 +34,70 @@ pub fn bridge(attr: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_attribute]
-pub fn validate(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let warning = quote! {
-        #[allow(dead_code)]
-        const _BRIDGERUST_VALIDATION_TODO: () = {
-            // Validation attributes are recognized but not yet enforced at compile time.
-            // Runtime validation will be added in a future release.
-        };
-    };
+pub fn validate(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let attrs = parse_macro_input!(
+        attr with syn::punctuated::Punctuated::<syn::Meta, syn::Token![,]>::parse_terminated
+    );
 
-    let item_tokens = proc_macro2::TokenStream::from(item);
-    quote! {
-        #warning
-        #item_tokens
+    for meta in attrs {
+        match meta {
+            syn::Meta::Path(path) => {
+                let is_supported =
+                    path.is_ident("required") || path.is_ident("email") || path.is_ident("url");
+                if !is_supported {
+                    return syn::Error::new_spanned(
+                        path,
+                        "Unsupported #[validate] flag. Supported flags: required, email, url",
+                    )
+                    .to_compile_error()
+                    .into();
+                }
+            }
+            syn::Meta::NameValue(nv) => {
+                let key = nv
+                    .path
+                    .get_ident()
+                    .map(ToString::to_string)
+                    .unwrap_or_default();
+                let is_supported = matches!(key.as_str(), "min" | "max" | "len" | "pattern");
+                if !is_supported {
+                    return syn::Error::new_spanned(
+                        nv.path,
+                        "Unsupported #[validate] key. Supported keys: min, max, len, pattern",
+                    )
+                    .to_compile_error()
+                    .into();
+                }
+
+                if key == "pattern"
+                    && !matches!(
+                        &nv.value,
+                        syn::Expr::Lit(syn::ExprLit {
+                            lit: syn::Lit::Str(_),
+                            ..
+                        })
+                    )
+                {
+                    return syn::Error::new_spanned(
+                        nv.value,
+                        "#[validate(pattern = ...)] expects a string literal",
+                    )
+                    .to_compile_error()
+                    .into();
+                }
+            }
+            syn::Meta::List(list) => {
+                return syn::Error::new_spanned(
+                    list,
+                    "Unsupported #[validate(...)] list form. Use flags (required) or key/value pairs (min = 1)",
+                )
+                .to_compile_error()
+                .into();
+            }
+        }
     }
-    .into()
+
+    item
 }
 
 #[proc_macro_attribute]
