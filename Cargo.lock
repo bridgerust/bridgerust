@@ -3038,6 +3038,7 @@ dependencies = [
  "bridge-embex",
  "bridge-embex-infrastructure",
  "bridgerust",
+ "embex-cli",
  "futures",
  "napi",
  "napi-derive",
