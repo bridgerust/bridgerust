@@ -10,6 +10,8 @@ use serde_json::json;
 use tracing::instrument;
 use uuid::Uuid;
 
+const EMBEX_ID_FIELD: &str = "embex_id";
+
 pub struct WeaviateAdapter {
     client: Client,
     url: String,
@@ -50,6 +52,14 @@ impl WeaviateAdapter {
     }
 }
 
+fn to_weaviate_uuid(id: &str) -> String {
+    if let Ok(uuid) = Uuid::try_parse(id) {
+        uuid.to_string()
+    } else {
+        Uuid::new_v5(&Uuid::NAMESPACE_URL, id.as_bytes()).to_string()
+    }
+}
+
 #[derive(Serialize)]
 struct WeaviateObject {
     class: String,
@@ -69,7 +79,11 @@ impl VectorDatabase for WeaviateAdapter {
             "description": "Created by Embex",
             "vectorizer": "none",
             "properties": [
-                // We could map metadata schema here, but Weaviate allows auto-schema
+                {
+                    "name": EMBEX_ID_FIELD,
+                    "dataType": ["text"],
+                    "description": "Original Embex point id"
+                }
             ]
         });
 
@@ -120,18 +134,16 @@ impl VectorDatabase for WeaviateAdapter {
         let objects: Vec<WeaviateObject> = points
             .into_iter()
             .map(|p| {
-                let id = Uuid::new_v4();
-
-                let props = if let Some(meta) = p.metadata {
-                    serde_json::to_value(meta).unwrap_or(json!({}))
-                } else {
-                    json!({})
-                };
+                let mut props = serde_json::Map::new();
+                if let Some(meta) = p.metadata {
+                    props.extend(meta);
+                }
+                props.insert(EMBEX_ID_FIELD.to_string(), json!(p.id));
 
                 WeaviateObject {
                     class: collection.to_string(),
-                    id: id.to_string(),
-                    properties: props,
+                    id: to_weaviate_uuid(&p.id),
+                    properties: serde_json::Value::Object(props),
                     vector: p.vector,
                 }
             })
@@ -168,23 +180,14 @@ impl VectorDatabase for WeaviateAdapter {
     async fn search(&self, query: &VectorQuery) -> Result<SearchResponse, EmbexError> {
         let url = format!("{}/v1/graphql", self.url);
 
-        // Construct GraphQL Query
-        // { Get { ClassName ( nearVector: { vector: [...] } limit: N ) { _additional { id certainty } [properties...] } } }
-        // We don't verify properties. We'll ask for `_additional { id certainty vector }` and maybe nothing else?
-        // Ideally we fetch all properties. but we don't know names.
-        // Weaviate GraphQL requires property names.
-        // Workaround: Weaviate v1.19+ supports `cursor`-based API which might return all props?
-        // Or we just fetch `_additional { id distance }` for now?
-        // If we want metadata, we are stuck without schema knowledge unless we query schema first.
-        // Let's query schema first? That's slow.
-        // Better: Expect user to provide 'return_attributes'? Embex `VectorQuery` doesn't have it explicitly yet (maybe in future).
-        // For now, let's just fetch `_additional { id distance }`.
-
-        let vec_str = serde_json::to_string(&query.vector).unwrap();
+        let vector = query.vector.as_ref().ok_or_else(|| {
+            EmbexError::Unsupported("Weaviate adapter requires a vector for search queries.".into())
+        })?;
+        let vec_str = serde_json::to_string(vector)?;
 
         let query_str = format!(
-            "{{ Get {{ {} ( nearVector: {{ vector: {} }} limit: {} ) {{ _additional {{ id distance }} }} }} }}",
-            query.collection, vec_str, query.top_k
+            "{{ Get {{ {} ( nearVector: {{ vector: {} }} limit: {} ) {{ {} _additional {{ id distance }} }} }} }}",
+            query.collection, vec_str, query.top_k, EMBEX_ID_FIELD
         );
 
         let payload = json!({ "query": query_str });
@@ -215,7 +218,12 @@ impl VectorDatabase for WeaviateAdapter {
         {
             for item in arr {
                 if let Some(additional) = item.get("_additional") {
-                    let id = additional["id"].as_str().unwrap_or("").to_string();
+                    let id = item
+                        .get(EMBEX_ID_FIELD)
+                        .and_then(|v| v.as_str())
+                        .or_else(|| additional.get("id").and_then(|v| v.as_str()))
+                        .unwrap_or_default()
+                        .to_string();
                     let dist = additional["distance"].as_f64().unwrap_or(0.0) as f32;
                     let score = 1.0 - dist;
 
@@ -237,10 +245,22 @@ impl VectorDatabase for WeaviateAdapter {
 
     async fn delete(&self, collection: &str, ids: Vec<String>) -> Result<(), EmbexError> {
         for id in ids {
-            let uuid = Uuid::try_parse(&id).unwrap().to_string();
-
+            let uuid = to_weaviate_uuid(&id);
             let url = format!("{}/v1/objects/{}/{}", self.url, collection, uuid);
-            let _ = self.client.delete(&url).send().await;
+            let res = self
+                .client
+                .delete(&url)
+                .send()
+                .await
+                .map_err(|e| EmbexError::Connection(e.to_string()))?;
+
+            if !res.status().is_success() && res.status() != reqwest::StatusCode::NOT_FOUND {
+                let text = res.text().await.unwrap_or_default();
+                return Err(EmbexError::Database(format!(
+                    "Delete failed for {}: {}",
+                    id, text
+                )));
+            }
         }
         Ok(())
     }
@@ -251,7 +271,8 @@ impl VectorDatabase for WeaviateAdapter {
         updates: Vec<bridge_embex_core::types::MetadataUpdate>,
     ) -> Result<(), EmbexError> {
         for update in updates {
-            let url = format!("{}/v1/objects/{}/{}", self.url, collection, update.id);
+            let uuid = to_weaviate_uuid(&update.id);
+            let url = format!("{}/v1/objects/{}/{}", self.url, collection, uuid);
 
             let payload = json!({
                 "properties": update.updates
@@ -315,16 +336,18 @@ impl VectorDatabase for WeaviateAdapter {
 
         // Response format: { "objects": [ ... ], "totalResults": ... }
         let mut points = Vec::new();
+        let mut next_cursor = None;
 
         if let Some(objects) = body.get("objects")
             && let Some(arr) = objects.as_array()
         {
             for item in arr {
-                let id = item
+                let raw_id = item
                     .get("id")
                     .and_then(|v| v.as_str())
                     .unwrap_or_default()
                     .to_string();
+                next_cursor = Some(raw_id.clone());
 
                 let vector = item
                     .get("vector")
@@ -336,7 +359,7 @@ impl VectorDatabase for WeaviateAdapter {
                     })
                     .unwrap_or_default();
 
-                let metadata = item
+                let mut metadata = item
                     .get("properties")
                     .and_then(|v| v.as_object())
                     .map(|obj| {
@@ -347,6 +370,17 @@ impl VectorDatabase for WeaviateAdapter {
                         map
                     });
 
+                let id = metadata
+                    .as_ref()
+                    .and_then(|m| m.get(EMBEX_ID_FIELD))
+                    .and_then(|v| v.as_str())
+                    .map(ToString::to_string)
+                    .unwrap_or(raw_id);
+
+                if let Some(meta) = metadata.as_mut() {
+                    meta.remove(EMBEX_ID_FIELD);
+                }
+
                 points.push(Point {
                     id,
                     vector,
@@ -355,12 +389,8 @@ impl VectorDatabase for WeaviateAdapter {
             }
         }
 
-        let next_offset = if let Some(last) = points.last() {
-            if points.len() >= limit {
-                Some(last.id.clone())
-            } else {
-                None
-            }
+        let next_offset = if points.len() >= limit {
+            next_cursor
         } else {
             None
         };

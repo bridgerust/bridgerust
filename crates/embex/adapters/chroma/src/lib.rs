@@ -98,8 +98,18 @@ impl VectorDatabase for ChromaAdapter {
 
         let ids: Vec<String> = points.iter().map(|p| p.id.clone()).collect();
         let embeddings: Vec<Vec<f32>> = points.iter().map(|p| p.vector.clone()).collect();
+        let metadatas: Vec<Option<HashMap<String, MetadataValue>>> = points
+            .iter()
+            .map(|p| {
+                p.metadata.as_ref().map(|m| {
+                    m.iter()
+                        .map(|(k, v)| (k.clone(), convert_value(v)))
+                        .collect()
+                })
+            })
+            .collect();
 
-        coll.add(ids, embeddings, None, None, None)
+        coll.add(ids, embeddings, None, None, Some(metadatas))
             .await
             .map_err(|e| EmbexError::Database(format!("Failed to add: {}", e)))?;
 
@@ -355,17 +365,34 @@ fn convert_filter(filter: &types::Filter) -> Where {
             operator: BooleanOperator::Or,
             children: filters.iter().map(convert_filter).collect(),
         }),
-        types::Filter::MustNot(filters) => {
-            // Chroma doesn't have a direct "NOT" for composite expressions.
-            // For now, we wrap in AND, though this doesn't faithfully represent a logical NOT of the group.
-            Where::Composite(CompositeExpression {
-                operator: BooleanOperator::And,
-                children: filters.iter().map(convert_filter).collect(),
-            })
-        }
+        types::Filter::MustNot(filters) => Where::Composite(CompositeExpression {
+            operator: BooleanOperator::And,
+            children: filters.iter().map(negate_filter).collect(),
+        }),
         types::Filter::Key(key, condition) => Where::Metadata(MetadataExpression {
             key: key.clone(),
             comparison: convert_condition(condition),
+        }),
+    }
+}
+
+fn negate_filter(filter: &types::Filter) -> Where {
+    match filter {
+        types::Filter::Must(filters) => Where::Composite(CompositeExpression {
+            operator: BooleanOperator::Or,
+            children: filters.iter().map(negate_filter).collect(),
+        }),
+        types::Filter::Should(filters) => Where::Composite(CompositeExpression {
+            operator: BooleanOperator::And,
+            children: filters.iter().map(negate_filter).collect(),
+        }),
+        types::Filter::MustNot(filters) => Where::Composite(CompositeExpression {
+            operator: BooleanOperator::And,
+            children: filters.iter().map(convert_filter).collect(),
+        }),
+        types::Filter::Key(key, condition) => Where::Metadata(MetadataExpression {
+            key: key.clone(),
+            comparison: negate_condition(condition),
         }),
     }
 }
@@ -395,6 +422,35 @@ fn convert_condition(condition: &types::Condition) -> MetadataComparison {
         }
         types::Condition::NotIn(values) => {
             MetadataComparison::Set(SetOperator::NotIn, convert_values(values))
+        }
+    }
+}
+
+fn negate_condition(condition: &types::Condition) -> MetadataComparison {
+    match condition {
+        types::Condition::Eq(v) => {
+            MetadataComparison::Primitive(PrimitiveOperator::NotEqual, convert_value(v))
+        }
+        types::Condition::Ne(v) => {
+            MetadataComparison::Primitive(PrimitiveOperator::Equal, convert_value(v))
+        }
+        types::Condition::Gt(v) => {
+            MetadataComparison::Primitive(PrimitiveOperator::LessThanOrEqual, convert_value(v))
+        }
+        types::Condition::Gte(v) => {
+            MetadataComparison::Primitive(PrimitiveOperator::LessThan, convert_value(v))
+        }
+        types::Condition::Lt(v) => {
+            MetadataComparison::Primitive(PrimitiveOperator::GreaterThanOrEqual, convert_value(v))
+        }
+        types::Condition::Lte(v) => {
+            MetadataComparison::Primitive(PrimitiveOperator::GreaterThan, convert_value(v))
+        }
+        types::Condition::In(values) => {
+            MetadataComparison::Set(SetOperator::NotIn, convert_values(values))
+        }
+        types::Condition::NotIn(values) => {
+            MetadataComparison::Set(SetOperator::In, convert_values(values))
         }
     }
 }
@@ -537,6 +593,19 @@ mod tests {
         match chroma_filter {
             chroma::types::Where::Composite(expr) => {
                 assert!(matches!(expr.operator, chroma::types::BooleanOperator::Or));
+                assert_eq!(expr.children.len(), 2);
+            }
+            _ => panic!("Expected Composite filter"),
+        }
+    }
+
+    #[test]
+    fn test_convert_filter_must_not() {
+        let filter = Filter::must_not(vec![Filter::eq("a", 1), Filter::gt("score", 10)]);
+        let chroma_filter = convert_filter(&filter);
+        match chroma_filter {
+            chroma::types::Where::Composite(expr) => {
+                assert!(matches!(expr.operator, chroma::types::BooleanOperator::And));
                 assert_eq!(expr.children.len(), 2);
             }
             _ => panic!("Expected Composite filter"),

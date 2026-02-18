@@ -147,9 +147,12 @@ impl VectorDatabase for QdrantAdapter {
                     let count_res = self.client.count(count_builder).await.map_err(
                         |e: qdrant_client::QdrantError| EmbexError::Database(e.to_string()),
                     )?;
+                    let count = count_res.result.ok_or_else(|| {
+                        EmbexError::Database("Qdrant count response missing result".to_string())
+                    })?;
                     aggregations.insert(
                         "count".to_string(),
-                        serde_json::Value::Number(count_res.result.unwrap().count.into()),
+                        serde_json::Value::Number(count.count.into()),
                     );
                 }
             }
