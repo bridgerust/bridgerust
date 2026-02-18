@@ -746,29 +746,38 @@ impl bridge_embex::Migration for DeclarativeMigrationAdapter {
 // CLI Entry Points
 // -----------------------------------------------------------------------------
 
+fn normalize_cli_args(mut args: Vec<String>) -> Vec<String> {
+    if args.is_empty() {
+        args.push("embex".to_string());
+        return args;
+    }
+
+    if args[0] != "embex" {
+        args.insert(0, "embex".to_string());
+    }
+
+    args
+}
+
 #[cfg(feature = "python")]
-#[pyfunction]
-pub fn cli_main<'p>(py: Python<'p>, _args: Vec<String>) -> PyResult<Bound<'p, PyAny>> {
+#[pyfunction(name = "cli")]
+pub fn cli_main<'p>(py: Python<'p>, args: Vec<String>) -> PyResult<Bound<'p, PyAny>> {
+    let cli_args = normalize_cli_args(args);
     bridgerust::pyo3_async_runtimes::tokio::future_into_py::<_, ()>(py, async move {
-        // Dummy implementation - cli crate needs to be linked
-        // Assuming embex_cli crate is available or mocked
-        // For bridge compatibility, we might just return error if CLI crate isn't linked
-        // But the previous binding had it.
-        // Assuming `bridge_embex` re-exports it?
-        // Actually bindings/python/Cargo.toml depended on `embex-cli`.
-        // crates/embex/bridge/Cargo.toml does NOT depend on `embex-cli`.
-        // So I cannot implement this yet without adding dependency!
-        // Returning a placeholder for now to satisfy "drop-in" as symbol existence.
-        Err(pyo3::exceptions::PyNotImplementedError::new_err(
-            "CLI not yet linked in bridge",
-        ))
+        embex_cli::run(cli_args)
+            .await
+            .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(())
     })
 }
 
 #[cfg(feature = "nodejs")]
 #[napi]
-pub async fn cli(_args: Vec<String>) -> napi::Result<()> {
-    Err(napi::Error::from_reason("CLI not yet linked in bridge"))
+pub async fn cli(args: Vec<String>) -> napi::Result<()> {
+    let cli_args = normalize_cli_args(args);
+    embex_cli::run(cli_args)
+        .await
+        .map_err(|e| napi::Error::from_reason(e.to_string()))
 }
 
 #[cfg(feature = "python")]
