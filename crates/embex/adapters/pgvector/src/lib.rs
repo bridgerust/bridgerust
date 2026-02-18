@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use pgvector::Vector;
 use sqlx::postgres::PgPoolOptions;
-use sqlx::{PgPool, Row};
+use sqlx::{PgPool, QueryBuilder, Row};
 use std::collections::HashMap;
 
 use bridge_embex_core::db::VectorDatabase;
@@ -42,16 +42,24 @@ impl PgVectorAdapter {
     }
 }
 
+fn quote_ident(identifier: &str) -> String {
+    format!("\"{}\"", identifier.replace('"', "\"\""))
+}
+
+fn escape_sql_literal(value: &str) -> String {
+    value.replace('\'', "''")
+}
+
 #[async_trait]
 impl VectorDatabase for PgVectorAdapter {
     #[tracing::instrument(skip(self, schema), fields(collection = %schema.name))]
     async fn create_collection(&self, schema: &CollectionSchema) -> Result<()> {
-        let table_name = &schema.name;
+        let table_name = quote_ident(&schema.name);
         let dimension = schema.dimension;
 
         let create_table_sql = format!(
             r#"
-            CREATE TABLE IF NOT EXISTS "{}" (
+            CREATE TABLE IF NOT EXISTS {} (
                 id TEXT PRIMARY KEY,
                 vector vector({}),
                 metadata JSONB
@@ -66,7 +74,8 @@ impl VectorDatabase for PgVectorAdapter {
             .map_err(|e| EmbexError::Database(format!("Failed to create table: {}", e)))?;
 
         // Create index for vector search
-        let index_name = format!("{}_vector_idx", table_name);
+        let index_name = format!("{}_vector_idx", schema.name);
+        let index_name = quote_ident(&index_name);
         let index_type = match schema.metric {
             DistanceMetric::Cosine => "vector_cosine_ops",
             DistanceMetric::Euclidean => "vector_l2_ops",
@@ -77,7 +86,7 @@ impl VectorDatabase for PgVectorAdapter {
         // IVFFlat with many lists doesn't work well with few rows
         let create_index_sql = format!(
             r#"
-            CREATE INDEX IF NOT EXISTS "{}" ON "{}" 
+            CREATE INDEX IF NOT EXISTS {} ON {} 
             USING hnsw (vector {})
             "#,
             index_name, table_name, index_type
@@ -91,7 +100,8 @@ impl VectorDatabase for PgVectorAdapter {
 
     #[tracing::instrument(skip(self), fields(collection = %name))]
     async fn delete_collection(&self, name: &str) -> Result<()> {
-        let drop_sql = format!(r#"DROP TABLE IF EXISTS "{}" CASCADE"#, name);
+        let table_name = quote_ident(name);
+        let drop_sql = format!(r#"DROP TABLE IF EXISTS {} CASCADE"#, table_name);
 
         sqlx::query(&drop_sql)
             .execute(&self.pool)
@@ -107,30 +117,45 @@ impl VectorDatabase for PgVectorAdapter {
             return Ok(());
         }
 
-        for point in points {
-            let vector = Vector::from(point.vector);
-            let metadata = point
-                .metadata
-                .map(|m| serde_json::to_value(m).unwrap_or_default())
-                .unwrap_or(serde_json::Value::Null);
+        let table_name = quote_ident(collection);
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|e| EmbexError::Database(format!("Failed to start transaction: {}", e)))?;
 
-            let insert_sql = format!(
-                r#"
-                INSERT INTO "{}" (id, vector, metadata)
-                VALUES ($1, $2, $3)
-                ON CONFLICT (id) DO UPDATE SET vector = $2, metadata = $3
-                "#,
-                collection
+        const INSERT_CHUNK_SIZE: usize = 256;
+        for chunk in points.chunks(INSERT_CHUNK_SIZE) {
+            let mut query_builder = QueryBuilder::<sqlx::Postgres>::new(format!(
+                "INSERT INTO {} (id, vector, metadata) ",
+                table_name
+            ));
+
+            query_builder.push_values(chunk, |mut b, point| {
+                let vector = Vector::from(point.vector.clone());
+                let metadata = point
+                    .metadata
+                    .as_ref()
+                    .map(|m| serde_json::to_value(m).unwrap_or_default())
+                    .unwrap_or(serde_json::Value::Null);
+
+                b.push_bind(&point.id).push_bind(vector).push_bind(metadata);
+            });
+
+            query_builder.push(
+                " ON CONFLICT (id) DO UPDATE SET vector = EXCLUDED.vector, metadata = EXCLUDED.metadata",
             );
 
-            sqlx::query(&insert_sql)
-                .bind(&point.id)
-                .bind(vector)
-                .bind(metadata)
-                .execute(&self.pool)
+            query_builder
+                .build()
+                .execute(&mut *tx)
                 .await
-                .map_err(|e| EmbexError::Database(format!("Failed to insert: {}", e)))?;
+                .map_err(|e| EmbexError::Database(format!("Failed to insert batch: {}", e)))?;
         }
+
+        tx.commit().await.map_err(|e| {
+            EmbexError::Database(format!("Failed to commit insert transaction: {}", e))
+        })?;
 
         Ok(())
     }
@@ -138,6 +163,7 @@ impl VectorDatabase for PgVectorAdapter {
     #[tracing::instrument(skip(self, query), fields(collection = %query.collection))]
     async fn search(&self, query: &VectorQuery) -> Result<SearchResponse> {
         let distance_op = Self::distance_operator(&DistanceMetric::Cosine); // Default to cosine
+        let table_name = quote_ident(&query.collection);
 
         let filter_clause = if let Some(filter) = &query.filter {
             format!("AND {}", convert_filter(filter))
@@ -155,27 +181,43 @@ impl VectorDatabase for PgVectorAdapter {
             let vector = Vector::from(vector.clone());
             let sql = format!(
                 r#"
-                SELECT id, vector {} $1 as distance, metadata
-                FROM "{}"
+                SELECT id, {} as vector, vector {} $1 as distance, metadata
+                FROM {}
                 WHERE 1=1 {}
                 ORDER BY vector {} $1
                 LIMIT $2
                 {}
                 "#,
-                distance_op, query.collection, filter_clause, distance_op, offset_clause
+                if query.include_vector {
+                    "vector"
+                } else {
+                    "NULL"
+                },
+                distance_op,
+                table_name,
+                filter_clause,
+                distance_op,
+                offset_clause
             );
             (sql, Some(vector))
         } else {
             // Filter only, no distance sorting
             let sql = format!(
                 r#"
-                SELECT id, NULL as distance, metadata
-                FROM "{}"
+                SELECT id, {} as vector, NULL as distance, metadata
+                FROM {}
                 WHERE 1=1 {}
                 LIMIT $1
                 {}
                 "#,
-                query.collection, filter_clause, offset_clause
+                if query.include_vector {
+                    "vector"
+                } else {
+                    "NULL"
+                },
+                table_name,
+                filter_clause,
+                offset_clause
             );
             (sql, None)
         };
@@ -201,19 +243,23 @@ impl VectorDatabase for PgVectorAdapter {
                 .try_get("id")
                 .map_err(|e| EmbexError::Database(e.to_string()))?;
 
-            let distance: f64 = row.try_get("distance").unwrap_or(0.0);
+            let distance: Option<f64> = row.try_get("distance").ok();
 
             let metadata: Option<serde_json::Value> = row.try_get("metadata").ok();
+
+            let vector: Option<Vec<f32>> = if query.include_vector {
+                row.try_get::<Vector, _>("vector").ok().map(|v| v.to_vec())
+            } else {
+                None
+            };
 
             let metadata_map: Option<HashMap<String, serde_json::Value>> =
                 metadata.and_then(|v| serde_json::from_value(v).ok());
 
             results.push(SearchResult {
                 id,
-                score: distance as f32, // Note: distance is not score, but Embex usage seems to treat them loosely?
-                // Usually score = 1 - distance or similar depending on metric.
-                // But here we return raw distance/value.
-                vector: None,
+                score: distance.map_or(1.0, |d| 1.0 - d as f32),
+                vector,
                 metadata: metadata_map,
             });
         }
@@ -223,8 +269,8 @@ impl VectorDatabase for PgVectorAdapter {
             match agg {
                 bridge_embex_core::types::Aggregation::Count => {
                     let count_sql = format!(
-                        r#"SELECT COUNT(*) FROM "{}" WHERE 1=1 {}"#,
-                        query.collection, filter_clause
+                        r#"SELECT COUNT(*) FROM {} WHERE 1=1 {}"#,
+                        table_name, filter_clause
                     );
                     let count: i64 = sqlx::query_scalar(&count_sql)
                         .fetch_one(&self.pool)
@@ -248,10 +294,11 @@ impl VectorDatabase for PgVectorAdapter {
             return Ok(());
         }
 
+        let table_name = quote_ident(collection);
         let placeholders: Vec<String> = (1..=ids.len()).map(|i| format!("${}", i)).collect();
         let delete_sql = format!(
-            r#"DELETE FROM "{}" WHERE id IN ({})"#,
-            collection,
+            r#"DELETE FROM {} WHERE id IN ({})"#,
+            table_name,
             placeholders.join(", ")
         );
 
@@ -270,11 +317,12 @@ impl VectorDatabase for PgVectorAdapter {
 
     #[tracing::instrument(skip(self, updates), fields(collection = %collection, count = updates.len()))]
     async fn update_metadata(&self, collection: &str, updates: Vec<MetadataUpdate>) -> Result<()> {
+        let table_name = quote_ident(collection);
         for update in updates {
             let metadata_json = serde_json::to_value(&update.updates)
                 .map_err(|e| EmbexError::Database(e.to_string()))?;
 
-            let update_sql = format!(r#"UPDATE "{}" SET metadata = $1 WHERE id = $2"#, collection);
+            let update_sql = format!(r#"UPDATE {} SET metadata = $1 WHERE id = $2"#, table_name);
 
             sqlx::query(&update_sql)
                 .bind(metadata_json)
@@ -293,6 +341,13 @@ impl VectorDatabase for PgVectorAdapter {
         offset: Option<String>,
         limit: usize,
     ) -> Result<bridge_embex_core::types::ScrollResponse> {
+        if limit == 0 {
+            return Ok(bridge_embex_core::types::ScrollResponse {
+                points: Vec::new(),
+                next_offset: offset,
+            });
+        }
+
         let offset_num = if let Some(o) = offset {
             o.parse::<i64>().map_err(|_| {
                 EmbexError::Validation("Offset must be a numeric string for PgVector".into())
@@ -300,16 +355,17 @@ impl VectorDatabase for PgVectorAdapter {
         } else {
             0
         };
+        let table_name = quote_ident(collection);
 
         // Ensure we explicitly select columns and order by ID for stable pagination
         let sql = format!(
             r#"
             SELECT id, vector, metadata 
-            FROM "{}" 
+            FROM {} 
             ORDER BY id 
             LIMIT $1 OFFSET $2
             "#,
-            collection
+            table_name
         );
 
         let rows = sqlx::query(&sql)
@@ -378,21 +434,22 @@ fn convert_filter(filter: &bridge_embex_core::types::Filter) -> String {
 
 fn convert_condition(key: &str, condition: &bridge_embex_core::types::Condition) -> String {
     use bridge_embex_core::types::Condition;
+    let safe_key = escape_sql_literal(key);
 
     match condition {
-        Condition::Eq(v) => format!("metadata->>'{}' = {}", key, format_value(v)),
-        Condition::Ne(v) => format!("metadata->>'{}' != {}", key, format_value(v)),
-        Condition::Gt(v) => format!("metadata->>'{}' > {}", key, format_value(v)),
-        Condition::Gte(v) => format!("metadata->>'{}' >= {}", key, format_value(v)),
-        Condition::Lt(v) => format!("metadata->>'{}' < {}", key, format_value(v)),
-        Condition::Lte(v) => format!("metadata->>'{}' <= {}", key, format_value(v)),
+        Condition::Eq(v) => format!("metadata->>'{}' = {}", safe_key, format_value(v)),
+        Condition::Ne(v) => format!("metadata->>'{}' != {}", safe_key, format_value(v)),
+        Condition::Gt(v) => format!("metadata->>'{}' > {}", safe_key, format_value(v)),
+        Condition::Gte(v) => format!("metadata->>'{}' >= {}", safe_key, format_value(v)),
+        Condition::Lt(v) => format!("metadata->>'{}' < {}", safe_key, format_value(v)),
+        Condition::Lte(v) => format!("metadata->>'{}' <= {}", safe_key, format_value(v)),
         Condition::In(v) => {
             let vals: Vec<String> = v.iter().map(format_value).collect();
-            format!("metadata->>'{}' IN ({})", key, vals.join(", "))
+            format!("metadata->>'{}' IN ({})", safe_key, vals.join(", "))
         }
         Condition::NotIn(v) => {
             let vals: Vec<String> = v.iter().map(format_value).collect();
-            format!("metadata->>'{}' NOT IN ({})", key, vals.join(", "))
+            format!("metadata->>'{}' NOT IN ({})", safe_key, vals.join(", "))
         }
     }
 }
@@ -522,5 +579,17 @@ mod tests {
     #[test]
     fn test_format_value_null() {
         assert_eq!(format_value(&json!(null)), "NULL");
+    }
+
+    #[test]
+    fn test_quote_ident_escapes_double_quotes() {
+        assert_eq!(quote_ident("normal"), "\"normal\"");
+        assert_eq!(quote_ident("a\"b"), "\"a\"\"b\"");
+    }
+
+    #[test]
+    fn test_escape_sql_literal_escapes_single_quotes() {
+        assert_eq!(escape_sql_literal("plain"), "plain");
+        assert_eq!(escape_sql_literal("o'hara"), "o''hara");
     }
 }
