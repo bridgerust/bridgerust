@@ -2,6 +2,8 @@ use async_trait::async_trait;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::sync::{Arc, RwLock};
+use std::time::{Duration, Instant};
 
 use bridge_embex_core::db::VectorDatabase;
 use bridge_embex_core::error::{EmbexError, Result};
@@ -19,6 +21,7 @@ pub struct PineconeAdapter {
     namespace: String,
     cloud: String,
     region: String,
+    host_cache: Arc<RwLock<HashMap<String, (String, Instant)>>>,
 }
 
 impl PineconeAdapter {
@@ -53,6 +56,7 @@ impl PineconeAdapter {
             namespace: namespace.unwrap_or("").to_string(),
             cloud: cloud.unwrap_or("aws").to_string(),
             region: region.unwrap_or("us-east-1").to_string(),
+            host_cache: Arc::new(RwLock::new(HashMap::new())),
         })
     }
 
@@ -72,6 +76,13 @@ impl PineconeAdapter {
     }
 
     async fn get_index_host(&self, index_name: &str) -> Result<String> {
+        if let Ok(cache) = self.host_cache.read()
+            && let Some((host, at)) = cache.get(index_name)
+            && at.elapsed() < Duration::from_secs(300)
+        {
+            return Ok(host.clone());
+        }
+
         let url = format!("{}/indexes/{}", PINECONE_CONTROL_URL, index_name);
 
         let response = self
@@ -95,6 +106,10 @@ impl PineconeAdapter {
             .json()
             .await
             .map_err(|e| EmbexError::Database(format!("Parse error: {}", e)))?;
+
+        if let Ok(mut cache) = self.host_cache.write() {
+            cache.insert(index_name.to_string(), (info.host.clone(), Instant::now()));
+        }
 
         Ok(info.host)
     }
