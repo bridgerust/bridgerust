@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.18] - 2026-02-18
+
+### Added
+
+- Accept dict-based point payloads in `Collection.insert()` and `Collection.insert_batch()` in addition to `Point` objects.
+
+### Fixed
+
+- `insert_stream()` now validates `batch_size > 0` to prevent invalid infinite-loop behavior.
+- Stream item conversion now raises explicit Python errors for invalid point payloads instead of silently skipping items.
+
 ## [0.1.16] - 2026-01-05
 
 ### Added

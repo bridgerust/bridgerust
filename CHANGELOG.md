@@ -5,6 +5,43 @@ All notable changes to BridgeRust projects will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.18] - 2026-02-18
+
+### Fixed
+
+- **Adapter correctness**:
+  - Weaviate now preserves caller IDs through `embex_id` and uses deterministic UUID mapping.
+  - Chroma now persists metadata on insert and correctly translates `must_not` filters.
+  - Qdrant count aggregation now fails with a clear error when response payload is missing.
+- **Migration reliability**:
+  - Migration state reads now paginate via `scroll` instead of a fixed-size fetch.
+  - Migration execution now validates duplicate versions before running.
+- **Streaming and batching validation**:
+  - Added validation for `batch_size > 0` and `parallel > 0` in batch/stream insertion paths.
+  - Data migrator now rejects zero-sized batches explicitly.
+
+### Changed
+
+- **Performance**:
+  - Pinecone adapter now caches index hosts to reduce control-plane requests.
+  - PgVector adapter now performs transactional chunked upserts for higher insert throughput.
+- **Core SIMD**:
+  - Added runtime SIMD backend detection (Scalar/AVX2/SSE4.1/NEON).
+  - Added fallible SIMD APIs (`try_*`) for safer embedding/vector operations.
+- **Capability introspection**:
+  - Added provider capability metadata via `get_provider_capabilities()` and `EmbexClient::capabilities()`.
+
+### Added
+
+- **Bridge CLI wiring**:
+  - `embex-bridge` now routes Python/Node CLI entrypoints to `embex-cli`.
+- **Python DX**:
+  - Python binding now accepts plain dict points in addition to `Point` objects.
+  - `insert_stream` now validates `batch_size` and returns explicit errors for invalid items.
+- **Release operations**:
+  - Added `docs/RELEASE.md` runbook.
+  - Standardized release tagging around `v*` across GitHub workflows.
+
 ## [0.1.17] - 2026-01-13
 
 ### Added
