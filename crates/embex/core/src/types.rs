@@ -35,6 +35,15 @@ impl Point {
         bridge_core::simd::cosine_similarity(&self.vector, &other.vector)
     }
 
+    /// Computes cosine similarity and returns a typed error instead of panicking.
+    #[cfg(feature = "simd")]
+    pub fn try_cosine_similarity(
+        &self,
+        other: &Point,
+    ) -> std::result::Result<f32, bridge_core::simd::SimdError> {
+        bridge_core::simd::try_cosine_similarity(&self.vector, &other.vector)
+    }
+
     /// Computes the L2 (Euclidean) distance to another point using SIMD-accelerated operations.
     ///
     /// # Panics
@@ -42,6 +51,15 @@ impl Point {
     #[cfg(feature = "simd")]
     pub fn l2_distance(&self, other: &Point) -> f32 {
         bridge_core::simd::l2_distance(&self.vector, &other.vector)
+    }
+
+    /// Computes L2 distance and returns a typed error instead of panicking.
+    #[cfg(feature = "simd")]
+    pub fn try_l2_distance(
+        &self,
+        other: &Point,
+    ) -> std::result::Result<f32, bridge_core::simd::SimdError> {
+        bridge_core::simd::try_l2_distance(&self.vector, &other.vector)
     }
 
     /// Computes the dot product with another point using SIMD-accelerated operations.
@@ -53,6 +71,15 @@ impl Point {
         bridge_core::simd::dot_product(&self.vector, &other.vector)
     }
 
+    /// Computes dot product and returns a typed error instead of panicking.
+    #[cfg(feature = "simd")]
+    pub fn try_dot_product(
+        &self,
+        other: &Point,
+    ) -> std::result::Result<f32, bridge_core::simd::SimdError> {
+        bridge_core::simd::try_dot_product(&self.vector, &other.vector)
+    }
+
     /// Normalizes the vector to unit length in-place using SIMD-accelerated operations.
     ///
     /// # Panics
@@ -62,10 +89,22 @@ impl Point {
         bridge_core::simd::normalize_in_place(&mut self.vector);
     }
 
+    /// Normalizes the vector to unit length and returns a typed error on zero vectors.
+    #[cfg(feature = "simd")]
+    pub fn try_normalize(&mut self) -> std::result::Result<(), bridge_core::simd::SimdError> {
+        bridge_core::simd::try_normalize_in_place(&mut self.vector)
+    }
+
     /// Returns the L2 norm (magnitude) of the vector using SIMD-accelerated operations.
     #[cfg(feature = "simd")]
     pub fn l2_norm(&self) -> f32 {
         bridge_core::simd::l2_norm(&self.vector)
+    }
+
+    /// Reports which SIMD backend is currently active.
+    #[cfg(feature = "simd")]
+    pub fn simd_backend(&self) -> bridge_core::simd::SimdBackend {
+        bridge_core::simd::active_backend()
     }
 }
 
@@ -277,6 +316,23 @@ mod tests {
         let point = Point::new("test_id", vec![1.0, 2.0]).with_metadata(metadata.clone());
 
         assert_eq!(point.metadata, Some(metadata));
+    }
+
+    #[cfg(feature = "simd")]
+    #[test]
+    fn test_point_try_simd_helpers() {
+        let a = Point::new("a", vec![1.0, 0.0]);
+        let b = Point::new("b", vec![1.0, 0.0]);
+
+        let cosine = a
+            .try_cosine_similarity(&b)
+            .expect("vectors with same length should succeed");
+        assert!((cosine - 1.0).abs() < 1e-5);
+
+        let dot = a
+            .try_dot_product(&b)
+            .expect("vectors with same length should succeed");
+        assert!((dot - 1.0).abs() < 1e-5);
     }
 
     #[test]

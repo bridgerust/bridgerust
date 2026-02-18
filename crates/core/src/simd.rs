@@ -14,31 +14,99 @@
 //!
 //! The functions automatically use SIMD when available, otherwise fall back to scalar operations.
 
+/// Runtime-selected SIMD backend in use for accelerated operations.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SimdBackend {
+    Scalar,
+    Avx2,
+    Sse41,
+    Neon,
+}
+
+/// Error returned by fallible SIMD helpers.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SimdError {
+    LengthMismatch { left: usize, right: usize },
+    ZeroVector,
+}
+
+impl std::fmt::Display for SimdError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SimdError::LengthMismatch { left, right } => {
+                write!(
+                    f,
+                    "Vectors must have the same length (left={}, right={})",
+                    left, right
+                )
+            }
+            SimdError::ZeroVector => write!(f, "Cannot normalize or score zero-magnitude vectors"),
+        }
+    }
+}
+
+impl std::error::Error for SimdError {}
+
+/// Returns the active SIMD backend for this process at runtime.
+#[inline]
+pub fn active_backend() -> SimdBackend {
+    #[cfg(all(target_arch = "x86_64", feature = "simd"))]
+    {
+        if std::is_x86_feature_detected!("avx2") {
+            return SimdBackend::Avx2;
+        }
+        if std::is_x86_feature_detected!("sse4.1") {
+            return SimdBackend::Sse41;
+        }
+    }
+
+    #[cfg(all(target_arch = "aarch64", feature = "simd"))]
+    {
+        if std::arch::is_aarch64_feature_detected!("neon") {
+            return SimdBackend::Neon;
+        }
+    }
+
+    SimdBackend::Scalar
+}
+
 /// Computes the dot product of two vectors.
 ///
 /// # Panics
 /// Panics if the vectors have different lengths.
 #[inline]
 pub fn dot_product(a: &[f32], b: &[f32]) -> f32 {
-    assert_eq!(a.len(), b.len(), "Vectors must have the same length");
+    try_dot_product(a, b).expect("Vectors must have the same length")
+}
 
-    #[cfg(all(target_arch = "x86_64", feature = "simd", target_feature = "avx2"))]
-    return unsafe { dot_product_avx2(a, b) };
+/// Computes the dot product of two vectors.
+#[inline]
+pub fn try_dot_product(a: &[f32], b: &[f32]) -> std::result::Result<f32, SimdError> {
+    if a.len() != b.len() {
+        return Err(SimdError::LengthMismatch {
+            left: a.len(),
+            right: b.len(),
+        });
+    }
 
-    #[cfg(all(
-        target_arch = "x86_64",
-        feature = "simd",
-        target_feature = "sse4.1",
-        not(target_feature = "avx2")
-    ))]
-    return unsafe { dot_product_sse4(a, b) };
+    #[cfg(all(target_arch = "x86_64", feature = "simd"))]
+    {
+        if std::is_x86_feature_detected!("avx2") {
+            return Ok(unsafe { dot_product_avx2(a, b) });
+        }
+        if std::is_x86_feature_detected!("sse4.1") {
+            return Ok(unsafe { dot_product_sse4(a, b) });
+        }
+    }
 
-    #[cfg(all(target_arch = "aarch64", feature = "simd", target_feature = "neon"))]
-    return unsafe { dot_product_neon(a, b) };
+    #[cfg(all(target_arch = "aarch64", feature = "simd"))]
+    {
+        if std::arch::is_aarch64_feature_detected!("neon") {
+            return Ok(unsafe { dot_product_neon(a, b) });
+        }
+    }
 
-    #[allow(unreachable_code)]
-    // Scalar fallback (always available when SIMD is not enabled)
-    dot_product_scalar(a, b)
+    Ok(dot_product_scalar(a, b))
 }
 
 /// Computes the L2 (Euclidean) distance between two vectors.
@@ -47,25 +115,37 @@ pub fn dot_product(a: &[f32], b: &[f32]) -> f32 {
 /// Panics if the vectors have different lengths.
 #[inline]
 pub fn l2_distance(a: &[f32], b: &[f32]) -> f32 {
-    assert_eq!(a.len(), b.len(), "Vectors must have the same length");
+    try_l2_distance(a, b).expect("Vectors must have the same length")
+}
 
-    #[cfg(all(target_arch = "x86_64", feature = "simd", target_feature = "avx2"))]
-    return unsafe { l2_distance_avx2(a, b) };
+/// Computes the L2 (Euclidean) distance between two vectors.
+#[inline]
+pub fn try_l2_distance(a: &[f32], b: &[f32]) -> std::result::Result<f32, SimdError> {
+    if a.len() != b.len() {
+        return Err(SimdError::LengthMismatch {
+            left: a.len(),
+            right: b.len(),
+        });
+    }
 
-    #[cfg(all(
-        target_arch = "x86_64",
-        feature = "simd",
-        target_feature = "sse4.1",
-        not(target_feature = "avx2")
-    ))]
-    return unsafe { l2_distance_sse4(a, b) };
+    #[cfg(all(target_arch = "x86_64", feature = "simd"))]
+    {
+        if std::is_x86_feature_detected!("avx2") {
+            return Ok(unsafe { l2_distance_avx2(a, b) });
+        }
+        if std::is_x86_feature_detected!("sse4.1") {
+            return Ok(unsafe { l2_distance_sse4(a, b) });
+        }
+    }
 
-    #[cfg(all(target_arch = "aarch64", feature = "simd", target_feature = "neon"))]
-    return unsafe { l2_distance_neon(a, b) };
+    #[cfg(all(target_arch = "aarch64", feature = "simd"))]
+    {
+        if std::arch::is_aarch64_feature_detected!("neon") {
+            return Ok(unsafe { l2_distance_neon(a, b) });
+        }
+    }
 
-    #[allow(unreachable_code)]
-    // Scalar fallback (always available when SIMD is not enabled)
-    l2_distance_scalar(a, b)
+    Ok(l2_distance_scalar(a, b))
 }
 
 /// Computes the cosine similarity between two vectors.
@@ -73,20 +153,29 @@ pub fn l2_distance(a: &[f32], b: &[f32]) -> f32 {
 /// Returns a value in the range [-1, 1], where 1 means identical direction.
 ///
 /// # Panics
-/// Panics if the vectors have different lengths or if either vector has zero magnitude.
+/// Panics if the vectors have different lengths.
 #[inline]
 pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
-    assert_eq!(a.len(), b.len(), "Vectors must have the same length");
+    match try_cosine_similarity(a, b) {
+        Ok(score) => score,
+        Err(SimdError::ZeroVector) => 0.0,
+        Err(SimdError::LengthMismatch { .. }) => {
+            panic!("Vectors must have the same length")
+        }
+    }
+}
 
-    let dot = dot_product(a, b);
-    let norm_a = dot_product(a, a).sqrt();
-    let norm_b = dot_product(b, b).sqrt();
+/// Computes the cosine similarity between two vectors.
+pub fn try_cosine_similarity(a: &[f32], b: &[f32]) -> std::result::Result<f32, SimdError> {
+    let dot = try_dot_product(a, b)?;
+    let norm_a = try_dot_product(a, a)?.sqrt();
+    let norm_b = try_dot_product(b, b)?.sqrt();
 
     if norm_a == 0.0 || norm_b == 0.0 {
-        return 0.0;
+        return Err(SimdError::ZeroVector);
     }
 
-    dot / (norm_a * norm_b)
+    Ok(dot / (norm_a * norm_b))
 }
 
 /// Normalizes a vector in-place to unit length.
@@ -95,37 +184,41 @@ pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
 /// Panics if the vector has zero magnitude.
 #[inline]
 pub fn normalize_in_place(v: &mut [f32]) {
-    let norm = dot_product(v, v).sqrt();
-    assert!(norm > 0.0, "Cannot normalize zero vector");
+    try_normalize_in_place(v).expect("Cannot normalize zero vector");
+}
+
+/// Normalizes a vector in-place to unit length.
+pub fn try_normalize_in_place(v: &mut [f32]) -> std::result::Result<(), SimdError> {
+    let norm = try_dot_product(v, v)?.sqrt();
+    if norm == 0.0 {
+        return Err(SimdError::ZeroVector);
+    }
 
     let inv_norm = 1.0 / norm;
 
-    #[cfg(all(target_arch = "x86_64", feature = "simd", target_feature = "avx2"))]
+    #[cfg(all(target_arch = "x86_64", feature = "simd"))]
     {
-        unsafe { normalize_in_place_avx2(v, inv_norm) };
-        return;
+        if std::is_x86_feature_detected!("avx2") {
+            unsafe { normalize_in_place_avx2(v, inv_norm) };
+            return Ok(());
+        }
+        if std::is_x86_feature_detected!("sse4.1") {
+            unsafe { normalize_in_place_sse4(v, inv_norm) };
+            return Ok(());
+        }
     }
 
-    #[cfg(all(
-        target_arch = "x86_64",
-        feature = "simd",
-        target_feature = "sse4.1",
-        not(target_feature = "avx2")
-    ))]
+    #[cfg(all(target_arch = "aarch64", feature = "simd"))]
     {
-        unsafe { normalize_in_place_sse4(v, inv_norm) };
-        return;
+        if std::arch::is_aarch64_feature_detected!("neon") {
+            unsafe { normalize_in_place_neon(v, inv_norm) };
+            return Ok(());
+        }
     }
 
-    #[cfg(all(target_arch = "aarch64", feature = "simd", target_feature = "neon"))]
-    {
-        unsafe { normalize_in_place_neon(v, inv_norm) };
-        return;
-    }
-
-    #[allow(unreachable_code)]
     // Scalar fallback
     normalize_in_place_scalar(v, inv_norm);
+    Ok(())
 }
 
 /// Computes the L2 norm (magnitude) of a vector.
@@ -170,7 +263,7 @@ fn normalize_in_place_scalar(v: &mut [f32], inv_norm: f32) {
 // x86_64 AVX2 implementations
 // ============================================================================
 
-#[cfg(all(target_arch = "x86_64", feature = "simd", target_feature = "avx2"))]
+#[cfg(all(target_arch = "x86_64", feature = "simd"))]
 #[target_feature(enable = "avx2")]
 unsafe fn dot_product_avx2(a: &[f32], b: &[f32]) -> f32 {
     use std::arch::x86_64::*;
@@ -183,7 +276,7 @@ unsafe fn dot_product_avx2(a: &[f32], b: &[f32]) -> f32 {
         let idx = i * 8;
         let va = _mm256_loadu_ps(a.as_ptr().add(idx));
         let vb = _mm256_loadu_ps(b.as_ptr().add(idx));
-        sum = _mm256_fmadd_ps(va, vb, sum);
+        sum = _mm256_add_ps(sum, _mm256_mul_ps(va, vb));
     }
 
     // Horizontal sum: reduce 8 elements to 1
@@ -202,7 +295,7 @@ unsafe fn dot_product_avx2(a: &[f32], b: &[f32]) -> f32 {
     }
 }
 
-#[cfg(all(target_arch = "x86_64", feature = "simd", target_feature = "avx2"))]
+#[cfg(all(target_arch = "x86_64", feature = "simd"))]
 #[target_feature(enable = "avx2")]
 unsafe fn l2_distance_avx2(a: &[f32], b: &[f32]) -> f32 {
     use std::arch::x86_64::*;
@@ -216,7 +309,7 @@ unsafe fn l2_distance_avx2(a: &[f32], b: &[f32]) -> f32 {
         let va = unsafe { _mm256_loadu_ps(a.as_ptr().add(idx)) };
         let vb = unsafe { _mm256_loadu_ps(b.as_ptr().add(idx)) };
         let diff = _mm256_sub_ps(va, vb);
-        sum = _mm256_fmadd_ps(diff, diff, sum);
+        sum = _mm256_add_ps(sum, _mm256_mul_ps(diff, diff));
     }
 
     // Horizontal sum
@@ -235,7 +328,7 @@ unsafe fn l2_distance_avx2(a: &[f32], b: &[f32]) -> f32 {
     }
 }
 
-#[cfg(all(target_arch = "x86_64", feature = "simd", target_feature = "avx2"))]
+#[cfg(all(target_arch = "x86_64", feature = "simd"))]
 #[target_feature(enable = "avx2")]
 unsafe fn normalize_in_place_avx2(v: &mut [f32], inv_norm: f32) {
     use std::arch::x86_64::*;
@@ -263,7 +356,7 @@ unsafe fn normalize_in_place_avx2(v: &mut [f32], inv_norm: f32) {
 // x86_64 SSE4.1 implementations
 // ============================================================================
 
-#[cfg(all(target_arch = "x86_64", feature = "simd", target_feature = "sse4.1"))]
+#[cfg(all(target_arch = "x86_64", feature = "simd"))]
 #[target_feature(enable = "sse4.1")]
 unsafe fn dot_product_sse4(a: &[f32], b: &[f32]) -> f32 {
     use std::arch::x86_64::*;
@@ -294,7 +387,7 @@ unsafe fn dot_product_sse4(a: &[f32], b: &[f32]) -> f32 {
     }
 }
 
-#[cfg(all(target_arch = "x86_64", feature = "simd", target_feature = "sse4.1"))]
+#[cfg(all(target_arch = "x86_64", feature = "simd"))]
 #[target_feature(enable = "sse4.1")]
 unsafe fn l2_distance_sse4(a: &[f32], b: &[f32]) -> f32 {
     use std::arch::x86_64::*;
@@ -326,7 +419,7 @@ unsafe fn l2_distance_sse4(a: &[f32], b: &[f32]) -> f32 {
     }
 }
 
-#[cfg(all(target_arch = "x86_64", feature = "simd", target_feature = "sse4.1"))]
+#[cfg(all(target_arch = "x86_64", feature = "simd"))]
 #[target_feature(enable = "sse4.1")]
 unsafe fn normalize_in_place_sse4(v: &mut [f32], inv_norm: f32) {
     use std::arch::x86_64::*;
@@ -354,7 +447,7 @@ unsafe fn normalize_in_place_sse4(v: &mut [f32], inv_norm: f32) {
 // ARM NEON implementations
 // ============================================================================
 
-#[cfg(all(target_arch = "aarch64", feature = "simd", target_feature = "neon"))]
+#[cfg(all(target_arch = "aarch64", feature = "simd"))]
 #[target_feature(enable = "neon")]
 unsafe fn dot_product_neon(a: &[f32], b: &[f32]) -> f32 {
     use std::arch::aarch64::*;
@@ -383,7 +476,7 @@ unsafe fn dot_product_neon(a: &[f32], b: &[f32]) -> f32 {
     }
 }
 
-#[cfg(all(target_arch = "aarch64", feature = "simd", target_feature = "neon"))]
+#[cfg(all(target_arch = "aarch64", feature = "simd"))]
 #[target_feature(enable = "neon")]
 unsafe fn l2_distance_neon(a: &[f32], b: &[f32]) -> f32 {
     use std::arch::aarch64::*;
@@ -413,7 +506,7 @@ unsafe fn l2_distance_neon(a: &[f32], b: &[f32]) -> f32 {
     }
 }
 
-#[cfg(all(target_arch = "aarch64", feature = "simd", target_feature = "neon"))]
+#[cfg(all(target_arch = "aarch64", feature = "simd"))]
 #[target_feature(enable = "neon")]
 unsafe fn normalize_in_place_neon(v: &mut [f32], inv_norm: f32) {
     use std::arch::aarch64::*;
@@ -531,5 +624,27 @@ mod tests {
         let v = vec![3.0, 4.0];
         let norm = l2_norm(&v);
         assert!((norm - 5.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_try_api_length_mismatch() {
+        let a = vec![1.0, 2.0];
+        let b = vec![1.0];
+        let result = try_dot_product(&a, &b);
+        assert!(matches!(result, Err(SimdError::LengthMismatch { .. })));
+    }
+
+    #[test]
+    fn test_try_normalize_zero_vector() {
+        let mut v = vec![0.0, 0.0];
+        let result = try_normalize_in_place(&mut v);
+        assert_eq!(result, Err(SimdError::ZeroVector));
+    }
+
+    #[test]
+    fn test_active_backend_is_known_variant() {
+        match active_backend() {
+            SimdBackend::Scalar | SimdBackend::Avx2 | SimdBackend::Sse41 | SimdBackend::Neon => {}
+        }
     }
 }
