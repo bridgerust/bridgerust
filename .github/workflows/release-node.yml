@@ -256,5 +256,12 @@ jobs:
           VERSION=${GITHUB_REF_NAME#v}
           npm version $VERSION --no-git-tag-version --allow-same-version
 
+          # Keep platform optionalDependencies aligned with the published version
+          npm pkg set optionalDependencies."@bridgerust/embex-darwin-arm64"="$VERSION"
+          npm pkg set optionalDependencies."@bridgerust/embex-darwin-x64"="$VERSION"
+          npm pkg set optionalDependencies."@bridgerust/embex-linux-x64-gnu"="$VERSION"
+          npm pkg set optionalDependencies."@bridgerust/embex-linux-x64-musl"="$VERSION"
+          npm pkg set optionalDependencies."@bridgerust/embex-win32-x64-msvc"="$VERSION"
+
           echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
           npm publish --access public
