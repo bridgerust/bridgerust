@@ -14,6 +14,7 @@ pub use bridge_embex_infrastructure::config::{self, ConfigError, EmbexConfig};
 pub use bridge_embex_infrastructure::observability::{
     EmbexMetrics, MetricsSnapshot, Timer, init_tracing,
 };
+pub use bridge_embex_infrastructure::provider::{ProviderCapabilities, get_provider_capabilities};
 pub use bridge_embex_infrastructure::retry::{RetryConfig, retry_with_backoff};
 
 // Re-export application layer

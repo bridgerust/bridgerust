@@ -5,6 +5,7 @@ use bridge_embex_core::error::Result;
 use bridge_embex_core::types::{Aggregation, CollectionSchema, Filter, Point, SearchResponse};
 use bridge_embex_infrastructure::config::EmbexConfig;
 use bridge_embex_infrastructure::observability::EmbexMetrics;
+use bridge_embex_infrastructure::provider::{ProviderCapabilities, get_provider_capabilities};
 use std::sync::Arc;
 
 /// Main client for interacting with the Embex vector database.
@@ -33,6 +34,7 @@ use std::sync::Arc;
 pub struct EmbexClient {
     db: Arc<dyn VectorDatabase>,
     metrics: Arc<EmbexMetrics>,
+    provider: String,
 }
 
 impl EmbexClient {
@@ -46,12 +48,23 @@ impl EmbexClient {
         Self {
             db,
             metrics: Arc::new(EmbexMetrics::new()),
+            provider: "custom".to_string(),
         }
     }
 
     /// Returns a snapshot of current metrics.
     pub fn metrics(&self) -> bridge_embex_infrastructure::observability::MetricsSnapshot {
         self.metrics.snapshot()
+    }
+
+    /// Returns the normalized provider name used by this client.
+    pub fn provider(&self) -> &str {
+        &self.provider
+    }
+
+    /// Returns capability metadata for the configured provider.
+    pub fn capabilities(&self) -> ProviderCapabilities {
+        get_provider_capabilities(&self.provider)
     }
 
     /// Creates a new `EmbexClient` from the provided configuration.
@@ -63,10 +76,12 @@ impl EmbexClient {
     /// This method is intended for providers that can be initialized synchronously.
     /// For providers requiring async initialization (like LanceDB or PgVector), use `new_async`.
     pub fn new(config: EmbexConfig) -> Result<Self> {
+        let provider = config.provider.clone();
         let db = AdapterFactory::create(&config)?;
         Ok(Self {
             db,
             metrics: Arc::new(EmbexMetrics::new()),
+            provider,
         })
     }
 
@@ -74,10 +89,12 @@ impl EmbexClient {
     ///
     /// Required for providers that need asynchronous initialization, such as LanceDB or PgVector.
     pub async fn new_async(config: EmbexConfig) -> Result<Self> {
+        let provider = config.provider.clone();
         let db = AdapterFactory::create_async(&config).await?;
         Ok(Self {
             db,
             metrics: Arc::new(EmbexMetrics::new()),
+            provider,
         })
     }
 
