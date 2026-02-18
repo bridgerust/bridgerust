@@ -79,6 +79,12 @@ impl DataMigrator {
     where
         F: Fn(MigrationProgress) + Send,
     {
+        if batch_size == 0 {
+            return Err(EmbexError::Validation(
+                "batch_size must be greater than 0".to_string(),
+            ));
+        }
+
         let start = std::time::Instant::now();
 
         // Create destination collection
@@ -168,6 +174,12 @@ impl DataMigrator {
         dest_collection: &str,
         batch_size: usize,
     ) -> Result<MigrationResult> {
+        if batch_size == 0 {
+            return Err(EmbexError::Validation(
+                "batch_size must be greater than 0".to_string(),
+            ));
+        }
+
         // Fetch first batch to infer dimension
         let first_batch = self.source.scroll(source_collection, None, 1).await?;
 
@@ -351,5 +363,21 @@ mod tests {
 
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("empty"));
+    }
+
+    #[tokio::test]
+    async fn test_migrate_rejects_zero_batch_size() {
+        let source = MockDb::empty();
+        let dest = MockDb::empty();
+        let migrator = DataMigrator::new(source, dest);
+
+        let result = migrator.migrate_simple("src", "dest", 0).await;
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("batch_size must be greater than 0")
+        );
     }
 }

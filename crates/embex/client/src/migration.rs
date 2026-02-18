@@ -62,24 +62,35 @@ impl MigrationManager {
     pub async fn get_applied_migrations(&self) -> Result<Vec<String>> {
         self.ensure_migration_table().await?;
 
-        let query = QueryBuilder::new_filter_only(MIGRATION_COLLECTION)
-            .limit(1000)
-            .include_metadata(true)
-            .build();
+        let mut applied = Vec::new();
+        let mut offset = None;
 
-        let response = self.db.search(&query).await?;
+        loop {
+            let response = self
+                .db
+                .scroll(MIGRATION_COLLECTION, offset.clone(), 500)
+                .await?;
+            if response.points.is_empty() {
+                break;
+            }
 
-        let applied: Vec<String> = response
-            .results
-            .into_iter()
-            .filter_map(|r| {
-                r.metadata.and_then(|m| {
+            applied.extend(response.points.into_iter().filter_map(|point| {
+                point.metadata.and_then(|m| {
                     m.get("version")
                         .and_then(|v| v.as_str())
-                        .map(|s| s.to_string())
+                        .map(ToString::to_string)
                 })
-            })
-            .collect();
+            }));
+
+            match response.next_offset {
+                Some(next) => offset = Some(next),
+                None => break,
+            }
+        }
+
+        applied.sort();
+        applied.dedup();
+
         Ok(applied)
     }
 
@@ -90,6 +101,8 @@ impl MigrationManager {
 
     /// Runs pending migrations in order.
     pub async fn run_migrations(&self, migrations: Vec<Box<dyn Migration>>) -> Result<()> {
+        Self::validate_migrations(&migrations)?;
+
         let _lock = self._lock.lock().await;
 
         let applied = self.get_applied_migrations().await?;

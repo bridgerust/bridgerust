@@ -254,6 +254,17 @@ impl Collection {
     ) -> Result<()> {
         use futures::StreamExt;
 
+        if batch_size == 0 {
+            return Err(bridge_embex_core::error::EmbexError::Validation(
+                "batch_size must be greater than 0".to_string(),
+            ));
+        }
+        if parallel == Some(0) {
+            return Err(bridge_embex_core::error::EmbexError::Validation(
+                "parallel must be greater than 0 when provided".to_string(),
+            ));
+        }
+
         let concurrency = parallel.unwrap_or(1);
         let chunks: Vec<Vec<Point>> = points.chunks(batch_size).map(|c| c.to_vec()).collect();
 
@@ -284,6 +295,17 @@ impl Collection {
         parallel: Option<usize>,
     ) -> Result<()> {
         use futures::StreamExt;
+
+        if batch_size == 0 {
+            return Err(bridge_embex_core::error::EmbexError::Validation(
+                "batch_size must be greater than 0".to_string(),
+            ));
+        }
+        if parallel == Some(0) {
+            return Err(bridge_embex_core::error::EmbexError::Validation(
+                "parallel must be greater than 0 when provided".to_string(),
+            ));
+        }
 
         let concurrency = parallel.unwrap_or(1);
 

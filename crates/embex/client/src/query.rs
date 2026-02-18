@@ -44,7 +44,7 @@ impl QueryBuilder {
     }
 
     pub fn limit(mut self, limit: usize) -> Self {
-        self.top_k = limit;
+        self.top_k = limit.max(1);
         self
     }
 
@@ -200,5 +200,11 @@ mod tests {
         assert!(!q.include_metadata);
         assert_eq!(q.aggregations.len(), 1);
         assert!(q.filter.is_some());
+    }
+
+    #[test]
+    fn test_query_builder_limit_zero_is_normalized() {
+        let q = QueryBuilder::new("test", vec![1.0, 2.0]).limit(0).build();
+        assert_eq!(q.top_k, 1);
     }
 }

@@ -3,7 +3,7 @@ use bridge_embex::VectorDatabase;
 use bridge_embex::migration::MigrationManager;
 use bridge_embex_core::error::Result;
 use bridge_embex_core::migration::Migration;
-use bridge_embex_core::types::{CollectionSchema, DistanceMetric, Point};
+use bridge_embex_core::types::{CollectionSchema, DistanceMetric, Point, ScrollResponse};
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 
@@ -110,13 +110,36 @@ impl VectorDatabase for MockDatabase {
 
     async fn scroll(
         &self,
-        _collection: &str,
-        _offset: Option<String>,
-        _limit: usize,
-    ) -> Result<bridge_embex_core::types::ScrollResponse> {
-        Ok(bridge_embex_core::types::ScrollResponse {
-            points: vec![],
-            next_offset: None,
+        collection: &str,
+        offset: Option<String>,
+        limit: usize,
+    ) -> Result<ScrollResponse> {
+        let offset_num = offset.and_then(|s| s.parse::<usize>().ok()).unwrap_or(0);
+        let limit = limit.max(1);
+
+        let stored = self.points.lock().unwrap();
+        let matching: Vec<Point> = stored
+            .iter()
+            .filter(|(coll_name, _)| coll_name == collection)
+            .flat_map(|(_, points)| points.clone())
+            .collect();
+
+        let batch: Vec<Point> = matching
+            .iter()
+            .skip(offset_num)
+            .take(limit)
+            .cloned()
+            .collect();
+
+        let next_offset = if offset_num + batch.len() < matching.len() {
+            Some((offset_num + batch.len()).to_string())
+        } else {
+            None
+        };
+
+        Ok(ScrollResponse {
+            points: batch,
+            next_offset,
         })
     }
 }
