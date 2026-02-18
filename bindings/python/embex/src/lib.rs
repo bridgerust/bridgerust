@@ -457,27 +457,13 @@ impl Collection {
     fn insert<'p>(
         &self,
         py: Python<'p>,
-        points: Vec<PyRef<'p, EmbexPoint>>,
+        points: Vec<Bound<'p, PyAny>>,
     ) -> PyResult<Bound<'p, PyAny>> {
         let inner = self.inner.clone();
 
         let mut rust_points = Vec::with_capacity(points.len());
-        for p in points {
-            let mut metadata = None;
-            if let Some(py_meta) = &p.metadata {
-                let mut meta_map = HashMap::new();
-                for (k, v) in py_meta {
-                    meta_map.insert(k.clone(), py_to_json(py, v)?);
-                }
-                metadata = Some(meta_map);
-            }
-
-            let point = Point {
-                id: p.id.clone(),
-                vector: p.vector.clone(),
-                metadata,
-            };
-            rust_points.push(point);
+        for point in points {
+            rust_points.push(py_any_to_point(py, &point)?);
         }
 
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
@@ -495,7 +481,7 @@ impl Collection {
     fn insert_batch<'p>(
         &self,
         py: Python<'p>,
-        points: Vec<PyRef<'p, EmbexPoint>>,
+        points: Vec<Bound<'p, PyAny>>,
         batch_size: Option<usize>,
         parallel: Option<usize>,
     ) -> PyResult<Bound<'p, PyAny>> {
@@ -503,22 +489,8 @@ impl Collection {
         let size = batch_size.unwrap_or(1000);
 
         let mut rust_points = Vec::with_capacity(points.len());
-        for p in points {
-            let mut metadata = None;
-            if let Some(py_meta) = &p.metadata {
-                let mut meta_map = HashMap::new();
-                for (k, v) in py_meta {
-                    meta_map.insert(k.clone(), py_to_json(py, v)?);
-                }
-                metadata = Some(meta_map);
-            }
-
-            let point = Point {
-                id: p.id.clone(),
-                vector: p.vector.clone(),
-                metadata,
-            };
-            rust_points.push(point);
+        for point in points {
+            rust_points.push(py_any_to_point(py, &point)?);
         }
 
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
@@ -701,47 +673,38 @@ impl Collection {
         points: Bound<'p, PyAny>,
         batch_size: usize,
     ) -> PyResult<Bound<'p, PyAny>> {
+        if batch_size == 0 {
+            return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                "batch_size must be greater than 0",
+            ));
+        }
+
         let inner = self.inner.clone();
         let iterator = points.try_iter()?;
         let py_iter: Py<PyIterator> = iterator.unbind();
 
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
             loop {
-                let mut batch: Vec<Point> = Vec::with_capacity(batch_size);
-                let mut done = false;
-
-                Python::attach(|py| {
+                let (batch, done) = Python::attach(|py| -> PyResult<(Vec<Point>, bool)> {
+                    let mut batch: Vec<Point> = Vec::with_capacity(batch_size);
+                    let mut done = false;
                     let mut iter = py_iter.bind(py).clone();
 
                     for _ in 0..batch_size {
                         let next_item = iter.next();
                         match next_item {
                             Some(Ok(item)) => {
-                                if let Ok(p) = item.extract::<PyRef<EmbexPoint>>() {
-                                    let mut metadata = None;
-                                    if let Some(py_meta) = &p.metadata {
-                                        let mut meta_map = HashMap::new();
-                                        for (k, v) in py_meta {
-                                            if let Ok(val) = py_to_json(py, v) {
-                                                meta_map.insert(k.clone(), val);
-                                            }
-                                        }
-                                        metadata = Some(meta_map);
-                                    }
-                                    batch.push(Point {
-                                        id: p.id.clone(),
-                                        vector: p.vector.clone(),
-                                        metadata,
-                                    });
-                                }
+                                batch.push(py_any_to_point(py, &item)?);
                             }
-                            _ => {
+                            Some(Err(err)) => return Err(err),
+                            None => {
                                 done = true;
                                 break;
                             }
                         }
                     }
-                });
+                    Ok((batch, done))
+                })?;
 
                 if !batch.is_empty() {
                     inner.insert(batch).await.map_err(to_py_err)?;
@@ -798,6 +761,74 @@ impl Collection {
             })
         })
     }
+}
+
+fn py_embex_point_to_rust(py: Python<'_>, p: &PyRef<'_, EmbexPoint>) -> PyResult<Point> {
+    let metadata = if let Some(py_meta) = &p.metadata {
+        let mut meta_map = HashMap::new();
+        for (k, v) in py_meta {
+            meta_map.insert(k.clone(), py_to_json(py, v)?);
+        }
+        Some(meta_map)
+    } else {
+        None
+    };
+
+    Ok(Point {
+        id: p.id.clone(),
+        vector: p.vector.clone(),
+        metadata,
+    })
+}
+
+fn py_any_to_point<'py>(py: Python<'py>, item: &Bound<'py, PyAny>) -> PyResult<Point> {
+    if let Ok(point_ref) = item.extract::<PyRef<'py, EmbexPoint>>() {
+        return py_embex_point_to_rust(py, &point_ref);
+    }
+
+    let dict = item.cast::<PyDict>().map_err(|_| {
+        PyErr::new::<pyo3::exceptions::PyTypeError, _>(
+            "Each point must be an embex.Point or a dict with keys: id, vector, metadata (optional)",
+        )
+    })?;
+
+    let id_obj = dict.get_item("id")?.ok_or_else(|| {
+        PyErr::new::<pyo3::exceptions::PyValueError, _>("Point dict is missing required key 'id'")
+    })?;
+    let vector_obj = dict.get_item("vector")?.ok_or_else(|| {
+        PyErr::new::<pyo3::exceptions::PyValueError, _>(
+            "Point dict is missing required key 'vector'",
+        )
+    })?;
+
+    let id = id_obj.extract::<String>()?;
+    let vector = vector_obj.extract::<Vec<f32>>()?;
+
+    let metadata = if let Some(metadata_obj) = dict.get_item("metadata")? {
+        if metadata_obj.is_none() {
+            None
+        } else {
+            let metadata_dict = metadata_obj.cast::<PyDict>().map_err(|_| {
+                PyErr::new::<pyo3::exceptions::PyTypeError, _>(
+                    "Point dict key 'metadata' must be a dict when provided",
+                )
+            })?;
+            let mut meta_map = HashMap::new();
+            for (k, v) in metadata_dict {
+                let key = k.extract::<String>()?;
+                meta_map.insert(key, py_to_json(py, &v.unbind())?);
+            }
+            Some(meta_map)
+        }
+    } else {
+        None
+    };
+
+    Ok(Point {
+        id,
+        vector,
+        metadata,
+    })
 }
 
 // Convert PyObject to serde_json::Value
