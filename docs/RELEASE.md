@@ -1,13 +1,16 @@
 # Release Guide
 
-This project uses tag-driven GitHub Actions releases.
+This project uses tag-driven GitHub Actions releases with separate lanes:
+
+- Embex packages: `embex-vX.Y.Z`
+- BridgeRust framework crates: `bridgerust-vX.Y.Z`
 
 ## 1. Prepare the version
 
-```bash
-# Bump all package versions (workspace, Python, Node)
-python3 scripts/bump_version.py 0.1.18
-```
+For Embex package releases, update at least:
+
+- `bindings/python/embex/pyproject.toml`
+- `bindings/node/@bridgerust/embex/package.json`
 
 Update `CHANGELOG.md` with the new version section and commit the changes.
 
@@ -25,21 +28,29 @@ cargo check -p embex-bridge --features python
 
 ## 3. Create and push the release tag
 
-Use `vX.Y.Z` as the canonical tag format:
+Embex release tag format:
 
 ```bash
-git tag v0.1.18
-git push origin v0.1.18
+git tag embex-v0.1.18
+git push origin embex-v0.1.18
+```
+
+BridgeRust crates release tag format:
+
+```bash
+git tag bridgerust-v0.1.18
+git push origin bridgerust-v0.1.18
 ```
 
 ## 4. CI/CD workflows triggered by tag
 
-- `.github/workflows/publish-crates-io.yml`
 - `.github/workflows/release-python.yml`
 - `.github/workflows/release-node.yml`
 - `.github/workflows/release.yml`
+- `.github/workflows/publish-crates-io.yml`
 
-`publish-crates-io.yml` also supports legacy tags (`bridgerust-v*`) for backward compatibility.
+- `embex-v*` triggers Python/Node publish plus GitHub release creation.
+- `bridgerust-v*` triggers crates.io publication for framework crates.
 
 ## 5. Post-release verification
 
@@ -49,4 +60,3 @@ Run `.github/workflows/test-published-packages.yml` (manual dispatch) or use loc
 ./scripts/test-npm-package.sh 0.1.18
 ./scripts/test-pypi-package.sh 0.1.18
 ```
-

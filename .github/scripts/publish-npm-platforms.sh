@@ -1,7 +1,10 @@
 #!/bin/bash
 set -e
 
-VERSION=${GITHUB_REF_NAME#v}
+VERSION=${GITHUB_REF_NAME#embex-v}
+if [ "$VERSION" = "$GITHUB_REF_NAME" ]; then
+  VERSION=${GITHUB_REF_NAME#v}
+fi
 echo "🚀 Publishing version: $VERSION"
 
 for dir in npm/*/; do
