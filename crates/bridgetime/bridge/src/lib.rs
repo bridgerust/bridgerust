@@ -653,6 +653,30 @@ impl BridgeTime {
         Ok(local.ordinal())
     }
 
+    pub fn quarter(&self) -> Result<u32, BridgeTimeError> {
+        let month0 = self.month()?;
+        let month0_u32 = u32::try_from(month0).map_err(|_| BridgeTimeError::ArithmeticOverflow)?;
+        Ok((month0_u32 / 3) + 1)
+    }
+
+    pub fn set_quarter(&self, value: i64) -> Result<Self, BridgeTimeError> {
+        self.set_field(CalendarField::Quarter, value)
+    }
+
+    pub fn iso_weekday(&self) -> Result<u32, BridgeTimeError> {
+        let local = self.local_datetime()?;
+        Ok(local.weekday().number_from_monday())
+    }
+
+    pub fn set_iso_weekday(&self, value: i64) -> Result<Self, BridgeTimeError> {
+        let local = self.local_datetime()?;
+        let current = i64::from(local.weekday().number_from_monday());
+        let delta = value
+            .checked_sub(current)
+            .ok_or(BridgeTimeError::ArithmeticOverflow)?;
+        self.shift_local_by(Duration::days(delta))
+    }
+
     pub fn set_day_of_year(&self, value: i64) -> Result<Self, BridgeTimeError> {
         let current = i64::from(self.day_of_year()?);
         let delta = value
@@ -746,6 +770,28 @@ impl BridgeTime {
 
     pub fn is_same_or_after(&self, other: &BridgeTime) -> bool {
         self.utc_millis >= other.utc_millis
+    }
+
+    pub fn is_same_or_before_unit(
+        &self,
+        other: &BridgeTime,
+        unit: String,
+    ) -> Result<bool, BridgeTimeError> {
+        let parsed_unit = TimeUnit::parse(&unit)?;
+        let lhs = self.start_of_unit(parsed_unit)?;
+        let rhs = other.start_of_unit(parsed_unit)?;
+        Ok(lhs.utc_millis <= rhs.utc_millis)
+    }
+
+    pub fn is_same_or_after_unit(
+        &self,
+        other: &BridgeTime,
+        unit: String,
+    ) -> Result<bool, BridgeTimeError> {
+        let parsed_unit = TimeUnit::parse(&unit)?;
+        let lhs = self.start_of_unit(parsed_unit)?;
+        let rhs = other.start_of_unit(parsed_unit)?;
+        Ok(lhs.utc_millis >= rhs.utc_millis)
     }
 
     pub fn is_between(
@@ -1384,12 +1430,28 @@ mod tests {
             .expect("parse should succeed");
 
         assert_eq!(dt.day_of_year().expect("day_of_year"), 53);
+        assert_eq!(dt.quarter().expect("quarter"), 1);
+        assert_eq!(dt.iso_weekday().expect("iso_weekday"), 7);
         assert_eq!(dt.week_of_year().expect("week_of_year"), 9);
         assert_eq!(
             dt.week().expect("week"),
             dt.week_of_year().expect("week_of_year")
         );
         assert_eq!(dt.iso_week().expect("iso_week"), 8);
+
+        let next_quarter = dt.set_quarter(2).expect("set_quarter");
+        assert_eq!(
+            next_quarter
+                .format("YYYY-MM-DD".to_string())
+                .expect("format"),
+            "2026-05-22"
+        );
+
+        let monday = dt.set_iso_weekday(1).expect("set_iso_weekday");
+        assert_eq!(
+            monday.format("YYYY-MM-DD".to_string()).expect("format"),
+            "2026-02-16"
+        );
 
         let next_day = dt.set_day_of_year(54).expect("set_day_of_year");
         assert_eq!(
@@ -1432,6 +1494,35 @@ mod tests {
                 .expect("subtract")
                 .is_yesterday()
                 .expect("is_yesterday")
+        );
+    }
+
+    #[test]
+    fn unit_aware_same_or_comparisons_work() {
+        let morning =
+            BridgeTime::parse("2026-02-22T10:15:30Z".to_string(), Some("UTC".to_string()))
+                .expect("parse should succeed");
+        let evening =
+            BridgeTime::parse("2026-02-22T23:59:00Z".to_string(), Some("UTC".to_string()))
+                .expect("parse should succeed");
+        let next_day =
+            BridgeTime::parse("2026-02-23T00:00:00Z".to_string(), Some("UTC".to_string()))
+                .expect("parse should succeed");
+
+        assert!(
+            morning
+                .is_same_or_before_unit(&evening, "day".to_string())
+                .expect("is_same_or_before_unit")
+        );
+        assert!(
+            evening
+                .is_same_or_after_unit(&morning, "day".to_string())
+                .expect("is_same_or_after_unit")
+        );
+        assert!(
+            !next_day
+                .is_same_or_before_unit(&morning, "day".to_string())
+                .expect("is_same_or_before_unit")
         );
     }
 
