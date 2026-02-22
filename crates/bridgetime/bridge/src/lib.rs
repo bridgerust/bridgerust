@@ -410,6 +410,31 @@ fn parse_datetime_input(input: &str, tz: Tz) -> Result<i64, BridgeTimeError> {
     Err(BridgeTimeError::InvalidDateInput(input.to_string()))
 }
 
+fn parse_datetime_with_format(input: &str, pattern: &str, tz: Tz) -> Result<i64, BridgeTimeError> {
+    let chrono_pattern = convert_dayjs_pattern(pattern);
+
+    if let Ok(value) = DateTime::parse_from_str(input, &chrono_pattern) {
+        return Ok(value.timestamp_millis());
+    }
+
+    if let Ok(naive) = NaiveDateTime::parse_from_str(input, &chrono_pattern) {
+        let local = resolve_local_datetime(tz, naive)?;
+        return Ok(local.with_timezone(&Utc).timestamp_millis());
+    }
+
+    if let Ok(date) = NaiveDate::parse_from_str(input, &chrono_pattern) {
+        let naive = date
+            .and_hms_milli_opt(0, 0, 0, 0)
+            .ok_or(BridgeTimeError::ArithmeticOverflow)?;
+        let local = resolve_local_datetime(tz, naive)?;
+        return Ok(local.with_timezone(&Utc).timestamp_millis());
+    }
+
+    Err(BridgeTimeError::InvalidDateInput(format!(
+        "{input} (format: {pattern})"
+    )))
+}
+
 #[bridge]
 pub fn supported_units() -> Vec<String> {
     vec![
@@ -452,6 +477,19 @@ impl BridgeTime {
     pub fn parse(input: String, timezone: Option<String>) -> Result<Self, BridgeTimeError> {
         let tz = resolve_timezone(timezone)?;
         let utc_millis = parse_datetime_input(&input, tz)?;
+        Ok(Self {
+            utc_millis,
+            timezone: tz.name().to_string(),
+        })
+    }
+
+    pub fn parse_format(
+        input: String,
+        pattern: String,
+        timezone: Option<String>,
+    ) -> Result<Self, BridgeTimeError> {
+        let tz = resolve_timezone(timezone)?;
+        let utc_millis = parse_datetime_with_format(&input, &pattern, tz)?;
         Ok(Self {
             utc_millis,
             timezone: tz.name().to_string(),
@@ -1234,6 +1272,35 @@ mod tests {
             .format("YYYY-MM-DD HH:mm:ss".to_string())
             .expect("format should succeed");
         assert_eq!(formatted, "2026-02-22 10:15:30");
+    }
+
+    #[test]
+    fn parse_format_supports_custom_patterns() {
+        let dt = BridgeTime::parse_format(
+            "22/02/2026 10:15".to_string(),
+            "DD/MM/YYYY HH:mm".to_string(),
+            Some("UTC".to_string()),
+        )
+        .expect("parse_format should succeed");
+
+        assert_eq!(
+            dt.format("YYYY-MM-DD HH:mm:ss".to_string())
+                .expect("format should succeed"),
+            "2026-02-22 10:15:00"
+        );
+
+        let date_only = BridgeTime::parse_format(
+            "2026/02/22".to_string(),
+            "YYYY/MM/DD".to_string(),
+            Some("UTC".to_string()),
+        )
+        .expect("parse_format should succeed");
+        assert_eq!(
+            date_only
+                .format("YYYY-MM-DD HH:mm:ss".to_string())
+                .expect("format should succeed"),
+            "2026-02-22 00:00:00"
+        );
     }
 
     #[test]
