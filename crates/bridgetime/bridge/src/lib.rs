@@ -115,20 +115,6 @@ impl TimeUnit {
             _ => Err(BridgeTimeError::InvalidUnit(raw.to_string())),
         }
     }
-
-    fn next(self) -> Option<Self> {
-        match self {
-            Self::Millisecond => Some(Self::Second),
-            Self::Second => Some(Self::Minute),
-            Self::Minute => Some(Self::Hour),
-            Self::Hour => Some(Self::Day),
-            Self::Day => Some(Self::Week),
-            Self::Week => Some(Self::Month),
-            Self::Month => Some(Self::Quarter),
-            Self::Quarter => Some(Self::Year),
-            Self::Year => None,
-        }
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1578,8 +1564,8 @@ impl BridgeTime {
             return Ok(self.clone_time());
         }
 
-        let next_unit = unit.next().ok_or(BridgeTimeError::ArithmeticOverflow)?;
-        let next_start = self.start_of_unit(next_unit)?;
+        let current_start = self.start_of_unit(unit)?;
+        let next_start = current_start.add_unit(1, unit)?;
         next_start.add_unit(-1, TimeUnit::Millisecond)
     }
 }
@@ -1663,6 +1649,42 @@ mod tests {
             .format("YYYY-MM-DD HH:mm:ss".to_string())
             .expect("format should succeed");
         assert_eq!(formatted, "2026-02-23 00:00:00");
+    }
+
+    #[test]
+    fn end_of_boundaries_are_correct() {
+        let dt = BridgeTime::parse("2026-02-22T10:15:30Z".to_string(), Some("UTC".to_string()))
+            .expect("parse should succeed");
+
+        let end_day = dt
+            .end_of("day".to_string())
+            .expect("end_of day should succeed");
+        assert_eq!(
+            end_day
+                .format("YYYY-MM-DD HH:mm:ss.SSS".to_string())
+                .expect("format should succeed"),
+            "2026-02-22 23:59:59.999"
+        );
+
+        let end_week = dt
+            .end_of("week".to_string())
+            .expect("end_of week should succeed");
+        assert_eq!(
+            end_week
+                .format("YYYY-MM-DD HH:mm:ss.SSS".to_string())
+                .expect("format should succeed"),
+            "2026-02-28 23:59:59.999"
+        );
+
+        let end_month = dt
+            .end_of("month".to_string())
+            .expect("end_of month should succeed");
+        assert_eq!(
+            end_month
+                .format("YYYY-MM-DD HH:mm:ss.SSS".to_string())
+                .expect("format should succeed"),
+            "2026-02-28 23:59:59.999"
+        );
     }
 
     #[test]
