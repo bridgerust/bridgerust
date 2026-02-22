@@ -28,6 +28,7 @@ BridgeTime package sources:
 - `crates/bridgetime/bridge`
 - `bindings/python/bridgetime`
 - `bindings/node/@bridgerust/bridgetime`
+- Docs: `docs/bridgetime.md`, `bindings/python/bridgetime/README.md`, `bindings/node/@bridgerust/bridgetime/README.md`
 
 ## The Problem
 

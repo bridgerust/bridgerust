@@ -21,9 +21,25 @@ export declare class BridgeTime {
   startOf(unit: string): BridgeTime
   endOf(unit: string): BridgeTime
   diff(other: BridgeTime, unit: string, asFloat?: boolean | null): number
+  isValid(): boolean
+  daysInMonth(): number
+  isLeapYear(): boolean
+  get(field: string): bigint
+  set(field: string, value: bigint | number): BridgeTime
   isBefore(other: BridgeTime): boolean
   isAfter(other: BridgeTime): boolean
   isSame(other: BridgeTime): boolean
+  isBeforeUnit(other: BridgeTime, unit: string): boolean
+  isAfterUnit(other: BridgeTime, unit: string): boolean
+  isSameUnit(other: BridgeTime, unit: string): boolean
+  isSameOrBefore(other: BridgeTime): boolean
+  isSameOrAfter(other: BridgeTime): boolean
+  isBetween(
+    start: BridgeTime,
+    end: BridgeTime,
+    unit?: string | null,
+    inclusivity?: string | null
+  ): boolean
   cloneTime(): BridgeTime
 }
 

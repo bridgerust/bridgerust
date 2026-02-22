@@ -18,6 +18,20 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
 - `start_of` / `end_of`
 - `diff` (integer or float)
 - Instant-preserving timezone conversion (`to_timezone`)
+- Calendar helpers:
+  - `get(field)` / `set(field, value)`
+  - `days_in_month()` / `is_leap_year()` / `is_valid()`
+- Comparison and range helpers:
+  - `is_before` / `is_after` / `is_same`
+  - `is_before_unit` / `is_after_unit` / `is_same_unit`
+  - `is_same_or_before` / `is_same_or_after`
+  - `is_between(start, end, unit?, inclusivity?)`
+
+## Day.js Parity Snapshot
+
+- Shared parity between Python and Node.js is high because both bindings use the same Rust core.
+- Core datetime operations are covered.
+- Full Day.js plugin parity is not complete yet (for example locale packs, relative time, durations, and calendar-style formatting helpers).
 
 ## API Surface
 
@@ -41,6 +55,11 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
 - `end_of(unit)`
 - `diff(other, unit, as_float?)`
 - `is_before(other)` / `is_after(other)` / `is_same(other)`
+- `is_before_unit(other, unit)` / `is_after_unit(other, unit)` / `is_same_unit(other, unit)`
+- `is_same_or_before(other)` / `is_same_or_after(other)`
+- `is_between(start, end, unit?, inclusivity?)`
+- `get(field)` / `set(field, value)`
+- `days_in_month()` / `is_leap_year()` / `is_valid()`
 
 ## Local Development
 

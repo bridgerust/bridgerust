@@ -22,8 +22,20 @@ console.log(ny.format("YYYY-MM-DD HH:mm:ss"));
 const next = now.add(1, "month").startOf("day");
 console.log(next.toIso());
 
+console.log(now.get("month")); // 0-based month (Jan=0)
+console.log(now.set("day", 1).toIso()); // set weekday (Sunday=0)
+console.log(now.daysInMonth());
+console.log(now.isBetween(now.startOf("day"), now.endOf("day"), "day", "[]"));
+
 console.log(supportedUnits());
 ```
+
+## API Highlights
+
+- Core: `parse`, `format`, `add`, `subtract`, `startOf`, `endOf`, `diff`
+- Calendar helpers: `get`, `set`, `daysInMonth`, `isLeapYear`, `isValid`
+- Comparison helpers: `isBefore`, `isAfter`, `isSame`, `isSameOrBefore`, `isSameOrAfter`
+- Unit/range helpers: `isBeforeUnit`, `isAfterUnit`, `isSameUnit`, `isBetween`
 
 ## Build Locally
 

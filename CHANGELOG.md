@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **BridgeTime (preview)**:
   - Added new `bridgetime-bridge` Rust crate with BridgeRust exports for Python and Node.js.
   - Implemented Day.js/Moment-style datetime API: parsing, formatting, timezone conversion, immutable arithmetic, `start_of`, `end_of`, and `diff`.
+  - Added Day.js-style calendar helpers: `get`, `set`, `days_in_month`, `is_leap_year`, `is_valid`.
+  - Added comparison/range helpers: `is_before_unit`, `is_after_unit`, `is_same_unit`, `is_same_or_before`, `is_same_or_after`, `is_between`.
   - Added package scaffolding:
     - Python: `bindings/python/bridgetime`
     - Node.js: `bindings/node/@bridgerust/bridgetime`
