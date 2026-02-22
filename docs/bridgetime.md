@@ -12,6 +12,7 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
 
 - Parse ISO strings (`2026-02-22T10:15:30Z`)
 - Parse local datetime strings (`YYYY-MM-DD`, `YYYY-MM-DD HH:mm:ss`)
+- Parse custom formats with Day.js-style tokens (`parse_format`)
 - Day.js-style token formatting (`YYYY`, `MM`, `DD`, `HH`, `mm`, `ss`, `SSS`, `Z`)
 - Immutable date arithmetic across units:
   - `millisecond`, `second`, `minute`, `hour`, `day`, `week`, `month`, `quarter`, `year`
@@ -53,6 +54,7 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
 
 - `BridgeTime.now(timezone?)`
 - `BridgeTime.parse(input, timezone?)`
+- `BridgeTime.parse_format(input, pattern, timezone?)`
 - `BridgeTime.from_unix_ms(unix_ms, timezone?)`
 - `BridgeTime.from_unix(unix_seconds, timezone?)`
 

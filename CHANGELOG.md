@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added relative-day helpers: `is_today`, `is_yesterday`, `is_tomorrow`.
   - Added relative-time helpers: `from_time`, `to_time`, `from_now`, `to_now`.
   - Added unit-aware comparison helpers: `is_same_or_before_unit`, `is_same_or_after_unit`.
+  - Added custom Day.js-style parse helper: `parse_format` / `parseFormat`.
   - Added package scaffolding:
     - Python: `bindings/python/bridgetime`
     - Node.js: `bindings/node/@bridgerust/bridgetime`

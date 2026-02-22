@@ -16,6 +16,9 @@ import { BridgeTime, supportedUnits } from "@bridgerust/bridgetime";
 const now = BridgeTime.now("UTC");
 console.log(now.toIso());
 
+const custom = BridgeTime.parseFormat("22/02/2026 10:15", "DD/MM/YYYY HH:mm", "UTC");
+console.log(custom.toIso());
+
 const ny = now.toTimezone("America/New_York");
 console.log(ny.format("YYYY-MM-DD HH:mm:ss"));
 
@@ -37,6 +40,7 @@ console.log(supportedUnits());
 ## API Highlights
 
 - Core: `parse`, `format`, `add`, `subtract`, `startOf`, `endOf`, `diff`
+- Custom parse helper: `parseFormat(input, pattern, timezone?)`
 - Calendar helpers: `get`, `set`, component getters/setters (`year`, `setYear`, etc), `daysInMonth`, `isLeapYear`, `isValid`
 - Week/day helpers: `dayOfYear`, `setDayOfYear`, `quarter`, `setQuarter`, `isoWeekday`, `setIsoWeekday`, `week`, `weekOfYear`, `setWeek`, `isoWeek`, `setIsoWeek`
 - Relative-day helpers: `isToday`, `isYesterday`, `isTomorrow`

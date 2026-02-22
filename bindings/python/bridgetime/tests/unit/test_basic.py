@@ -15,6 +15,14 @@ def test_parse_add_and_format():
     assert shifted.format("YYYY-MM-DD") == "2026-02-23"
 
 
+def test_parse_format_supports_custom_patterns():
+    dt = BridgeTime.parse_format("22/02/2026 10:15", "DD/MM/YYYY HH:mm", "UTC")
+    assert dt.format("YYYY-MM-DD HH:mm:ss") == "2026-02-22 10:15:00"
+
+    date_only = BridgeTime.parse_format("2026/02/22", "YYYY/MM/DD", "UTC")
+    assert date_only.format("YYYY-MM-DD HH:mm:ss") == "2026-02-22 00:00:00"
+
+
 def test_timezone_conversion_preserves_instant():
     dt = BridgeTime.parse("2026-02-22T12:00:00Z", "UTC")
     ny = dt.to_timezone("America/New_York")

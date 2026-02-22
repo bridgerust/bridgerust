@@ -16,6 +16,9 @@ from bridgetime import BridgeTime, supported_units
 now = BridgeTime.now("UTC")
 print(now.to_iso())
 
+custom = BridgeTime.parse_format("22/02/2026 10:15", "DD/MM/YYYY HH:mm", "UTC")
+print(custom.to_iso())
+
 ny = now.to_timezone("America/New_York")
 print(ny.format("YYYY-MM-DD HH:mm:ss"))
 
@@ -37,6 +40,7 @@ print(supported_units())
 ## API Highlights
 
 - Core: `parse`, `format`, `add`, `subtract`, `start_of`, `end_of`, `diff`
+- Custom parse helper: `parse_format(input, pattern, timezone?)`
 - Calendar helpers: `get`, `set`, component getters/setters (`year`, `set_year`, etc), `days_in_month`, `is_leap_year`, `is_valid`
 - Week/day helpers: `day_of_year`, `set_day_of_year`, `quarter`, `set_quarter`, `iso_weekday`, `set_iso_weekday`, `week`, `week_of_year`, `set_week`, `iso_week`, `set_iso_week`
 - Relative-day helpers: `is_today`, `is_yesterday`, `is_tomorrow`

@@ -6,6 +6,7 @@ export declare class BridgeTime {
 
   static now(timezone?: string | null): BridgeTime
   static parse(input: string, timezone?: string | null): BridgeTime
+  static parseFormat(input: string, pattern: string, timezone?: string | null): BridgeTime
   static fromUnixMs(unixMs: bigint | number, timezone?: string | null): BridgeTime
   static fromUnix(unixSeconds: bigint | number, timezone?: string | null): BridgeTime
 
