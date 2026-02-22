@@ -189,7 +189,7 @@ jobs:
         working-directory: bindings/node/@bridgerust/bridgetime
         shell: bash
         env:
-          GITHUB_REF_NAME: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
+          NPM_TAG_NAME: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
           NPM_TAG_PREFIX: bridgetime-v
           NPM_PACKAGE_BASE: bridgetime
           NPM_PACKAGE_SCOPE: '@bridgerust'

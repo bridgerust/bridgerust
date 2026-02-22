@@ -231,7 +231,10 @@ jobs:
         working-directory: bindings/node/@bridgerust/embex
         shell: bash
         env:
-          GITHUB_REF_NAME: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
+          NPM_TAG_NAME: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
+          NPM_TAG_PREFIX: embex-v
+          NPM_PACKAGE_BASE: embex
+          NPM_PACKAGE_SCOPE: '@bridgerust'
         run: |
           echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
           bash $GITHUB_WORKSPACE/.github/scripts/publish-npm-platforms.sh

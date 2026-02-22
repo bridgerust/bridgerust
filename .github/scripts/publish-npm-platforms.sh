@@ -5,19 +5,21 @@ PACKAGE_SCOPE="${NPM_PACKAGE_SCOPE:-@bridgerust}"
 PACKAGE_BASE="${NPM_PACKAGE_BASE:-embex}"
 TAG_PREFIX="${NPM_TAG_PREFIX:-embex-v}"
 
-if [ -z "$GITHUB_REF_NAME" ]; then
-  echo "❌ GITHUB_REF_NAME is required"
+TAG_NAME="${NPM_TAG_NAME:-$GITHUB_REF_NAME}"
+
+if [ -z "$TAG_NAME" ]; then
+  echo "❌ NPM_TAG_NAME or GITHUB_REF_NAME is required"
   exit 1
 fi
 
-if [[ "$GITHUB_REF_NAME" == "$TAG_PREFIX"* ]]; then
-  VERSION="${GITHUB_REF_NAME#"$TAG_PREFIX"}"
+if [[ "$TAG_NAME" == "$TAG_PREFIX"* ]]; then
+  VERSION="${TAG_NAME#"$TAG_PREFIX"}"
 else
-  VERSION="${GITHUB_REF_NAME#v}"
+  VERSION="${TAG_NAME#v}"
 fi
 
-if [ -z "$VERSION" ] || [ "$VERSION" = "$GITHUB_REF_NAME" ]; then
-  echo "❌ Could not extract version from tag: $GITHUB_REF_NAME (prefix: $TAG_PREFIX)"
+if [ -z "$VERSION" ] || [ "$VERSION" = "$TAG_NAME" ]; then
+  echo "❌ Could not extract version from tag: $TAG_NAME (prefix: $TAG_PREFIX)"
   exit 1
 fi
 
