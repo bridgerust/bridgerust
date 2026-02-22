@@ -29,6 +29,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Node.js: `bindings/node/@bridgerust/bridgetime`
   - Added CI checks for `bridgetime-bridge` (base + python/nodejs features).
 
+### Fixed
+
+- **BridgeTime correctness**:
+  - Fixed `end_of(unit)` boundary calculation to use `start_of(unit) + 1 unit - 1ms`, ensuring correct results for units like `day` and `week`.
+
 ### Changed
 
 - **Release automation**:

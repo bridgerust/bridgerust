@@ -15,6 +15,19 @@ def test_parse_add_and_format():
     assert shifted.format("YYYY-MM-DD") == "2026-02-23"
 
 
+def test_end_of_boundaries_are_correct():
+    dt = BridgeTime.parse("2026-02-22T10:15:30Z", "UTC")
+
+    end_day = dt.end_of("day")
+    assert end_day.format("YYYY-MM-DD HH:mm:ss.SSS") == "2026-02-22 23:59:59.999"
+
+    end_week = dt.end_of("week")
+    assert end_week.format("YYYY-MM-DD HH:mm:ss.SSS") == "2026-02-28 23:59:59.999"
+
+    end_month = dt.end_of("month")
+    assert end_month.format("YYYY-MM-DD HH:mm:ss.SSS") == "2026-02-28 23:59:59.999"
+
+
 def test_parse_format_supports_custom_patterns():
     dt = BridgeTime.parse_format("22/02/2026 10:15", "DD/MM/YYYY HH:mm", "UTC")
     assert dt.format("YYYY-MM-DD HH:mm:ss") == "2026-02-22 10:15:00"
