@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-02-22
+
+### Added
+
+- **BridgeTime parity expansion**:
+  - Added Day.js-style calendar, comparison, and range helpers.
+  - Added explicit component getters/setters and week/year helpers.
+  - Added relative-day and relative-time helpers.
+  - Added custom parse helper (`parse_format` / `parseFormat`).
+  - Added timezone helpers (`utc_offset`, `is_utc`, `is_dst`).
+  - Added array and ordering helpers (`from_array`, `to_array`, `min`, `max`, `clamp`).
+  - Added duration API (`BridgeDuration`, duration factories/converters/humanize, `add_duration`, `subtract_duration`).
+
+### Fixed
+
+- **BridgeTime correctness**:
+  - Fixed `end_of(unit)` boundary computation and added regression coverage for day/week/month boundaries.
+
 ### Added
 
 - **BridgeTime (preview)**:
