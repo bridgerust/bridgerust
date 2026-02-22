@@ -5,7 +5,7 @@ use chrono::{
     DateTime, Datelike, Duration, LocalResult, NaiveDate, NaiveDateTime, Offset, SecondsFormat,
     TimeZone, Timelike, Utc,
 };
-use chrono_tz::Tz;
+use chrono_tz::{OffsetComponents, Tz};
 use std::fmt::{Display, Formatter};
 
 #[cfg(feature = "python")]
@@ -28,6 +28,7 @@ pub enum BridgeTimeError {
     InvalidUnit(String),
     InvalidField(String),
     InvalidInclusivity(String),
+    InvalidComponents(String),
     ArithmeticOverflow,
     NonexistentLocalTime(String, String),
 }
@@ -49,6 +50,10 @@ impl Display for BridgeTimeError {
             Self::InvalidInclusivity(value) => write!(
                 f,
                 "Invalid inclusivity: {value}. Use one of: (), (], [), []"
+            ),
+            Self::InvalidComponents(value) => write!(
+                f,
+                "Invalid components: {value}. Use [year, month0, date, hour, minute, second, millisecond]"
             ),
             Self::ArithmeticOverflow => write!(f, "Date arithmetic overflow"),
             Self::NonexistentLocalTime(local, tz) => {
@@ -496,6 +501,58 @@ impl BridgeTime {
         })
     }
 
+    pub fn from_array(
+        components: Vec<i64>,
+        timezone: Option<String>,
+    ) -> Result<Self, BridgeTimeError> {
+        if components.is_empty() || components.len() > 7 {
+            return Err(BridgeTimeError::InvalidComponents(format!(
+                "expected 1..=7 items, got {}",
+                components.len()
+            )));
+        }
+
+        let tz = resolve_timezone(timezone)?;
+
+        let year = i32::try_from(components[0]).map_err(|_| BridgeTimeError::ArithmeticOverflow)?;
+        let month0 = *components.get(1).unwrap_or(&0);
+        let date = *components.get(2).unwrap_or(&1);
+        let hour = *components.get(3).unwrap_or(&0);
+        let minute = *components.get(4).unwrap_or(&0);
+        let second = *components.get(5).unwrap_or(&0);
+        let millisecond = *components.get(6).unwrap_or(&0);
+
+        let total_month = i64::from(year)
+            .checked_mul(12)
+            .and_then(|value| value.checked_add(month0))
+            .ok_or(BridgeTimeError::ArithmeticOverflow)?;
+        let normalized_year = i32::try_from(total_month.div_euclid(12))
+            .map_err(|_| BridgeTimeError::ArithmeticOverflow)?;
+        let normalized_month = u32::try_from(total_month.rem_euclid(12) + 1)
+            .map_err(|_| BridgeTimeError::ArithmeticOverflow)?;
+
+        let mut naive = build_naive_datetime(normalized_year, normalized_month, 1, 0, 0, 0, 0)?;
+        let adjustments = [
+            Duration::days(
+                date.checked_sub(1)
+                    .ok_or(BridgeTimeError::ArithmeticOverflow)?,
+            ),
+            Duration::hours(hour),
+            Duration::minutes(minute),
+            Duration::seconds(second),
+            Duration::milliseconds(millisecond),
+        ];
+
+        for adjustment in adjustments {
+            naive = naive
+                .checked_add_signed(adjustment)
+                .ok_or(BridgeTimeError::ArithmeticOverflow)?;
+        }
+
+        let local = resolve_local_datetime(tz, naive)?;
+        Ok(Self::from_local_datetime(local))
+    }
+
     pub fn from_unix_ms(unix_ms: i64, timezone: Option<String>) -> Result<Self, BridgeTimeError> {
         let tz = resolve_timezone(timezone)?;
         utc_from_millis(unix_ms)?;
@@ -539,6 +596,20 @@ impl BridgeTime {
         self.timezone.clone()
     }
 
+    pub fn to_array(&self) -> Result<Vec<i64>, BridgeTimeError> {
+        let local = self.local_datetime()?;
+        let naive = local.naive_local();
+        Ok(vec![
+            i64::from(naive.year()),
+            i64::from(naive.month0()),
+            i64::from(naive.day()),
+            i64::from(naive.hour()),
+            i64::from(naive.minute()),
+            i64::from(naive.second()),
+            i64::from(naive.and_utc().timestamp_subsec_millis()),
+        ])
+    }
+
     pub fn utc_offset(&self) -> Result<i32, BridgeTimeError> {
         let local = self.local_datetime()?;
         Ok(local.offset().fix().local_minus_utc() / 60)
@@ -547,6 +618,11 @@ impl BridgeTime {
     pub fn is_utc(&self) -> Result<bool, BridgeTimeError> {
         let tz = self.as_tz()?;
         Ok(tz.name() == "UTC")
+    }
+
+    pub fn is_dst(&self) -> Result<bool, BridgeTimeError> {
+        let local = self.local_datetime()?;
+        Ok(local.offset().dst_offset() != Duration::zero())
     }
 
     pub fn to_timezone(&self, timezone: String) -> Result<Self, BridgeTimeError> {
@@ -928,6 +1004,35 @@ impl BridgeTime {
     pub fn to_now(&self, without_suffix: Option<bool>) -> Result<String, BridgeTimeError> {
         let now = Self::now(Some(self.timezone.clone()))?;
         self.to_time(&now, without_suffix)
+    }
+
+    pub fn min(first: &BridgeTime, second: &BridgeTime) -> BridgeTime {
+        if first.utc_millis <= second.utc_millis {
+            first.clone_time()
+        } else {
+            second.clone_time()
+        }
+    }
+
+    pub fn max(first: &BridgeTime, second: &BridgeTime) -> BridgeTime {
+        if first.utc_millis >= second.utc_millis {
+            first.clone_time()
+        } else {
+            second.clone_time()
+        }
+    }
+
+    pub fn clamp(&self, start: &BridgeTime, end: &BridgeTime) -> BridgeTime {
+        let lower = Self::min(start, end);
+        let upper = Self::max(start, end);
+
+        if self.utc_millis < lower.utc_millis {
+            lower
+        } else if self.utc_millis > upper.utc_millis {
+            upper
+        } else {
+            self.clone_time()
+        }
     }
 
     pub fn clone_time(&self) -> BridgeTime {
@@ -1341,6 +1446,26 @@ mod tests {
     }
 
     #[test]
+    fn from_array_and_to_array_work() {
+        let dt =
+            BridgeTime::from_array(vec![2026, 1, 22, 10, 15, 30, 250], Some("UTC".to_string()))
+                .expect("from_array should succeed");
+        assert_eq!(
+            dt.to_array().expect("to_array should succeed"),
+            vec![2026, 1, 22, 10, 15, 30, 250]
+        );
+
+        let overflow = BridgeTime::from_array(vec![2026, 12, 1], Some("UTC".to_string()))
+            .expect("from_array should succeed");
+        assert_eq!(
+            overflow
+                .format("YYYY-MM-DD".to_string())
+                .expect("format should succeed"),
+            "2027-01-01"
+        );
+    }
+
+    #[test]
     fn add_and_start_of_work() {
         let dt = BridgeTime::parse("2026-02-22T10:15:30Z".to_string(), Some("UTC".to_string()))
             .expect("parse should succeed");
@@ -1371,6 +1496,19 @@ mod tests {
         assert_eq!(ny_dt.utc_offset().expect("utc_offset"), -300);
         assert!(utc_dt.is_utc().expect("is_utc"));
         assert!(!ny_dt.is_utc().expect("is_utc"));
+
+        let ny_winter = BridgeTime::parse(
+            "2026-01-15T12:00:00Z".to_string(),
+            Some("America/New_York".to_string()),
+        )
+        .expect("parse should succeed");
+        let ny_summer = BridgeTime::parse(
+            "2026-07-15T12:00:00Z".to_string(),
+            Some("America/New_York".to_string()),
+        )
+        .expect("parse should succeed");
+        assert!(!ny_winter.is_dst().expect("is_dst"));
+        assert!(ny_summer.is_dst().expect("is_dst"));
     }
 
     #[test]
@@ -1636,6 +1774,22 @@ mod tests {
                 .is_same_or_before_unit(&morning, "day".to_string())
                 .expect("is_same_or_before_unit")
         );
+    }
+
+    #[test]
+    fn min_max_and_clamp_work() {
+        let a = BridgeTime::parse("2026-02-22T10:00:00Z".to_string(), Some("UTC".to_string()))
+            .expect("parse should succeed");
+        let b = BridgeTime::parse("2026-02-22T11:00:00Z".to_string(), Some("UTC".to_string()))
+            .expect("parse should succeed");
+        let c = BridgeTime::parse("2026-02-22T12:00:00Z".to_string(), Some("UTC".to_string()))
+            .expect("parse should succeed");
+
+        assert_eq!(BridgeTime::min(&a, &b).unix_ms(), a.unix_ms());
+        assert_eq!(BridgeTime::max(&a, &b).unix_ms(), b.unix_ms());
+        assert_eq!(a.clamp(&b, &c).unix_ms(), b.unix_ms());
+        assert_eq!(c.clamp(&a, &b).unix_ms(), b.unix_ms());
+        assert_eq!(b.clamp(&a, &c).unix_ms(), b.unix_ms());
     }
 
     #[test]
