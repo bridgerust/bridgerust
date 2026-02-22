@@ -23,6 +23,28 @@ def test_parse_format_supports_custom_patterns():
     assert date_only.format("YYYY-MM-DD HH:mm:ss") == "2026-02-22 00:00:00"
 
 
+def test_array_min_max_clamp_and_dst_helpers():
+    dt = BridgeTime.from_array([2026, 1, 22, 10, 15, 30, 250], "UTC")
+    assert dt.to_array() == [2026, 1, 22, 10, 15, 30, 250]
+
+    overflow = BridgeTime.from_array([2026, 12, 1], "UTC")
+    assert overflow.format("YYYY-MM-DD") == "2027-01-01"
+
+    a = BridgeTime.parse("2026-02-22T10:00:00Z", "UTC")
+    b = BridgeTime.parse("2026-02-22T11:00:00Z", "UTC")
+    c = BridgeTime.parse("2026-02-22T12:00:00Z", "UTC")
+    assert BridgeTime.min(a, b).unix_ms() == a.unix_ms()
+    assert BridgeTime.max(a, b).unix_ms() == b.unix_ms()
+    assert a.clamp(b, c).unix_ms() == b.unix_ms()
+    assert c.clamp(a, b).unix_ms() == b.unix_ms()
+    assert b.clamp(a, c).unix_ms() == b.unix_ms()
+
+    ny_winter = BridgeTime.parse("2026-01-15T12:00:00Z", "America/New_York")
+    ny_summer = BridgeTime.parse("2026-07-15T12:00:00Z", "America/New_York")
+    assert ny_winter.is_dst() is False
+    assert ny_summer.is_dst() is True
+
+
 def test_timezone_conversion_preserves_instant():
     dt = BridgeTime.parse("2026-02-22T12:00:00Z", "UTC")
     ny = dt.to_timezone("America/New_York")

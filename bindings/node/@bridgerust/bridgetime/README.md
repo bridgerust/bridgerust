@@ -18,10 +18,12 @@ console.log(now.toIso());
 
 const custom = BridgeTime.parseFormat("22/02/2026 10:15", "DD/MM/YYYY HH:mm", "UTC");
 console.log(custom.toIso());
+const fromArray = BridgeTime.fromArray([2026, 1, 22, 10, 15, 30, 250], "UTC");
+console.log(fromArray.toArray());
 
 const ny = now.toTimezone("America/New_York");
 console.log(ny.format("YYYY-MM-DD HH:mm:ss"));
-console.log(now.utcOffset(), now.isUtc());
+console.log(now.utcOffset(), now.isUtc(), ny.isDst());
 
 const next = now.add(1, "month").startOf("day");
 console.log(next.toIso());
@@ -35,6 +37,8 @@ console.log(now.isoWeekYear(), now.daysInYear(), now.weeksInYear(), now.isoWeeks
 console.log(now.isToday());
 console.log(now.add(30, "minute").fromNow()); // in 30 minutes
 console.log(now.isBetween(now.startOf("day"), now.endOf("day"), "day", "[]"));
+console.log(BridgeTime.min(now, next).toIso(), BridgeTime.max(now, next).toIso());
+console.log(now.clamp(now.subtract(1, "day"), now.add(1, "day")).toIso());
 
 console.log(supportedUnits());
 ```
@@ -42,12 +46,13 @@ console.log(supportedUnits());
 ## API Highlights
 
 - Core: `parse`, `format`, `add`, `subtract`, `startOf`, `endOf`, `diff`
-- Custom parse helper: `parseFormat(input, pattern, timezone?)`
-- Timezone helpers: `timezone`, `utcOffset`, `isUtc`, `toTimezone`
+- Custom parse helpers: `parseFormat(input, pattern, timezone?)`, `fromArray(components, timezone?)`, `toArray()`
+- Timezone helpers: `timezone`, `utcOffset`, `isUtc`, `isDst`, `toTimezone`
 - Calendar helpers: `get`, `set`, component getters/setters (`year`, `setYear`, etc), `daysInMonth`, `isLeapYear`, `isValid`
 - Week/day helpers: `dayOfYear`, `setDayOfYear`, `quarter`, `setQuarter`, `isoWeekday`, `setIsoWeekday`, `week`, `weekOfYear`, `setWeek`, `isoWeek`, `setIsoWeek`, `isoWeekYear`, `daysInYear`, `weeksInYear`, `isoWeeksInYear`
 - Relative-day helpers: `isToday`, `isYesterday`, `isTomorrow`
 - Relative-time helpers: `fromTime`, `toTime`, `fromNow`, `toNow`
+- Min/max helpers: `BridgeTime.min(a, b)`, `BridgeTime.max(a, b)`, `clamp(start, end)`
 - Comparison helpers: `isBefore`, `isAfter`, `isSame`, `isSameOrBefore`, `isSameOrAfter`, `isSameOrBeforeUnit`, `isSameOrAfterUnit`
 - Unit/range helpers: `isBeforeUnit`, `isAfterUnit`, `isSameUnit`, `isBetween`
 

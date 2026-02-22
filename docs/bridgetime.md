@@ -13,6 +13,7 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
 - Parse ISO strings (`2026-02-22T10:15:30Z`)
 - Parse local datetime strings (`YYYY-MM-DD`, `YYYY-MM-DD HH:mm:ss`)
 - Parse custom formats with Day.js-style tokens (`parse_format`)
+- Parse/build via component arrays (`from_array`, `to_array`)
 - Day.js-style token formatting (`YYYY`, `MM`, `DD`, `HH`, `mm`, `ss`, `SSS`, `Z`)
 - Immutable date arithmetic across units:
   - `millisecond`, `second`, `minute`, `hour`, `day`, `week`, `month`, `quarter`, `year`
@@ -20,6 +21,7 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
 - `diff` (integer or float)
 - Instant-preserving timezone conversion (`to_timezone`)
 - Timezone offset helpers: `utc_offset()` / `is_utc()`
+- DST helper: `is_dst()`
 - Calendar helpers:
   - `get(field)` / `set(field, value)`
   - explicit component getters/setters (`year`, `month`, `date`, `day`, `hour`, `minute`, `second`, `millisecond`)
@@ -37,6 +39,10 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
 - Relative-time helpers:
   - `from_time(other, without_suffix?)` / `to_time(other, without_suffix?)`
   - `from_now(without_suffix?)` / `to_now(without_suffix?)`
+- Range helpers:
+  - `clamp(start, end)`
+- Static ordering helpers:
+  - `BridgeTime.min(a, b)` / `BridgeTime.max(a, b)`
 - Comparison and range helpers:
   - `is_before` / `is_after` / `is_same`
   - `is_before_unit` / `is_after_unit` / `is_same_unit`
@@ -57,6 +63,7 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
 - `BridgeTime.now(timezone?)`
 - `BridgeTime.parse(input, timezone?)`
 - `BridgeTime.parse_format(input, pattern, timezone?)`
+- `BridgeTime.from_array(components, timezone?)`
 - `BridgeTime.from_unix_ms(unix_ms, timezone?)`
 - `BridgeTime.from_unix(unix_seconds, timezone?)`
 
@@ -66,7 +73,9 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
 - `format(pattern)`
 - `unix_ms()` / `unix()` / `value_of()`
 - `timezone()`
+- `to_array()`
 - `utc_offset()` / `is_utc()`
+- `is_dst()`
 - `to_timezone(timezone)`
 - `add(amount, unit)`
 - `subtract(amount, unit)`
@@ -90,6 +99,7 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
 - `from_time(other, without_suffix?)` / `to_time(other, without_suffix?)`
 - `from_now(without_suffix?)` / `to_now(without_suffix?)`
 - `is_same_or_before_unit(other, unit)` / `is_same_or_after_unit(other, unit)`
+- `clamp(start, end)`
 - `days_in_month()` / `is_leap_year()` / `is_valid()`
 
 ## Local Development

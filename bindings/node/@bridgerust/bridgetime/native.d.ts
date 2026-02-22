@@ -7,8 +7,11 @@ export declare class BridgeTime {
   static now(timezone?: string | null): BridgeTime
   static parse(input: string, timezone?: string | null): BridgeTime
   static parseFormat(input: string, pattern: string, timezone?: string | null): BridgeTime
+  static fromArray(components: Array<bigint | number>, timezone?: string | null): BridgeTime
   static fromUnixMs(unixMs: bigint | number, timezone?: string | null): BridgeTime
   static fromUnix(unixSeconds: bigint | number, timezone?: string | null): BridgeTime
+  static min(first: BridgeTime, second: BridgeTime): BridgeTime
+  static max(first: BridgeTime, second: BridgeTime): BridgeTime
 
   toIso(): string
   format(pattern: string): string
@@ -16,8 +19,10 @@ export declare class BridgeTime {
   unix(): bigint
   valueOf(): bigint
   timezone(): string
+  toArray(): Array<bigint>
   utcOffset(): number
   isUtc(): boolean
+  isDst(): boolean
   toTimezone(timezone: string): BridgeTime
   add(amount: bigint | number, unit: string): BridgeTime
   subtract(amount: bigint | number, unit: string): BridgeTime
@@ -67,6 +72,7 @@ export declare class BridgeTime {
   toTime(other: BridgeTime, withoutSuffix?: boolean | null): string
   fromNow(withoutSuffix?: boolean | null): string
   toNow(withoutSuffix?: boolean | null): string
+  clamp(start: BridgeTime, end: BridgeTime): BridgeTime
   isBefore(other: BridgeTime): boolean
   isAfter(other: BridgeTime): boolean
   isSame(other: BridgeTime): boolean
