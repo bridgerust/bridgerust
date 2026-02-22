@@ -26,6 +26,8 @@ pub enum BridgeTimeError {
     InvalidDateInput(String),
     InvalidTimestamp(i64),
     InvalidUnit(String),
+    InvalidField(String),
+    InvalidInclusivity(String),
     ArithmeticOverflow,
     NonexistentLocalTime(String, String),
 }
@@ -39,6 +41,14 @@ impl Display for BridgeTimeError {
             Self::InvalidUnit(unit) => write!(
                 f,
                 "Invalid unit: {unit}. Use one of: millisecond, second, minute, hour, day, week, month, quarter, year"
+            ),
+            Self::InvalidField(field) => write!(
+                f,
+                "Invalid field: {field}. Use one of: millisecond, second, minute, hour, day, date, month, quarter, year"
+            ),
+            Self::InvalidInclusivity(value) => write!(
+                f,
+                "Invalid inclusivity: {value}. Use one of: (), (], [), []"
             ),
             Self::ArithmeticOverflow => write!(f, "Date arithmetic overflow"),
             Self::NonexistentLocalTime(local, tz) => {
@@ -114,6 +124,61 @@ impl TimeUnit {
             Self::Year => None,
         }
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum CalendarField {
+    Millisecond,
+    Second,
+    Minute,
+    Hour,
+    Day,
+    Date,
+    Month,
+    Quarter,
+    Year,
+}
+
+impl CalendarField {
+    fn parse(raw: &str) -> Result<Self, BridgeTimeError> {
+        let normalized = raw.trim().to_ascii_lowercase();
+        match normalized.as_str() {
+            "ms" | "millisecond" | "milliseconds" => Ok(Self::Millisecond),
+            "s" | "sec" | "second" | "seconds" => Ok(Self::Second),
+            "m" | "min" | "minute" | "minutes" => Ok(Self::Minute),
+            "h" | "hour" | "hours" => Ok(Self::Hour),
+            "d" | "day" | "days" | "weekday" | "week_day" | "dayofweek" | "day_of_week" => {
+                Ok(Self::Day)
+            }
+            "date" | "dates" | "dayofmonth" | "day_of_month" => Ok(Self::Date),
+            "mo" | "month" | "months" => Ok(Self::Month),
+            "q" | "quarter" | "quarters" => Ok(Self::Quarter),
+            "y" | "year" | "years" => Ok(Self::Year),
+            _ => Err(BridgeTimeError::InvalidField(raw.to_string())),
+        }
+    }
+}
+
+fn parse_inclusivity(inclusivity: Option<String>) -> Result<(bool, bool), BridgeTimeError> {
+    let resolved = inclusivity.unwrap_or_else(|| "()".to_string());
+    let chars: Vec<char> = resolved.chars().collect();
+    if chars.len() != 2 {
+        return Err(BridgeTimeError::InvalidInclusivity(resolved));
+    }
+
+    let start_inclusive = match chars[0] {
+        '[' => true,
+        '(' => false,
+        _ => return Err(BridgeTimeError::InvalidInclusivity(resolved)),
+    };
+
+    let end_inclusive = match chars[1] {
+        ']' => true,
+        ')' => false,
+        _ => return Err(BridgeTimeError::InvalidInclusivity(resolved)),
+    };
+
+    Ok((start_inclusive, end_inclusive))
 }
 
 fn parse_timezone(raw: &str) -> Result<Tz, BridgeTimeError> {
@@ -443,6 +508,30 @@ impl BridgeTime {
         }
     }
 
+    pub fn is_valid(&self) -> bool {
+        self.as_utc_datetime().is_ok() && self.as_tz().is_ok()
+    }
+
+    pub fn days_in_month(&self) -> Result<u32, BridgeTimeError> {
+        let local = self.local_datetime()?;
+        last_day_of_month(local.year(), local.month())
+    }
+
+    pub fn is_leap_year(&self) -> Result<bool, BridgeTimeError> {
+        let local = self.local_datetime()?;
+        Ok(NaiveDate::from_ymd_opt(local.year(), 2, 29).is_some())
+    }
+
+    pub fn get(&self, field: String) -> Result<i64, BridgeTimeError> {
+        let parsed_field = CalendarField::parse(&field)?;
+        self.get_field(parsed_field)
+    }
+
+    pub fn set(&self, field: String, value: i64) -> Result<Self, BridgeTimeError> {
+        let parsed_field = CalendarField::parse(&field)?;
+        self.set_field(parsed_field, value)
+    }
+
     pub fn is_before(&self, other: &BridgeTime) -> bool {
         self.utc_millis < other.utc_millis
     }
@@ -453,6 +542,67 @@ impl BridgeTime {
 
     pub fn is_same(&self, other: &BridgeTime) -> bool {
         self.utc_millis == other.utc_millis
+    }
+
+    pub fn is_before_unit(
+        &self,
+        other: &BridgeTime,
+        unit: String,
+    ) -> Result<bool, BridgeTimeError> {
+        let parsed_unit = TimeUnit::parse(&unit)?;
+        let lhs = self.start_of_unit(parsed_unit)?;
+        let rhs = other.start_of_unit(parsed_unit)?;
+        Ok(lhs.utc_millis < rhs.utc_millis)
+    }
+
+    pub fn is_after_unit(&self, other: &BridgeTime, unit: String) -> Result<bool, BridgeTimeError> {
+        let parsed_unit = TimeUnit::parse(&unit)?;
+        let lhs = self.start_of_unit(parsed_unit)?;
+        let rhs = other.start_of_unit(parsed_unit)?;
+        Ok(lhs.utc_millis > rhs.utc_millis)
+    }
+
+    pub fn is_same_unit(&self, other: &BridgeTime, unit: String) -> Result<bool, BridgeTimeError> {
+        let parsed_unit = TimeUnit::parse(&unit)?;
+        let lhs = self.start_of_unit(parsed_unit)?;
+        let rhs = other.start_of_unit(parsed_unit)?;
+        Ok(lhs.utc_millis == rhs.utc_millis)
+    }
+
+    pub fn is_same_or_before(&self, other: &BridgeTime) -> bool {
+        self.utc_millis <= other.utc_millis
+    }
+
+    pub fn is_same_or_after(&self, other: &BridgeTime) -> bool {
+        self.utc_millis >= other.utc_millis
+    }
+
+    pub fn is_between(
+        &self,
+        start: &BridgeTime,
+        end: &BridgeTime,
+        unit: Option<String>,
+        inclusivity: Option<String>,
+    ) -> Result<bool, BridgeTimeError> {
+        let parsed_unit = unit.map(|raw| TimeUnit::parse(&raw)).transpose()?;
+        let current = self.comparison_value(parsed_unit)?;
+        let lower = start.comparison_value(parsed_unit)?;
+        let upper = end.comparison_value(parsed_unit)?;
+        let (start_inclusive, end_inclusive) = parse_inclusivity(inclusivity)?;
+
+        let lower_ok = if start_inclusive {
+            current >= lower
+        } else {
+            current > lower
+        };
+
+        let upper_ok = if end_inclusive {
+            current <= upper
+        } else {
+            current < upper
+        };
+
+        Ok(lower_ok && upper_ok)
     }
 
     pub fn clone_time(&self) -> BridgeTime {
@@ -493,6 +643,161 @@ impl BridgeTime {
         Self {
             utc_millis: local.with_timezone(&Utc).timestamp_millis(),
             timezone: local.timezone().name().to_string(),
+        }
+    }
+
+    fn from_resolved_local(tz: Tz, naive: NaiveDateTime) -> Result<Self, BridgeTimeError> {
+        let local = resolve_local_datetime(tz, naive)?;
+        Ok(Self::from_local_datetime(local))
+    }
+
+    fn comparison_value(&self, unit: Option<TimeUnit>) -> Result<i64, BridgeTimeError> {
+        match unit {
+            Some(parsed_unit) => {
+                let normalized = self.start_of_unit(parsed_unit)?;
+                Ok(normalized.utc_millis)
+            }
+            None => Ok(self.utc_millis),
+        }
+    }
+
+    fn get_field(&self, field: CalendarField) -> Result<i64, BridgeTimeError> {
+        let local = self.local_datetime()?;
+        let naive = local.naive_local();
+        let value = match field {
+            CalendarField::Millisecond => i64::from(naive.and_utc().timestamp_subsec_millis()),
+            CalendarField::Second => i64::from(naive.second()),
+            CalendarField::Minute => i64::from(naive.minute()),
+            CalendarField::Hour => i64::from(naive.hour()),
+            CalendarField::Day => i64::from(naive.weekday().num_days_from_sunday()),
+            CalendarField::Date => i64::from(naive.day()),
+            CalendarField::Month => i64::from(naive.month0()),
+            CalendarField::Quarter => i64::from((naive.month0() / 3) + 1),
+            CalendarField::Year => i64::from(naive.year()),
+        };
+        Ok(value)
+    }
+
+    fn set_field(&self, field: CalendarField, value: i64) -> Result<Self, BridgeTimeError> {
+        let local = self.local_datetime()?;
+        let tz = local.timezone();
+        let naive = local.naive_local();
+        let millisecond = naive.and_utc().timestamp_subsec_millis();
+
+        match field {
+            CalendarField::Year => {
+                let year = i32::try_from(value).map_err(|_| BridgeTimeError::ArithmeticOverflow)?;
+                let day = naive.day().min(last_day_of_month(year, naive.month())?);
+                let target = build_naive_datetime(
+                    year,
+                    naive.month(),
+                    day,
+                    naive.hour(),
+                    naive.minute(),
+                    naive.second(),
+                    millisecond,
+                )?;
+                Self::from_resolved_local(tz, target)
+            }
+            CalendarField::Month | CalendarField::Quarter => {
+                let target_month0 = if field == CalendarField::Month {
+                    i32::try_from(value).map_err(|_| BridgeTimeError::ArithmeticOverflow)?
+                } else {
+                    let quarter =
+                        i32::try_from(value).map_err(|_| BridgeTimeError::ArithmeticOverflow)?;
+                    let quarter_zero_based = quarter
+                        .checked_sub(1)
+                        .ok_or(BridgeTimeError::ArithmeticOverflow)?;
+                    let month_in_quarter = i32::try_from(naive.month0() % 3)
+                        .map_err(|_| BridgeTimeError::ArithmeticOverflow)?;
+                    quarter_zero_based
+                        .checked_mul(3)
+                        .and_then(|base| base.checked_add(month_in_quarter))
+                        .ok_or(BridgeTimeError::ArithmeticOverflow)?
+                };
+
+                let base_year_month = naive
+                    .year()
+                    .checked_mul(12)
+                    .ok_or(BridgeTimeError::ArithmeticOverflow)?;
+                let total_month = base_year_month
+                    .checked_add(target_month0)
+                    .ok_or(BridgeTimeError::ArithmeticOverflow)?;
+                let year = total_month.div_euclid(12);
+                let month = u32::try_from(total_month.rem_euclid(12) + 1)
+                    .map_err(|_| BridgeTimeError::ArithmeticOverflow)?;
+                let day = naive.day().min(last_day_of_month(year, month)?);
+                let target = build_naive_datetime(
+                    year,
+                    month,
+                    day,
+                    naive.hour(),
+                    naive.minute(),
+                    naive.second(),
+                    millisecond,
+                )?;
+                Self::from_resolved_local(tz, target)
+            }
+            CalendarField::Date => {
+                let current = i64::from(naive.day());
+                let delta = value
+                    .checked_sub(current)
+                    .ok_or(BridgeTimeError::ArithmeticOverflow)?;
+                let target = naive
+                    .checked_add_signed(Duration::days(delta))
+                    .ok_or(BridgeTimeError::ArithmeticOverflow)?;
+                Self::from_resolved_local(tz, target)
+            }
+            CalendarField::Day => {
+                let current = i64::from(naive.weekday().num_days_from_sunday());
+                let delta = value
+                    .checked_sub(current)
+                    .ok_or(BridgeTimeError::ArithmeticOverflow)?;
+                let target = naive
+                    .checked_add_signed(Duration::days(delta))
+                    .ok_or(BridgeTimeError::ArithmeticOverflow)?;
+                Self::from_resolved_local(tz, target)
+            }
+            CalendarField::Hour => {
+                let current = i64::from(naive.hour());
+                let delta = value
+                    .checked_sub(current)
+                    .ok_or(BridgeTimeError::ArithmeticOverflow)?;
+                let target = naive
+                    .checked_add_signed(Duration::hours(delta))
+                    .ok_or(BridgeTimeError::ArithmeticOverflow)?;
+                Self::from_resolved_local(tz, target)
+            }
+            CalendarField::Minute => {
+                let current = i64::from(naive.minute());
+                let delta = value
+                    .checked_sub(current)
+                    .ok_or(BridgeTimeError::ArithmeticOverflow)?;
+                let target = naive
+                    .checked_add_signed(Duration::minutes(delta))
+                    .ok_or(BridgeTimeError::ArithmeticOverflow)?;
+                Self::from_resolved_local(tz, target)
+            }
+            CalendarField::Second => {
+                let current = i64::from(naive.second());
+                let delta = value
+                    .checked_sub(current)
+                    .ok_or(BridgeTimeError::ArithmeticOverflow)?;
+                let target = naive
+                    .checked_add_signed(Duration::seconds(delta))
+                    .ok_or(BridgeTimeError::ArithmeticOverflow)?;
+                Self::from_resolved_local(tz, target)
+            }
+            CalendarField::Millisecond => {
+                let current = i64::from(millisecond);
+                let delta = value
+                    .checked_sub(current)
+                    .ok_or(BridgeTimeError::ArithmeticOverflow)?;
+                let target = naive
+                    .checked_add_signed(Duration::milliseconds(delta))
+                    .ok_or(BridgeTimeError::ArithmeticOverflow)?;
+                Self::from_resolved_local(tz, target)
+            }
         }
     }
 
@@ -648,7 +953,7 @@ impl BridgeTime {
 
 #[cfg(test)]
 mod tests {
-    use super::BridgeTime;
+    use super::{BridgeTime, BridgeTimeError};
 
     #[test]
     fn parses_iso_and_formats() {
@@ -706,6 +1011,106 @@ mod tests {
 
         assert_eq!(int_hours, 1.0);
         assert!((float_hours - 1.5).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn get_and_set_follow_dayjs_conventions() {
+        let dt = BridgeTime::parse(
+            "2026-02-22T10:15:30.250Z".to_string(),
+            Some("UTC".to_string()),
+        )
+        .expect("parse should succeed");
+
+        assert_eq!(dt.get("month".to_string()).expect("get month"), 1);
+        assert_eq!(dt.get("date".to_string()).expect("get date"), 22);
+        assert_eq!(dt.get("day".to_string()).expect("get day"), 0);
+        assert_eq!(dt.get("quarter".to_string()).expect("get quarter"), 1);
+
+        let shifted_month = dt.set("month".to_string(), 2).expect("set month");
+        assert_eq!(
+            shifted_month
+                .format("YYYY-MM-DD".to_string())
+                .expect("format"),
+            "2026-03-22"
+        );
+
+        let shifted_day = dt.set("day".to_string(), 1).expect("set day");
+        assert_eq!(
+            shifted_day
+                .format("YYYY-MM-DD".to_string())
+                .expect("format"),
+            "2026-02-23"
+        );
+
+        let shifted_ms = dt
+            .set("millisecond".to_string(), 900)
+            .expect("set millisecond");
+        assert_eq!(shifted_ms.format("SSS".to_string()).expect("format"), "900");
+    }
+
+    #[test]
+    fn calendar_helpers_work() {
+        let leap = BridgeTime::parse("2024-02-10T12:00:00Z".to_string(), Some("UTC".to_string()))
+            .expect("parse should succeed");
+        let normal = BridgeTime::parse("2025-02-10T12:00:00Z".to_string(), Some("UTC".to_string()))
+            .expect("parse should succeed");
+
+        assert!(leap.is_valid());
+        assert!(leap.is_leap_year().expect("is_leap_year"));
+        assert_eq!(leap.days_in_month().expect("days_in_month"), 29);
+
+        assert!(!normal.is_leap_year().expect("is_leap_year"));
+        assert_eq!(normal.days_in_month().expect("days_in_month"), 28);
+    }
+
+    #[test]
+    fn comparison_helpers_with_units_and_ranges_work() {
+        let morning =
+            BridgeTime::parse("2026-02-22T10:15:30Z".to_string(), Some("UTC".to_string()))
+                .expect("parse should succeed");
+        let evening =
+            BridgeTime::parse("2026-02-22T23:59:00Z".to_string(), Some("UTC".to_string()))
+                .expect("parse should succeed");
+        let next_day =
+            BridgeTime::parse("2026-02-23T00:00:00Z".to_string(), Some("UTC".to_string()))
+                .expect("parse should succeed");
+
+        assert!(morning.is_before(&evening));
+        assert!(morning.is_same_or_before(&evening));
+        assert!(evening.is_same_or_after(&morning));
+
+        assert!(
+            morning
+                .is_same_unit(&evening, "day".to_string())
+                .expect("is_same_unit")
+        );
+        assert!(
+            !evening
+                .is_after_unit(&morning, "day".to_string())
+                .expect("is_after_unit")
+        );
+        assert!(
+            morning
+                .is_before_unit(&next_day, "day".to_string())
+                .expect("is_before_unit")
+        );
+
+        assert!(
+            evening
+                .is_between(
+                    &morning,
+                    &next_day,
+                    Some("day".to_string()),
+                    Some("[)".to_string())
+                )
+                .expect("is_between")
+        );
+
+        let invalid = evening.is_between(&morning, &next_day, None, Some("invalid".to_string()));
+        assert!(matches!(
+            invalid,
+            Err(BridgeTimeError::InvalidInclusivity(_))
+        ));
     }
 }
 
