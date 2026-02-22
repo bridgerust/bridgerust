@@ -2,8 +2,8 @@
 use bridgerust::new;
 use bridgerust::{bridge, error};
 use chrono::{
-    DateTime, Datelike, Duration, LocalResult, NaiveDate, NaiveDateTime, SecondsFormat, TimeZone,
-    Timelike, Utc,
+    DateTime, Datelike, Duration, LocalResult, NaiveDate, NaiveDateTime, Offset, SecondsFormat,
+    TimeZone, Timelike, Utc,
 };
 use chrono_tz::Tz;
 use std::fmt::{Display, Formatter};
@@ -539,6 +539,16 @@ impl BridgeTime {
         self.timezone.clone()
     }
 
+    pub fn utc_offset(&self) -> Result<i32, BridgeTimeError> {
+        let local = self.local_datetime()?;
+        Ok(local.offset().fix().local_minus_utc() / 60)
+    }
+
+    pub fn is_utc(&self) -> Result<bool, BridgeTimeError> {
+        let tz = self.as_tz()?;
+        Ok(tz.name() == "UTC")
+    }
+
     pub fn to_timezone(&self, timezone: String) -> Result<Self, BridgeTimeError> {
         let tz = parse_timezone(&timezone)?;
         Ok(Self {
@@ -736,6 +746,11 @@ impl BridgeTime {
         self.shift_local_by(Duration::weeks(delta))
     }
 
+    pub fn iso_week_year(&self) -> Result<i64, BridgeTimeError> {
+        let local = self.local_datetime()?;
+        Ok(i64::from(local.iso_week().year()))
+    }
+
     pub fn week_of_year(&self) -> Result<u32, BridgeTimeError> {
         let local = self.local_datetime()?;
         sunday_week_of_year(local.date_naive())
@@ -743,6 +758,28 @@ impl BridgeTime {
 
     pub fn week(&self) -> Result<u32, BridgeTimeError> {
         self.week_of_year()
+    }
+
+    pub fn weeks_in_year(&self) -> Result<u32, BridgeTimeError> {
+        let year = i32::try_from(self.year()?).map_err(|_| BridgeTimeError::ArithmeticOverflow)?;
+        let last_day =
+            NaiveDate::from_ymd_opt(year, 12, 31).ok_or(BridgeTimeError::ArithmeticOverflow)?;
+        sunday_week_of_year(last_day)
+    }
+
+    pub fn iso_weeks_in_year(&self) -> Result<u32, BridgeTimeError> {
+        let year = i32::try_from(self.year()?).map_err(|_| BridgeTimeError::ArithmeticOverflow)?;
+        let dec_28 =
+            NaiveDate::from_ymd_opt(year, 12, 28).ok_or(BridgeTimeError::ArithmeticOverflow)?;
+        Ok(dec_28.iso_week().week())
+    }
+
+    pub fn days_in_year(&self) -> Result<u32, BridgeTimeError> {
+        if self.is_leap_year()? {
+            Ok(366)
+        } else {
+            Ok(365)
+        }
     }
 
     pub fn set_week(&self, value: i64) -> Result<Self, BridgeTimeError> {
@@ -1330,6 +1367,10 @@ mod tests {
 
         assert_eq!(utc_dt.unix_ms(), ny_dt.unix_ms());
         assert_eq!(ny_dt.timezone(), "America/New_York");
+        assert_eq!(utc_dt.utc_offset().expect("utc_offset"), 0);
+        assert_eq!(ny_dt.utc_offset().expect("utc_offset"), -300);
+        assert!(utc_dt.is_utc().expect("is_utc"));
+        assert!(!ny_dt.is_utc().expect("is_utc"));
     }
 
     #[test]
@@ -1505,6 +1546,10 @@ mod tests {
             dt.week_of_year().expect("week_of_year")
         );
         assert_eq!(dt.iso_week().expect("iso_week"), 8);
+        assert_eq!(dt.iso_week_year().expect("iso_week_year"), 2026);
+        assert_eq!(dt.days_in_year().expect("days_in_year"), 365);
+        assert_eq!(dt.weeks_in_year().expect("weeks_in_year"), 53);
+        assert_eq!(dt.iso_weeks_in_year().expect("iso_weeks_in_year"), 53);
 
         let next_quarter = dt.set_quarter(2).expect("set_quarter");
         assert_eq!(
