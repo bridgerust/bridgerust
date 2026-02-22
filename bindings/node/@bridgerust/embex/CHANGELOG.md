@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.19] - 2026-02-22
+
+### Fixed
+
+- Replaced Bun-based release build/publish pipeline with Node/npm tooling for improved runner compatibility.
+- Added manual release tag input support in the Node publish workflow.
+
 ## [0.1.18] - 2026-02-18
 
 ### Fixed

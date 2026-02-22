@@ -5,6 +5,15 @@ All notable changes to BridgeRust projects will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.19] - 2026-02-22
+
+### Fixed
+
+- **Embex release CI/CD**:
+  - Fixed Python publish job checkout and tag/version validation for tag/manual runs.
+  - Replaced Bun-based Node release steps with Node/npm tooling to avoid macOS Intel Bun download failures.
+  - Added manual tag input handling in Embex publish workflows.
+
 ## [0.1.18] - 2026-02-18
 
 ### Fixed

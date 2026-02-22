@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.19] - 2026-02-22
+
+### Fixed
+
+- Release workflow now supports manual tag input and validates against the checked out `pyproject.toml`.
+
 ## [0.1.18] - 2026-02-18
 
 ### Added
