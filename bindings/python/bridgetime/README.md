@@ -11,7 +11,7 @@ pip install bridgetime
 ## Quickstart
 
 ```python
-from bridgetime import BridgeTime, supported_units
+from bridgetime import BridgeDuration, BridgeTime, supported_units
 
 now = BridgeTime.now("UTC")
 print(now.to_iso())
@@ -20,6 +20,8 @@ custom = BridgeTime.parse_format("22/02/2026 10:15", "DD/MM/YYYY HH:mm", "UTC")
 print(custom.to_iso())
 from_array = BridgeTime.from_array([2026, 1, 22, 10, 15, 30, 250], "UTC")
 print(from_array.to_array())
+duration = BridgeDuration(90, "minute")
+print(duration.humanize(True))  # in 2 hours
 
 ny = now.to_timezone("America/New_York")
 print(ny.format("YYYY-MM-DD HH:mm:ss"))
@@ -36,6 +38,7 @@ print(now.day_of_year(), now.week(), now.iso_week())
 print(now.iso_week_year(), now.days_in_year(), now.weeks_in_year(), now.iso_weeks_in_year())
 print(now.is_today())
 print(now.add(30, "minute").from_now())  # in 30 minutes
+print(now.add_duration(BridgeDuration.from_minutes(30)).to_iso())
 print(now.is_between(now.start_of("day"), now.end_of("day"), "day", "[]"))
 print(BridgeTime.min(now, future).to_iso(), BridgeTime.max(now, future).to_iso())
 print(now.clamp(now.subtract(1, "day"), now.add(1, "day")).to_iso())
@@ -46,6 +49,7 @@ print(supported_units())
 ## API Highlights
 
 - Core: `parse`, `format`, `add`, `subtract`, `start_of`, `end_of`, `diff`
+- Duration helpers: `BridgeDuration`, `BridgeTime.duration(value, unit?)`, `add_duration`, `subtract_duration`
 - Custom parse helpers: `parse_format(input, pattern, timezone?)`, `from_array(components, timezone?)`, `to_array()`
 - Timezone helpers: `timezone`, `utc_offset`, `is_utc`, `is_dst`, `to_timezone`
 - Calendar helpers: `get`, `set`, component getters/setters (`year`, `set_year`, etc), `days_in_month`, `is_leap_year`, `is_valid`

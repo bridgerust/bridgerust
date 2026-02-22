@@ -1,6 +1,33 @@
 /* eslint-disable */
 /* auto-generated-like local declaration for BridgeTime bindings */
 
+export declare class BridgeDuration {
+  constructor(value: bigint | number, unit?: string | null)
+
+  static fromMilliseconds(value: bigint | number): BridgeDuration
+  static fromSeconds(value: bigint | number): BridgeDuration
+  static fromMinutes(value: bigint | number): BridgeDuration
+  static fromHours(value: bigint | number): BridgeDuration
+  static fromDays(value: bigint | number): BridgeDuration
+  static fromWeeks(value: bigint | number): BridgeDuration
+  static fromMonths(value: bigint | number): BridgeDuration
+  static fromYears(value: bigint | number): BridgeDuration
+
+  asMilliseconds(): bigint
+  asSeconds(): number
+  asMinutes(): number
+  asHours(): number
+  asDays(): number
+  asWeeks(): number
+  asMonths(): number
+  asYears(): number
+  humanize(withSuffix?: boolean | null): string
+  add(other: BridgeDuration): BridgeDuration
+  subtract(other: BridgeDuration): BridgeDuration
+  negate(): BridgeDuration
+  abs(): BridgeDuration
+}
+
 export declare class BridgeTime {
   constructor(input?: string | null, timezone?: string | null)
 
@@ -10,6 +37,7 @@ export declare class BridgeTime {
   static fromArray(components: Array<bigint | number>, timezone?: string | null): BridgeTime
   static fromUnixMs(unixMs: bigint | number, timezone?: string | null): BridgeTime
   static fromUnix(unixSeconds: bigint | number, timezone?: string | null): BridgeTime
+  static duration(value: bigint | number, unit?: string | null): BridgeDuration
   static min(first: BridgeTime, second: BridgeTime): BridgeTime
   static max(first: BridgeTime, second: BridgeTime): BridgeTime
 
@@ -25,7 +53,9 @@ export declare class BridgeTime {
   isDst(): boolean
   toTimezone(timezone: string): BridgeTime
   add(amount: bigint | number, unit: string): BridgeTime
+  addDuration(duration: BridgeDuration): BridgeTime
   subtract(amount: bigint | number, unit: string): BridgeTime
+  subtractDuration(duration: BridgeDuration): BridgeTime
   startOf(unit: string): BridgeTime
   endOf(unit: string): BridgeTime
   diff(other: BridgeTime, unit: string, asFloat?: boolean | null): number

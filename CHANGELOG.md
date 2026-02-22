@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added custom Day.js-style parse helper: `parse_format` / `parseFormat`.
   - Added timezone/year parity helpers: `utc_offset`, `is_utc`, `iso_week_year`, `days_in_year`, `weeks_in_year`, `iso_weeks_in_year`.
   - Added array and ordering parity helpers: `from_array`, `to_array`, `BridgeTime.min`, `BridgeTime.max`, `clamp`, `is_dst`.
+  - Added duration parity helpers: `BridgeDuration`, `BridgeTime.duration`, `add_duration`, `subtract_duration`, duration conversion/humanize APIs.
   - Added package scaffolding:
     - Python: `bindings/python/bridgetime`
     - Node.js: `bindings/node/@bridgerust/bridgetime`

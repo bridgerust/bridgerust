@@ -11,7 +11,7 @@ npm install @bridgerust/bridgetime
 ## Quickstart
 
 ```ts
-import { BridgeTime, supportedUnits } from "@bridgerust/bridgetime";
+import { BridgeDuration, BridgeTime, supportedUnits } from "@bridgerust/bridgetime";
 
 const now = BridgeTime.now("UTC");
 console.log(now.toIso());
@@ -20,6 +20,8 @@ const custom = BridgeTime.parseFormat("22/02/2026 10:15", "DD/MM/YYYY HH:mm", "U
 console.log(custom.toIso());
 const fromArray = BridgeTime.fromArray([2026, 1, 22, 10, 15, 30, 250], "UTC");
 console.log(fromArray.toArray());
+const duration = new BridgeDuration(90, "minute");
+console.log(duration.humanize(true)); // in 2 hours
 
 const ny = now.toTimezone("America/New_York");
 console.log(ny.format("YYYY-MM-DD HH:mm:ss"));
@@ -36,6 +38,7 @@ console.log(now.dayOfYear(), now.week(), now.isoWeek());
 console.log(now.isoWeekYear(), now.daysInYear(), now.weeksInYear(), now.isoWeeksInYear());
 console.log(now.isToday());
 console.log(now.add(30, "minute").fromNow()); // in 30 minutes
+console.log(now.addDuration(BridgeDuration.fromMinutes(30)).toIso());
 console.log(now.isBetween(now.startOf("day"), now.endOf("day"), "day", "[]"));
 console.log(BridgeTime.min(now, next).toIso(), BridgeTime.max(now, next).toIso());
 console.log(now.clamp(now.subtract(1, "day"), now.add(1, "day")).toIso());
@@ -46,6 +49,7 @@ console.log(supportedUnits());
 ## API Highlights
 
 - Core: `parse`, `format`, `add`, `subtract`, `startOf`, `endOf`, `diff`
+- Duration helpers: `BridgeDuration`, `BridgeTime.duration(value, unit?)`, `addDuration`, `subtractDuration`
 - Custom parse helpers: `parseFormat(input, pattern, timezone?)`, `fromArray(components, timezone?)`, `toArray()`
 - Timezone helpers: `timezone`, `utcOffset`, `isUtc`, `isDst`, `toTimezone`
 - Calendar helpers: `get`, `set`, component getters/setters (`year`, `setYear`, etc), `daysInMonth`, `isLeapYear`, `isValid`

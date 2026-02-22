@@ -1,4 +1,4 @@
-from bridgetime import BridgeTime, supported_units
+from bridgetime import BridgeDuration, BridgeTime, supported_units
 
 
 def test_supported_units():
@@ -175,3 +175,25 @@ def test_unit_aware_same_or_comparisons():
     assert morning.is_same_or_before_unit(evening, "day") is True
     assert evening.is_same_or_after_unit(morning, "day") is True
     assert next_day.is_same_or_before_unit(morning, "day") is False
+
+
+def test_duration_helpers():
+    duration = BridgeDuration(90, "minute")
+    assert duration.as_milliseconds() == 5_400_000
+    assert duration.as_hours() == 1.5
+    assert duration.humanize(False) == "2 hours"
+    assert duration.humanize(True) == "in 2 hours"
+
+    thirty = BridgeDuration.from_minutes(30)
+    sixty = duration.subtract(thirty)
+    assert sixty.as_minutes() == 60.0
+    assert thirty.negate().humanize(True) == "30 minutes ago"
+
+    base = BridgeTime.parse("2026-02-22T10:00:00Z", "UTC")
+    moved = base.add_duration(thirty)
+    assert moved.format("YYYY-MM-DD HH:mm:ss") == "2026-02-22 10:30:00"
+    back = moved.subtract_duration(thirty)
+    assert back.unix_ms() == base.unix_ms()
+
+    static_duration = BridgeTime.duration(2, "hour")
+    assert static_duration.as_minutes() == 120.0

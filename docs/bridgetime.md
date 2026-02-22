@@ -15,6 +15,7 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
 - Parse custom formats with Day.js-style tokens (`parse_format`)
 - Parse/build via component arrays (`from_array`, `to_array`)
 - Day.js-style token formatting (`YYYY`, `MM`, `DD`, `HH`, `mm`, `ss`, `SSS`, `Z`)
+- Duration type with arithmetic and humanization (`BridgeDuration`)
 - Immutable date arithmetic across units:
   - `millisecond`, `second`, `minute`, `hour`, `day`, `week`, `month`, `quarter`, `year`
 - `start_of` / `end_of`
@@ -54,7 +55,7 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
 
 - Shared parity between Python and Node.js is high because both bindings use the same Rust core.
 - Core datetime operations are covered.
-- Full Day.js plugin parity is not complete yet (for example locale packs, durations, and calendar-style formatting helpers).
+- Full Day.js plugin parity is not complete yet (for example locale packs and calendar-style formatting helpers).
 
 ## API Surface
 
@@ -66,6 +67,8 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
 - `BridgeTime.from_array(components, timezone?)`
 - `BridgeTime.from_unix_ms(unix_ms, timezone?)`
 - `BridgeTime.from_unix(unix_seconds, timezone?)`
+- `BridgeTime.duration(value, unit?)`
+- `BridgeTime.min(a, b)` / `BridgeTime.max(a, b)`
 
 ### Instance methods
 
@@ -78,6 +81,7 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
 - `is_dst()`
 - `to_timezone(timezone)`
 - `add(amount, unit)`
+- `add_duration(duration)` / `subtract_duration(duration)`
 - `subtract(amount, unit)`
 - `start_of(unit)`
 - `end_of(unit)`
@@ -101,6 +105,14 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
 - `is_same_or_before_unit(other, unit)` / `is_same_or_after_unit(other, unit)`
 - `clamp(start, end)`
 - `days_in_month()` / `is_leap_year()` / `is_valid()`
+
+### Duration methods (`BridgeDuration`)
+
+- `BridgeDuration(value, unit?)`
+- `BridgeDuration.from_milliseconds(...)`, `from_seconds(...)`, `from_minutes(...)`, `from_hours(...)`, `from_days(...)`, `from_weeks(...)`, `from_months(...)`, `from_years(...)`
+- `as_milliseconds()` / `as_seconds()` / `as_minutes()` / `as_hours()` / `as_days()` / `as_weeks()` / `as_months()` / `as_years()`
+- `humanize(with_suffix?)`
+- `add(other)` / `subtract(other)` / `negate()` / `abs()`
 
 ## Local Development
 
