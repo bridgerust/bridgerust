@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added BridgeTime PyPI auth fallback: `PYPI_API_TOKEN` if provided, otherwise Trusted Publisher mode.
   - Fixed BridgeTime Node release artifact generation by emitting `.node` binaries directly from cross-target `cargo build` outputs.
   - Added versioned BridgeTime `native.js` / `native.d.ts` loader files for stable package publish and TypeScript compilation.
+  - Removed unnecessary `protoc` installation from BridgeTime release workflows to avoid flaky Windows package-feed failures.
+  - Narrowed BridgeTime Node release matrix to supported dynamic targets (darwin x64/arm64, linux x64 gnu, win32 x64 msvc).
 
 ## [0.1.19] - 2026-02-22
 
