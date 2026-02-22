@@ -26,6 +26,32 @@ export declare class BridgeTime {
   isLeapYear(): boolean
   get(field: string): bigint
   set(field: string, value: bigint | number): BridgeTime
+  year(): bigint
+  month(): bigint
+  date(): bigint
+  day(): bigint
+  hour(): bigint
+  minute(): bigint
+  second(): bigint
+  millisecond(): bigint
+  setYear(value: bigint | number): BridgeTime
+  setMonth(value: bigint | number): BridgeTime
+  setDate(value: bigint | number): BridgeTime
+  setDay(value: bigint | number): BridgeTime
+  setHour(value: bigint | number): BridgeTime
+  setMinute(value: bigint | number): BridgeTime
+  setSecond(value: bigint | number): BridgeTime
+  setMillisecond(value: bigint | number): BridgeTime
+  dayOfYear(): number
+  setDayOfYear(value: bigint | number): BridgeTime
+  isoWeek(): number
+  setIsoWeek(value: bigint | number): BridgeTime
+  weekOfYear(): number
+  week(): number
+  setWeek(value: bigint | number): BridgeTime
+  isToday(): boolean
+  isYesterday(): boolean
+  isTomorrow(): boolean
   isBefore(other: BridgeTime): boolean
   isAfter(other: BridgeTime): boolean
   isSame(other: BridgeTime): boolean

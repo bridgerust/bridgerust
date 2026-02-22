@@ -20,7 +20,15 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
 - Instant-preserving timezone conversion (`to_timezone`)
 - Calendar helpers:
   - `get(field)` / `set(field, value)`
+  - explicit component getters/setters (`year`, `month`, `date`, `day`, `hour`, `minute`, `second`, `millisecond`)
+  - `set_year` / `set_month` / `set_date` / `set_day` / `set_hour` / `set_minute` / `set_second` / `set_millisecond`
   - `days_in_month()` / `is_leap_year()` / `is_valid()`
+- Day/week helpers:
+  - `day_of_year()` / `set_day_of_year(value)`
+  - `week()` / `week_of_year()` / `set_week(value)`
+  - `iso_week()` / `set_iso_week(value)`
+- Relative-day helpers:
+  - `is_today()` / `is_yesterday()` / `is_tomorrow()`
 - Comparison and range helpers:
   - `is_before` / `is_after` / `is_same`
   - `is_before_unit` / `is_after_unit` / `is_same_unit`
@@ -59,6 +67,12 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
 - `is_same_or_before(other)` / `is_same_or_after(other)`
 - `is_between(start, end, unit?, inclusivity?)`
 - `get(field)` / `set(field, value)`
+- `year()` / `month()` / `date()` / `day()` / `hour()` / `minute()` / `second()` / `millisecond()`
+- `set_year(value)` / `set_month(value)` / `set_date(value)` / `set_day(value)` / `set_hour(value)` / `set_minute(value)` / `set_second(value)` / `set_millisecond(value)`
+- `day_of_year()` / `set_day_of_year(value)`
+- `week()` / `week_of_year()` / `set_week(value)`
+- `iso_week()` / `set_iso_week(value)`
+- `is_today()` / `is_yesterday()` / `is_tomorrow()`
 - `days_in_month()` / `is_leap_year()` / `is_valid()`
 
 ## Local Development

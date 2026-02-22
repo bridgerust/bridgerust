@@ -57,3 +57,50 @@ def test_unit_comparisons_and_between():
     assert morning.is_before_unit(next_day, "day") is True
 
     assert evening.is_between(morning, next_day, "day", "[)") is True
+
+
+def test_explicit_component_getters_and_setters():
+    dt = BridgeTime.parse("2026-02-22T10:15:30.250Z", "UTC")
+
+    assert dt.year() == 2026
+    assert dt.month() == 1
+    assert dt.date() == 22
+    assert dt.day() == 0
+    assert dt.hour() == 10
+    assert dt.minute() == 15
+    assert dt.second() == 30
+    assert dt.millisecond() == 250
+
+    shifted = (
+        dt.set_year(2027)
+        .set_month(3)
+        .set_date(5)
+        .set_hour(12)
+        .set_minute(45)
+        .set_second(5)
+        .set_millisecond(900)
+    )
+    assert shifted.format("YYYY-MM-DD HH:mm:ss.SSS") == "2027-04-05 12:45:05.900"
+
+
+def test_day_of_year_week_and_relative_day_helpers():
+    dt = BridgeTime.parse("2026-02-22T10:15:30Z", "UTC")
+
+    assert dt.day_of_year() == 53
+    assert dt.week_of_year() == 9
+    assert dt.week() == dt.week_of_year()
+    assert dt.iso_week() == 8
+
+    next_day = dt.set_day_of_year(54)
+    assert next_day.format("YYYY-MM-DD") == "2026-02-23"
+
+    next_week = dt.set_week(dt.week() + 1)
+    assert next_week.diff(dt, "day", True) == 7.0
+
+    next_iso_week = dt.set_iso_week(dt.iso_week() + 1)
+    assert next_iso_week.diff(dt, "day", True) == 7.0
+
+    today = BridgeTime.now("UTC")
+    assert today.is_today() is True
+    assert today.add(1, "day").is_tomorrow() is True
+    assert today.subtract(1, "day").is_yesterday() is True

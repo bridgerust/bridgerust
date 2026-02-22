@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Implemented Day.js/Moment-style datetime API: parsing, formatting, timezone conversion, immutable arithmetic, `start_of`, `end_of`, and `diff`.
   - Added Day.js-style calendar helpers: `get`, `set`, `days_in_month`, `is_leap_year`, `is_valid`.
   - Added comparison/range helpers: `is_before_unit`, `is_after_unit`, `is_same_unit`, `is_same_or_before`, `is_same_or_after`, `is_between`.
+  - Added explicit Day.js-style component methods (`year`, `month`, `date`, `day`, `hour`, `minute`, `second`, `millisecond`) plus setter variants.
+  - Added day/week parity helpers: `day_of_year`, `set_day_of_year`, `week`, `week_of_year`, `set_week`, `iso_week`, `set_iso_week`.
+  - Added relative-day helpers: `is_today`, `is_yesterday`, `is_tomorrow`.
   - Added package scaffolding:
     - Python: `bindings/python/bridgetime`
     - Node.js: `bindings/node/@bridgerust/bridgetime`
