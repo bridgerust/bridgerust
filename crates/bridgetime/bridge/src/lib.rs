@@ -238,6 +238,40 @@ fn format_relative_phrase(diff_millis: i64, without_suffix: bool) -> String {
     }
 }
 
+fn duration_to_millis(amount: i64, unit: TimeUnit) -> Result<i64, BridgeTimeError> {
+    match unit {
+        TimeUnit::Millisecond => Ok(amount),
+        TimeUnit::Second => amount
+            .checked_mul(1_000)
+            .ok_or(BridgeTimeError::ArithmeticOverflow),
+        TimeUnit::Minute => amount
+            .checked_mul(60_000)
+            .ok_or(BridgeTimeError::ArithmeticOverflow),
+        TimeUnit::Hour => amount
+            .checked_mul(3_600_000)
+            .ok_or(BridgeTimeError::ArithmeticOverflow),
+        TimeUnit::Day => amount
+            .checked_mul(86_400_000)
+            .ok_or(BridgeTimeError::ArithmeticOverflow),
+        TimeUnit::Week => amount
+            .checked_mul(604_800_000)
+            .ok_or(BridgeTimeError::ArithmeticOverflow),
+        TimeUnit::Month | TimeUnit::Quarter | TimeUnit::Year => {
+            let factor = match unit {
+                TimeUnit::Month => AVG_DAYS_PER_MONTH * MS_PER_DAY,
+                TimeUnit::Quarter => AVG_DAYS_PER_MONTH * 3.0 * MS_PER_DAY,
+                TimeUnit::Year => AVG_DAYS_PER_YEAR * MS_PER_DAY,
+                _ => unreachable!(),
+            };
+            let value = (amount as f64) * factor;
+            if !value.is_finite() || value.abs() > i64::MAX as f64 {
+                return Err(BridgeTimeError::ArithmeticOverflow);
+            }
+            Ok(value.round() as i64)
+        }
+    }
+}
+
 fn parse_timezone(raw: &str) -> Result<Tz, BridgeTimeError> {
     let trimmed = raw.trim();
     let normalized = if trimmed.is_empty()
@@ -456,6 +490,139 @@ pub fn supported_units() -> Vec<String> {
 }
 
 #[bridge]
+pub struct BridgeDuration {
+    milliseconds: i64,
+}
+
+#[bridge]
+impl BridgeDuration {
+    #[constructor]
+    pub fn new(value: i64, unit: Option<String>) -> Result<Self, BridgeTimeError> {
+        let millis = match unit {
+            Some(raw_unit) => {
+                let parsed_unit = TimeUnit::parse(&raw_unit)?;
+                duration_to_millis(value, parsed_unit)?
+            }
+            None => value,
+        };
+        Ok(Self {
+            milliseconds: millis,
+        })
+    }
+
+    pub fn from_milliseconds(value: i64) -> Self {
+        Self {
+            milliseconds: value,
+        }
+    }
+
+    pub fn from_seconds(value: i64) -> Result<Self, BridgeTimeError> {
+        Self::new(value, Some("second".to_string()))
+    }
+
+    pub fn from_minutes(value: i64) -> Result<Self, BridgeTimeError> {
+        Self::new(value, Some("minute".to_string()))
+    }
+
+    pub fn from_hours(value: i64) -> Result<Self, BridgeTimeError> {
+        Self::new(value, Some("hour".to_string()))
+    }
+
+    pub fn from_days(value: i64) -> Result<Self, BridgeTimeError> {
+        Self::new(value, Some("day".to_string()))
+    }
+
+    pub fn from_weeks(value: i64) -> Result<Self, BridgeTimeError> {
+        Self::new(value, Some("week".to_string()))
+    }
+
+    pub fn from_months(value: i64) -> Result<Self, BridgeTimeError> {
+        Self::new(value, Some("month".to_string()))
+    }
+
+    pub fn from_years(value: i64) -> Result<Self, BridgeTimeError> {
+        Self::new(value, Some("year".to_string()))
+    }
+
+    pub fn as_milliseconds(&self) -> i64 {
+        self.milliseconds
+    }
+
+    pub fn as_seconds(&self) -> f64 {
+        self.milliseconds as f64 / MS_PER_SECOND
+    }
+
+    pub fn as_minutes(&self) -> f64 {
+        self.milliseconds as f64 / MS_PER_MINUTE
+    }
+
+    pub fn as_hours(&self) -> f64 {
+        self.milliseconds as f64 / MS_PER_HOUR
+    }
+
+    pub fn as_days(&self) -> f64 {
+        self.milliseconds as f64 / MS_PER_DAY
+    }
+
+    pub fn as_weeks(&self) -> f64 {
+        self.milliseconds as f64 / MS_PER_WEEK
+    }
+
+    pub fn as_months(&self) -> f64 {
+        self.milliseconds as f64 / (AVG_DAYS_PER_MONTH * MS_PER_DAY)
+    }
+
+    pub fn as_years(&self) -> f64 {
+        self.milliseconds as f64 / (AVG_DAYS_PER_YEAR * MS_PER_DAY)
+    }
+
+    pub fn humanize(&self, with_suffix: Option<bool>) -> String {
+        format_relative_phrase(self.milliseconds, !with_suffix.unwrap_or(false))
+    }
+
+    pub fn add(&self, other: &BridgeDuration) -> Result<Self, BridgeTimeError> {
+        Ok(Self {
+            milliseconds: self
+                .milliseconds
+                .checked_add(other.milliseconds)
+                .ok_or(BridgeTimeError::ArithmeticOverflow)?,
+        })
+    }
+
+    pub fn subtract(&self, other: &BridgeDuration) -> Result<Self, BridgeTimeError> {
+        Ok(Self {
+            milliseconds: self
+                .milliseconds
+                .checked_sub(other.milliseconds)
+                .ok_or(BridgeTimeError::ArithmeticOverflow)?,
+        })
+    }
+
+    pub fn negate(&self) -> Result<Self, BridgeTimeError> {
+        Ok(Self {
+            milliseconds: self
+                .milliseconds
+                .checked_neg()
+                .ok_or(BridgeTimeError::ArithmeticOverflow)?,
+        })
+    }
+
+    pub fn abs(&self) -> Result<Self, BridgeTimeError> {
+        if self.milliseconds >= 0 {
+            return Ok(Self {
+                milliseconds: self.milliseconds,
+            });
+        }
+        self.negate()
+    }
+
+    #[cfg(feature = "python")]
+    fn __repr__(&self) -> String {
+        format!("BridgeDuration(milliseconds={})", self.milliseconds)
+    }
+}
+
+#[bridge]
 pub struct BridgeTime {
     utc_millis: i64,
     timezone: String,
@@ -569,6 +736,10 @@ impl BridgeTime {
         Self::from_unix_ms(unix_ms, timezone)
     }
 
+    pub fn duration(value: i64, unit: Option<String>) -> Result<BridgeDuration, BridgeTimeError> {
+        BridgeDuration::new(value, unit)
+    }
+
     pub fn to_iso(&self) -> Result<String, BridgeTimeError> {
         let local = self.local_datetime()?;
         Ok(local.to_rfc3339_opts(SecondsFormat::Millis, true))
@@ -638,12 +809,24 @@ impl BridgeTime {
         self.add_unit(amount, parsed_unit)
     }
 
+    pub fn add_duration(&self, duration: &BridgeDuration) -> Result<Self, BridgeTimeError> {
+        self.add_unit(duration.milliseconds, TimeUnit::Millisecond)
+    }
+
     pub fn subtract(&self, amount: i64, unit: String) -> Result<Self, BridgeTimeError> {
         let parsed_unit = TimeUnit::parse(&unit)?;
         let negated = amount
             .checked_neg()
             .ok_or(BridgeTimeError::ArithmeticOverflow)?;
         self.add_unit(negated, parsed_unit)
+    }
+
+    pub fn subtract_duration(&self, duration: &BridgeDuration) -> Result<Self, BridgeTimeError> {
+        let negated = duration
+            .milliseconds
+            .checked_neg()
+            .ok_or(BridgeTimeError::ArithmeticOverflow)?;
+        self.add_unit(negated, TimeUnit::Millisecond)
     }
 
     pub fn start_of(&self, unit: String) -> Result<Self, BridgeTimeError> {
@@ -1403,7 +1586,7 @@ impl BridgeTime {
 
 #[cfg(test)]
 mod tests {
-    use super::{BridgeTime, BridgeTimeError};
+    use super::{BridgeDuration, BridgeTime, BridgeTimeError};
 
     #[test]
     fn parses_iso_and_formats() {
@@ -1840,6 +2023,40 @@ mod tests {
                 .starts_with("in ")
         );
     }
+
+    #[test]
+    fn duration_helpers_work() {
+        let duration =
+            BridgeDuration::new(90, Some("minute".to_string())).expect("duration should build");
+        assert_eq!(duration.as_milliseconds(), 5_400_000);
+        assert_eq!(duration.as_hours(), 1.5);
+        assert_eq!(duration.humanize(Some(false)), "2 hours");
+        assert_eq!(duration.humanize(Some(true)), "in 2 hours");
+
+        let thirty = BridgeDuration::from_minutes(30).expect("duration");
+        let sixty = duration.subtract(&thirty).expect("subtract");
+        assert_eq!(sixty.as_minutes(), 60.0);
+
+        let negative = thirty.negate().expect("negate");
+        assert_eq!(negative.humanize(Some(true)), "30 minutes ago");
+
+        let base = BridgeTime::parse("2026-02-22T10:00:00Z".to_string(), Some("UTC".to_string()))
+            .expect("parse should succeed");
+        let moved = base.add_duration(&thirty).expect("add_duration");
+        assert_eq!(
+            moved
+                .format("YYYY-MM-DD HH:mm:ss".to_string())
+                .expect("format should succeed"),
+            "2026-02-22 10:30:00"
+        );
+
+        let back = moved.subtract_duration(&thirty).expect("subtract_duration");
+        assert_eq!(back.unix_ms(), base.unix_ms());
+
+        let static_duration =
+            BridgeTime::duration(2, Some("hour".to_string())).expect("BridgeTime::duration");
+        assert_eq!(static_duration.as_minutes(), 120.0);
+    }
 }
 
 #[cfg(feature = "python")]
@@ -1847,6 +2064,7 @@ mod tests {
 fn bridgetime(
     m: &bridgerust::pyo3::Bound<'_, bridgerust::pyo3::types::PyModule>,
 ) -> bridgerust::pyo3::PyResult<()> {
+    m.add_class::<BridgeDuration>()?;
     m.add_class::<BridgeTime>()?;
     m.add_function(bridgerust::pyo3::wrap_pyfunction!(supported_units, m)?)?;
     Ok(())
