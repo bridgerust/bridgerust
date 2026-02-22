@@ -54,6 +54,9 @@ cargo clippy --all -- -D warnings
 - **Rust Features**: The `embex-bridge` crate has mutually exclusive features (`python` and `nodejs`).
   - Do NOT run `cargo check --all-features` on the entire workspace.
   - Instead, check specific features: `cargo check -p embex-bridge --features python`.
+- **BridgeTime crate**: Validate language bridges with:
+  - `cargo check -p bridgetime-bridge --features python`
+  - `cargo check -p bridgetime-bridge --features nodejs`
 
 ### Python Bindings Setup
 
@@ -71,6 +74,18 @@ maturin develop --features all
 pytest tests/
 ```
 
+### Python BridgeTime Setup
+
+```bash
+cd bindings/python/bridgetime
+
+# Build/install extension in the active environment
+maturin develop
+
+# Run tests
+pytest tests/
+```
+
 ### Node.js Bindings Setup
 
 ```bash
@@ -84,6 +99,18 @@ npm run build
 
 # Run tests
 npm test
+```
+
+### Node.js BridgeTime Setup
+
+```bash
+cd bindings/node/@bridgerust/bridgetime
+
+# Install dependencies
+npm install
+
+# Build bindings
+npm run build
 ```
 
 ### Running Integration Tests

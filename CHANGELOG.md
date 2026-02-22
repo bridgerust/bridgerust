@@ -5,6 +5,18 @@ All notable changes to BridgeRust projects will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **BridgeTime (preview)**:
+  - Added new `bridgetime-bridge` Rust crate with BridgeRust exports for Python and Node.js.
+  - Implemented Day.js/Moment-style datetime API: parsing, formatting, timezone conversion, immutable arithmetic, `start_of`, `end_of`, and `diff`.
+  - Added package scaffolding:
+    - Python: `bindings/python/bridgetime`
+    - Node.js: `bindings/node/@bridgerust/bridgetime`
+  - Added CI checks for `bridgetime-bridge` (base + python/nodejs features).
+
 ## [0.1.19] - 2026-02-22
 
 ### Fixed

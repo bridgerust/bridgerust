@@ -11,6 +11,24 @@
 
 </div>
 
+## Also in this repository: BridgeTime (Preview)
+
+BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and Node.js.
+
+```bash
+# Python
+pip install bridgetime
+
+# Node.js
+npm install @bridgerust/bridgetime
+```
+
+BridgeTime package sources:
+
+- `crates/bridgetime/bridge`
+- `bindings/python/bridgetime`
+- `bindings/node/@bridgerust/bridgetime`
+
 ## The Problem
 
 Every vector database has a different API:

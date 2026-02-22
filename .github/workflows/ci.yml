@@ -91,6 +91,15 @@ jobs:
       - name: Check embex-bridge (Node.js)
         run: cargo check -p embex-bridge --features nodejs
 
+      - name: Check bridgetime-bridge
+        run: cargo check -p bridgetime-bridge
+
+      - name: Check bridgetime-bridge (Python)
+        run: cargo check -p bridgetime-bridge --features python
+
+      - name: Check bridgetime-bridge (Node.js)
+        run: cargo check -p bridgetime-bridge --features nodejs
+
       - name: Check disk space after
         if: always()
         run: df -h

@@ -4,6 +4,7 @@ This project uses tag-driven GitHub Actions releases with separate lanes:
 
 - Embex packages: `embex-vX.Y.Z`
 - BridgeRust framework crates: `bridgerust-vX.Y.Z`
+- BridgeTime packages (in progress): `bridgetime-vX.Y.Z`
 
 ## 1. Prepare the version
 
@@ -11,6 +12,11 @@ For Embex package releases, update at least:
 
 - `bindings/python/embex/pyproject.toml`
 - `bindings/node/@bridgerust/embex/package.json`
+
+For BridgeTime package releases, update at least:
+
+- `bindings/python/bridgetime/pyproject.toml`
+- `bindings/node/@bridgerust/bridgetime/package.json`
 
 Update `CHANGELOG.md` with the new version section and commit the changes.
 
@@ -24,6 +30,10 @@ cargo test --workspace --no-fail-fast
 cargo check -p embex-bridge --features nodejs
 # For Python feature, ensure Python 3.x is installed in PATH:
 cargo check -p embex-bridge --features python
+
+# BridgeTime bindings compile checks
+cargo check -p bridgetime-bridge --features nodejs
+cargo check -p bridgetime-bridge --features python
 ```
 
 ## 3. Create and push the release tag
@@ -42,6 +52,13 @@ git tag bridgerust-v0.1.18
 git push origin bridgerust-v0.1.18
 ```
 
+BridgeTime release tag format:
+
+```bash
+git tag bridgetime-v0.1.0
+git push origin bridgetime-v0.1.0
+```
+
 ## 4. CI/CD workflows triggered by tag
 
 - `.github/workflows/release-python.yml`
@@ -51,6 +68,7 @@ git push origin bridgerust-v0.1.18
 
 - `embex-v*` triggers Python/Node publish plus GitHub release creation.
 - `bridgerust-v*` triggers crates.io publication for framework crates.
+- `bridgetime-v*` is reserved for BridgeTime release automation (manual publish flow until dedicated workflows are added).
 
 ## 5. Post-release verification
 
