@@ -196,6 +196,43 @@ fn sunday_week_of_year(date: NaiveDate) -> Result<u32, BridgeTimeError> {
     u32::try_from(week).map_err(|_| BridgeTimeError::ArithmeticOverflow)
 }
 
+fn format_relative_phrase(diff_millis: i64, without_suffix: bool) -> String {
+    let is_future = diff_millis > 0;
+    let seconds = (diff_millis.unsigned_abs() as f64) / 1_000.0;
+
+    let phrase = if seconds < 45.0 {
+        "a few seconds".to_string()
+    } else if seconds < 90.0 {
+        "a minute".to_string()
+    } else if seconds < 45.0 * 60.0 {
+        format!("{} minutes", (seconds / 60.0).round() as i64)
+    } else if seconds < 90.0 * 60.0 {
+        "an hour".to_string()
+    } else if seconds < 22.0 * 3_600.0 {
+        format!("{} hours", (seconds / 3_600.0).round() as i64)
+    } else if seconds < 36.0 * 3_600.0 {
+        "a day".to_string()
+    } else if seconds < 26.0 * 86_400.0 {
+        format!("{} days", (seconds / 86_400.0).round() as i64)
+    } else if seconds < 45.0 * 86_400.0 {
+        "a month".to_string()
+    } else if seconds < 320.0 * 86_400.0 {
+        format!("{} months", (seconds / (30.0 * 86_400.0)).round() as i64)
+    } else if seconds < 548.0 * 86_400.0 {
+        "a year".to_string()
+    } else {
+        format!("{} years", (seconds / (365.0 * 86_400.0)).round() as i64)
+    };
+
+    if without_suffix {
+        phrase
+    } else if is_future {
+        format!("in {phrase}")
+    } else {
+        format!("{phrase} ago")
+    }
+}
+
 fn parse_timezone(raw: &str) -> Result<Tz, BridgeTimeError> {
     let trimmed = raw.trim();
     let normalized = if trimmed.is_empty()
@@ -737,6 +774,39 @@ impl BridgeTime {
         };
 
         Ok(lower_ok && upper_ok)
+    }
+
+    pub fn from_time(
+        &self,
+        other: &BridgeTime,
+        without_suffix: Option<bool>,
+    ) -> Result<String, BridgeTimeError> {
+        let diff_millis = self
+            .utc_millis
+            .checked_sub(other.utc_millis)
+            .ok_or(BridgeTimeError::ArithmeticOverflow)?;
+        Ok(format_relative_phrase(
+            diff_millis,
+            without_suffix.unwrap_or(false),
+        ))
+    }
+
+    pub fn to_time(
+        &self,
+        other: &BridgeTime,
+        without_suffix: Option<bool>,
+    ) -> Result<String, BridgeTimeError> {
+        other.from_time(self, without_suffix)
+    }
+
+    pub fn from_now(&self, without_suffix: Option<bool>) -> Result<String, BridgeTimeError> {
+        let now = Self::now(Some(self.timezone.clone()))?;
+        self.from_time(&now, without_suffix)
+    }
+
+    pub fn to_now(&self, without_suffix: Option<bool>) -> Result<String, BridgeTimeError> {
+        let now = Self::now(Some(self.timezone.clone()))?;
+        self.to_time(&now, without_suffix)
     }
 
     pub fn clone_time(&self) -> BridgeTime {
@@ -1362,6 +1432,55 @@ mod tests {
                 .expect("subtract")
                 .is_yesterday()
                 .expect("is_yesterday")
+        );
+    }
+
+    #[test]
+    fn relative_time_helpers_work() {
+        let base = BridgeTime::parse("2026-02-22T10:00:00Z".to_string(), Some("UTC".to_string()))
+            .expect("parse should succeed");
+        let future = BridgeTime::parse("2026-02-22T10:30:00Z".to_string(), Some("UTC".to_string()))
+            .expect("parse should succeed");
+        let past = BridgeTime::parse("2026-02-22T09:30:00Z".to_string(), Some("UTC".to_string()))
+            .expect("parse should succeed");
+
+        assert_eq!(
+            future
+                .from_time(&base, Some(false))
+                .expect("from_time should succeed"),
+            "in 30 minutes"
+        );
+        assert_eq!(
+            past.from_time(&base, Some(false))
+                .expect("from_time should succeed"),
+            "30 minutes ago"
+        );
+        assert_eq!(
+            future
+                .from_time(&base, Some(true))
+                .expect("from_time should succeed"),
+            "30 minutes"
+        );
+        assert_eq!(
+            base.to_time(&future, Some(false))
+                .expect("to_time should succeed"),
+            "in 30 minutes"
+        );
+
+        let now = BridgeTime::now(Some("UTC".to_string())).expect("now should succeed");
+        assert!(
+            now.add(2, "day".to_string())
+                .expect("add should succeed")
+                .from_now(Some(false))
+                .expect("from_now should succeed")
+                .starts_with("in ")
+        );
+        assert!(
+            now.subtract(2, "day".to_string())
+                .expect("subtract should succeed")
+                .to_now(Some(false))
+                .expect("to_now should succeed")
+                .starts_with("in ")
         );
     }
 }
