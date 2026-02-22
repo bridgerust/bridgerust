@@ -16,8 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added comparison/range helpers: `is_before_unit`, `is_after_unit`, `is_same_unit`, `is_same_or_before`, `is_same_or_after`, `is_between`.
   - Added explicit Day.js-style component methods (`year`, `month`, `date`, `day`, `hour`, `minute`, `second`, `millisecond`) plus setter variants.
   - Added day/week parity helpers: `day_of_year`, `set_day_of_year`, `week`, `week_of_year`, `set_week`, `iso_week`, `set_iso_week`.
+  - Added calendar/week parity helpers: `quarter`, `set_quarter`, `iso_weekday`, `set_iso_weekday`.
   - Added relative-day helpers: `is_today`, `is_yesterday`, `is_tomorrow`.
   - Added relative-time helpers: `from_time`, `to_time`, `from_now`, `to_now`.
+  - Added unit-aware comparison helpers: `is_same_or_before_unit`, `is_same_or_after_unit`.
   - Added package scaffolding:
     - Python: `bindings/python/bridgetime`
     - Node.js: `bindings/node/@bridgerust/bridgetime`

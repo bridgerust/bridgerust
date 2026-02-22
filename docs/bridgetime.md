@@ -25,6 +25,8 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
   - `days_in_month()` / `is_leap_year()` / `is_valid()`
 - Day/week helpers:
   - `day_of_year()` / `set_day_of_year(value)`
+  - `quarter()` / `set_quarter(value)`
+  - `iso_weekday()` / `set_iso_weekday(value)`
   - `week()` / `week_of_year()` / `set_week(value)`
   - `iso_week()` / `set_iso_week(value)`
 - Relative-day helpers:
@@ -36,6 +38,7 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
   - `is_before` / `is_after` / `is_same`
   - `is_before_unit` / `is_after_unit` / `is_same_unit`
   - `is_same_or_before` / `is_same_or_after`
+  - `is_same_or_before_unit` / `is_same_or_after_unit`
   - `is_between(start, end, unit?, inclusivity?)`
 
 ## Day.js Parity Snapshot
@@ -73,11 +76,14 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
 - `year()` / `month()` / `date()` / `day()` / `hour()` / `minute()` / `second()` / `millisecond()`
 - `set_year(value)` / `set_month(value)` / `set_date(value)` / `set_day(value)` / `set_hour(value)` / `set_minute(value)` / `set_second(value)` / `set_millisecond(value)`
 - `day_of_year()` / `set_day_of_year(value)`
+- `quarter()` / `set_quarter(value)`
+- `iso_weekday()` / `set_iso_weekday(value)`
 - `week()` / `week_of_year()` / `set_week(value)`
 - `iso_week()` / `set_iso_week(value)`
 - `is_today()` / `is_yesterday()` / `is_tomorrow()`
 - `from_time(other, without_suffix?)` / `to_time(other, without_suffix?)`
 - `from_now(without_suffix?)` / `to_now(without_suffix?)`
+- `is_same_or_before_unit(other, unit)` / `is_same_or_after_unit(other, unit)`
 - `days_in_month()` / `is_leap_year()` / `is_valid()`
 
 ## Local Development

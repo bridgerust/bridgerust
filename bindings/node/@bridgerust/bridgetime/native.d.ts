@@ -44,6 +44,10 @@ export declare class BridgeTime {
   setMillisecond(value: bigint | number): BridgeTime
   dayOfYear(): number
   setDayOfYear(value: bigint | number): BridgeTime
+  quarter(): number
+  setQuarter(value: bigint | number): BridgeTime
+  isoWeekday(): number
+  setIsoWeekday(value: bigint | number): BridgeTime
   isoWeek(): number
   setIsoWeek(value: bigint | number): BridgeTime
   weekOfYear(): number
@@ -64,6 +68,8 @@ export declare class BridgeTime {
   isSameUnit(other: BridgeTime, unit: string): boolean
   isSameOrBefore(other: BridgeTime): boolean
   isSameOrAfter(other: BridgeTime): boolean
+  isSameOrBeforeUnit(other: BridgeTime, unit: string): boolean
+  isSameOrAfterUnit(other: BridgeTime, unit: string): boolean
   isBetween(
     start: BridgeTime,
     end: BridgeTime,

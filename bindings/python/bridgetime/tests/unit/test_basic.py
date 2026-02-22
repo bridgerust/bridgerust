@@ -87,9 +87,17 @@ def test_day_of_year_week_and_relative_day_helpers():
     dt = BridgeTime.parse("2026-02-22T10:15:30Z", "UTC")
 
     assert dt.day_of_year() == 53
+    assert dt.quarter() == 1
+    assert dt.iso_weekday() == 7
     assert dt.week_of_year() == 9
     assert dt.week() == dt.week_of_year()
     assert dt.iso_week() == 8
+
+    next_quarter = dt.set_quarter(2)
+    assert next_quarter.format("YYYY-MM-DD") == "2026-05-22"
+
+    monday = dt.set_iso_weekday(1)
+    assert monday.format("YYYY-MM-DD") == "2026-02-16"
 
     next_day = dt.set_day_of_year(54)
     assert next_day.format("YYYY-MM-DD") == "2026-02-23"
@@ -119,3 +127,13 @@ def test_relative_time_helpers():
     now = BridgeTime.now("UTC")
     assert now.add(2, "day").from_now(False).startswith("in ")
     assert now.subtract(2, "day").to_now(False).startswith("in ")
+
+
+def test_unit_aware_same_or_comparisons():
+    morning = BridgeTime.parse("2026-02-22T10:15:30Z", "UTC")
+    evening = BridgeTime.parse("2026-02-22T23:59:00Z", "UTC")
+    next_day = BridgeTime.parse("2026-02-23T00:00:00Z", "UTC")
+
+    assert morning.is_same_or_before_unit(evening, "day") is True
+    assert evening.is_same_or_after_unit(morning, "day") is True
+    assert next_day.is_same_or_before_unit(morning, "day") is False
