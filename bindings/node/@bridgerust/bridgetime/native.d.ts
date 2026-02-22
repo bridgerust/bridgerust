@@ -52,6 +52,10 @@ export declare class BridgeTime {
   isToday(): boolean
   isYesterday(): boolean
   isTomorrow(): boolean
+  fromTime(other: BridgeTime, withoutSuffix?: boolean | null): string
+  toTime(other: BridgeTime, withoutSuffix?: boolean | null): string
+  fromNow(withoutSuffix?: boolean | null): string
+  toNow(withoutSuffix?: boolean | null): string
   isBefore(other: BridgeTime): boolean
   isAfter(other: BridgeTime): boolean
   isSame(other: BridgeTime): boolean

@@ -104,3 +104,18 @@ def test_day_of_year_week_and_relative_day_helpers():
     assert today.is_today() is True
     assert today.add(1, "day").is_tomorrow() is True
     assert today.subtract(1, "day").is_yesterday() is True
+
+
+def test_relative_time_helpers():
+    base = BridgeTime.parse("2026-02-22T10:00:00Z", "UTC")
+    future = BridgeTime.parse("2026-02-22T10:30:00Z", "UTC")
+    past = BridgeTime.parse("2026-02-22T09:30:00Z", "UTC")
+
+    assert future.from_time(base, False) == "in 30 minutes"
+    assert past.from_time(base, False) == "30 minutes ago"
+    assert future.from_time(base, True) == "30 minutes"
+    assert base.to_time(future, False) == "in 30 minutes"
+
+    now = BridgeTime.now("UTC")
+    assert now.add(2, "day").from_now(False).startswith("in ")
+    assert now.subtract(2, "day").to_now(False).startswith("in ")

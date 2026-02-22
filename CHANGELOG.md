@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added explicit Day.js-style component methods (`year`, `month`, `date`, `day`, `hour`, `minute`, `second`, `millisecond`) plus setter variants.
   - Added day/week parity helpers: `day_of_year`, `set_day_of_year`, `week`, `week_of_year`, `set_week`, `iso_week`, `set_iso_week`.
   - Added relative-day helpers: `is_today`, `is_yesterday`, `is_tomorrow`.
+  - Added relative-time helpers: `from_time`, `to_time`, `from_now`, `to_now`.
   - Added package scaffolding:
     - Python: `bindings/python/bridgetime`
     - Node.js: `bindings/node/@bridgerust/bridgetime`

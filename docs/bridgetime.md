@@ -29,6 +29,9 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
   - `iso_week()` / `set_iso_week(value)`
 - Relative-day helpers:
   - `is_today()` / `is_yesterday()` / `is_tomorrow()`
+- Relative-time helpers:
+  - `from_time(other, without_suffix?)` / `to_time(other, without_suffix?)`
+  - `from_now(without_suffix?)` / `to_now(without_suffix?)`
 - Comparison and range helpers:
   - `is_before` / `is_after` / `is_same`
   - `is_before_unit` / `is_after_unit` / `is_same_unit`
@@ -39,7 +42,7 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
 
 - Shared parity between Python and Node.js is high because both bindings use the same Rust core.
 - Core datetime operations are covered.
-- Full Day.js plugin parity is not complete yet (for example locale packs, relative time, durations, and calendar-style formatting helpers).
+- Full Day.js plugin parity is not complete yet (for example locale packs, durations, and calendar-style formatting helpers).
 
 ## API Surface
 
@@ -73,6 +76,8 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
 - `week()` / `week_of_year()` / `set_week(value)`
 - `iso_week()` / `set_iso_week(value)`
 - `is_today()` / `is_yesterday()` / `is_tomorrow()`
+- `from_time(other, without_suffix?)` / `to_time(other, without_suffix?)`
+- `from_now(without_suffix?)` / `to_now(without_suffix?)`
 - `days_in_month()` / `is_leap_year()` / `is_valid()`
 
 ## Local Development
