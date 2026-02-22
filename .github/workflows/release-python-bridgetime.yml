@@ -62,14 +62,6 @@ jobs:
         with:
           targets: ${{ matrix.platform.target }}
 
-      - name: Install protobuf (macOS)
-        if: matrix.platform.os == 'macos'
-        run: brew install protobuf
-
-      - name: Install protobuf (Windows)
-        if: matrix.platform.os == 'windows'
-        run: choco install protoc -y
-
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
@@ -79,11 +71,6 @@ jobs:
           manylinux: auto
           working-directory: bindings/python/bridgetime
           rust-toolchain: stable
-          before-script-linux: |
-            yum install -y wget unzip
-            wget https://github.com/protocolbuffers/protobuf/releases/download/v25.1/protoc-25.1-linux-x86_64.zip
-            unzip -o protoc-25.1-linux-x86_64.zip -d /usr/local
-            protoc --version
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4

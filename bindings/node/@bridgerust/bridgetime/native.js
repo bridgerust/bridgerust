@@ -61,7 +61,10 @@ function requireNative() {
   if (process.platform === 'linux') {
     if (process.arch === 'x64') {
       if (isMusl()) {
-        return tryLoad('./bridgetime.linux-x64-musl.node', '@bridgerust/bridgetime-linux-x64-musl')
+        return (
+          tryLoad('./bridgetime.linux-x64-musl.node', '@bridgerust/bridgetime-linux-x64-musl') ||
+          tryLoad('./bridgetime.linux-x64-gnu.node', '@bridgerust/bridgetime-linux-x64-gnu')
+        )
       }
       return tryLoad('./bridgetime.linux-x64-gnu.node', '@bridgerust/bridgetime-linux-x64-gnu')
     }

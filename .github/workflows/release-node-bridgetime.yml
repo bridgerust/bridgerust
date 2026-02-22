@@ -32,9 +32,6 @@ jobs:
           - host: ubuntu-latest
             target: x86_64-unknown-linux-gnu
 
-          - host: ubuntu-latest
-            target: x86_64-unknown-linux-musl
-
           - host: windows-latest
             target: x86_64-pc-windows-msvc
 
@@ -59,23 +56,6 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.settings.target }}
-
-      - name: Install protobuf
-        shell: bash
-        run: |
-          if [[ "$RUNNER_OS" == "Linux" ]]; then
-            sudo apt-get update && sudo apt-get install -y protobuf-compiler
-          elif [[ "$RUNNER_OS" == "macOS" ]]; then
-            brew install protobuf
-          elif [[ "$RUNNER_OS" == "Windows" ]]; then
-            choco install protoc -y
-          fi
-
-      - name: Setup toolchain (musl)
-        if: matrix.settings.target == 'x86_64-unknown-linux-musl'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y musl-tools
 
       - name: Install dependencies
         working-directory: bindings/node/@bridgerust/bridgetime
@@ -196,12 +176,11 @@ jobs:
         working-directory: bindings/node/@bridgerust/bridgetime
         shell: bash
         run: |
-          mkdir -p npm/darwin-arm64 npm/darwin-x64 npm/linux-x64-gnu npm/linux-x64-musl npm/win32-x64-msvc
+          mkdir -p npm/darwin-arm64 npm/darwin-x64 npm/linux-x64-gnu npm/win32-x64-msvc
 
           cp bridgetime.aarch64-apple-darwin.node npm/darwin-arm64/bridgetime.darwin-arm64.node
           cp bridgetime.x86_64-apple-darwin.node npm/darwin-x64/bridgetime.darwin-x64.node
           cp bridgetime.x86_64-unknown-linux-gnu.node npm/linux-x64-gnu/bridgetime.linux-x64-gnu.node
-          cp bridgetime.x86_64-unknown-linux-musl.node npm/linux-x64-musl/bridgetime.linux-x64-musl.node
           cp bridgetime.x86_64-pc-windows-msvc.node npm/win32-x64-msvc/bridgetime.win32-x64-msvc.node
 
           rm -f *.node
@@ -228,7 +207,6 @@ jobs:
           npm pkg set optionalDependencies."@bridgerust/bridgetime-darwin-arm64"="$VERSION"
           npm pkg set optionalDependencies."@bridgerust/bridgetime-darwin-x64"="$VERSION"
           npm pkg set optionalDependencies."@bridgerust/bridgetime-linux-x64-gnu"="$VERSION"
-          npm pkg set optionalDependencies."@bridgerust/bridgetime-linux-x64-musl"="$VERSION"
           npm pkg set optionalDependencies."@bridgerust/bridgetime-win32-x64-msvc"="$VERSION"
 
           echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
