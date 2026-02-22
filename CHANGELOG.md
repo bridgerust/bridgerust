@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `.github/workflows/release-node-bridgetime.yml`
     - `.github/workflows/release-bridgetime.yml`
   - Generalized `.github/scripts/publish-npm-platforms.sh` to support reusable package/tag settings (used by both Embex and BridgeTime lanes).
+  - Fixed BridgeTime Node release build command to use `npx napi build` in CI.
+  - Added BridgeTime PyPI auth fallback: `PYPI_API_TOKEN` if provided, otherwise Trusted Publisher mode.
 
 ## [0.1.19] - 2026-02-22
 

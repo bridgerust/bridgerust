@@ -73,6 +73,20 @@ git push origin bridgetime-v0.1.0
 - `bridgerust-v*` triggers crates.io publication for framework crates.
 - `bridgetime-v*` triggers BridgeTime Python/Node publish plus GitHub release creation.
 
+### PyPI authentication note (BridgeTime)
+
+BridgeTime Python publish supports two auth modes:
+
+- `PYPI_API_TOKEN` secret set: token-based publish (recommended while bootstrapping).
+- No token secret: Trusted Publisher (OIDC) mode.
+
+If Trusted Publisher mode fails with `invalid-publisher`, configure the `bridgetime` project on PyPI with matching GitHub claims for:
+
+- repository: `bridgerust/bridgerust`
+- workflow: `.github/workflows/release-python-bridgetime.yml`
+- tag pattern: `refs/tags/bridgetime-v*`
+- environment (if used): `pypi`
+
 ## 5. Post-release verification
 
 Run `.github/workflows/test-published-packages.yml` (manual dispatch) or use local scripts:
