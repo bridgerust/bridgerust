@@ -17,6 +17,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Node.js: `bindings/node/@bridgerust/bridgetime`
   - Added CI checks for `bridgetime-bridge` (base + python/nodejs features).
 
+### Changed
+
+- **Release automation**:
+  - Added dedicated BridgeTime tag workflows:
+    - `.github/workflows/release-python-bridgetime.yml`
+    - `.github/workflows/release-node-bridgetime.yml`
+    - `.github/workflows/release-bridgetime.yml`
+  - Generalized `.github/scripts/publish-npm-platforms.sh` to support reusable package/tag settings (used by both Embex and BridgeTime lanes).
+
 ## [0.1.19] - 2026-02-22
 
 ### Fixed

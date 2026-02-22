@@ -4,7 +4,7 @@ This project uses tag-driven GitHub Actions releases with separate lanes:
 
 - Embex packages: `embex-vX.Y.Z`
 - BridgeRust framework crates: `bridgerust-vX.Y.Z`
-- BridgeTime packages (in progress): `bridgetime-vX.Y.Z`
+- BridgeTime packages: `bridgetime-vX.Y.Z`
 
 ## 1. Prepare the version
 
@@ -64,11 +64,14 @@ git push origin bridgetime-v0.1.0
 - `.github/workflows/release-python.yml`
 - `.github/workflows/release-node.yml`
 - `.github/workflows/release.yml`
+- `.github/workflows/release-python-bridgetime.yml`
+- `.github/workflows/release-node-bridgetime.yml`
+- `.github/workflows/release-bridgetime.yml`
 - `.github/workflows/publish-crates-io.yml`
 
 - `embex-v*` triggers Python/Node publish plus GitHub release creation.
 - `bridgerust-v*` triggers crates.io publication for framework crates.
-- `bridgetime-v*` is reserved for BridgeTime release automation (manual publish flow until dedicated workflows are added).
+- `bridgetime-v*` triggers BridgeTime Python/Node publish plus GitHub release creation.
 
 ## 5. Post-release verification
 
