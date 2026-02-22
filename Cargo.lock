@@ -1376,6 +1376,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "bridgetime-bridge"
+version = "0.1.0"
+dependencies = [
+ "bridgerust",
+ "chrono",
+ "chrono-tz",
+ "napi",
+ "napi-build",
+ "napi-derive",
+ "pyo3",
+]
+
+[[package]]
 name = "brotli"
 version = "8.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"

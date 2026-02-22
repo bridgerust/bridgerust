@@ -15,6 +15,7 @@ members = [
     "crates/embex/adapters/lancedb",
     "crates/embex/adapters/pgvector",
     "crates/embex/bridge",
+    "crates/bridgetime/bridge",
     # "bindings/python/bridge-schema",  # Temporarily disabled - not ready yet
     "bindings/python/embex",
     "bindings/node/@bridgerust/embex",
@@ -39,12 +40,12 @@ homepage = "https://bridgerust.dev"
 
 # Optimize release builds for size
 [profile.release]
-opt-level = 3           # Maximum optimizations
-lto = true              # Link-time optimization
-codegen-units = 1       # Better optimization, slower compile
-strip = true            # CRITICAL: Strip debug symbols
-panic = 'abort'         # Smaller binaries
-debug = false           # No debug info
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+panic = 'abort'
+debug = false
 
 # Apply to all workspace packages
 [profile.release.package."*"]
