@@ -85,7 +85,7 @@ jobs:
         working-directory: bindings/node/@bridgerust/bridgetime
         shell: bash
         run: |
-          npx @napi-rs/cli build --target ${{ matrix.settings.target }} --release --strip --features nodejs --manifest-path ../../../../crates/bridgetime/bridge/Cargo.toml --js native.js --dts native.d.ts
+          npx napi build --target ${{ matrix.settings.target }} --release --strip --features nodejs --manifest-path ../../../../crates/bridgetime/bridge/Cargo.toml --js native.js --dts native.d.ts
           npx tsc || true
 
           echo "📦 Built files:"
