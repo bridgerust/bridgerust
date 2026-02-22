@@ -181,6 +181,21 @@ fn parse_inclusivity(inclusivity: Option<String>) -> Result<(bool, bool), Bridge
     Ok((start_inclusive, end_inclusive))
 }
 
+fn sunday_week_of_year(date: NaiveDate) -> Result<u32, BridgeTimeError> {
+    let first_day =
+        NaiveDate::from_ymd_opt(date.year(), 1, 1).ok_or(BridgeTimeError::ArithmeticOverflow)?;
+    let first_day_offset = i64::from(first_day.weekday().num_days_from_sunday());
+    let ordinal0 = i64::from(date.ordinal0());
+    let aligned = ordinal0
+        .checked_add(first_day_offset)
+        .ok_or(BridgeTimeError::ArithmeticOverflow)?;
+    let week = aligned
+        .checked_div(7)
+        .and_then(|value| value.checked_add(1))
+        .ok_or(BridgeTimeError::ArithmeticOverflow)?;
+    u32::try_from(week).map_err(|_| BridgeTimeError::ArithmeticOverflow)
+}
+
 fn parse_timezone(raw: &str) -> Result<Tz, BridgeTimeError> {
     let trimmed = raw.trim();
     let normalized = if trimmed.is_empty()
@@ -532,6 +547,125 @@ impl BridgeTime {
         self.set_field(parsed_field, value)
     }
 
+    pub fn year(&self) -> Result<i64, BridgeTimeError> {
+        self.get_field(CalendarField::Year)
+    }
+
+    pub fn month(&self) -> Result<i64, BridgeTimeError> {
+        self.get_field(CalendarField::Month)
+    }
+
+    pub fn date(&self) -> Result<i64, BridgeTimeError> {
+        self.get_field(CalendarField::Date)
+    }
+
+    pub fn day(&self) -> Result<i64, BridgeTimeError> {
+        self.get_field(CalendarField::Day)
+    }
+
+    pub fn hour(&self) -> Result<i64, BridgeTimeError> {
+        self.get_field(CalendarField::Hour)
+    }
+
+    pub fn minute(&self) -> Result<i64, BridgeTimeError> {
+        self.get_field(CalendarField::Minute)
+    }
+
+    pub fn second(&self) -> Result<i64, BridgeTimeError> {
+        self.get_field(CalendarField::Second)
+    }
+
+    pub fn millisecond(&self) -> Result<i64, BridgeTimeError> {
+        self.get_field(CalendarField::Millisecond)
+    }
+
+    pub fn set_year(&self, value: i64) -> Result<Self, BridgeTimeError> {
+        self.set_field(CalendarField::Year, value)
+    }
+
+    pub fn set_month(&self, value: i64) -> Result<Self, BridgeTimeError> {
+        self.set_field(CalendarField::Month, value)
+    }
+
+    pub fn set_date(&self, value: i64) -> Result<Self, BridgeTimeError> {
+        self.set_field(CalendarField::Date, value)
+    }
+
+    pub fn set_day(&self, value: i64) -> Result<Self, BridgeTimeError> {
+        self.set_field(CalendarField::Day, value)
+    }
+
+    pub fn set_hour(&self, value: i64) -> Result<Self, BridgeTimeError> {
+        self.set_field(CalendarField::Hour, value)
+    }
+
+    pub fn set_minute(&self, value: i64) -> Result<Self, BridgeTimeError> {
+        self.set_field(CalendarField::Minute, value)
+    }
+
+    pub fn set_second(&self, value: i64) -> Result<Self, BridgeTimeError> {
+        self.set_field(CalendarField::Second, value)
+    }
+
+    pub fn set_millisecond(&self, value: i64) -> Result<Self, BridgeTimeError> {
+        self.set_field(CalendarField::Millisecond, value)
+    }
+
+    pub fn day_of_year(&self) -> Result<u32, BridgeTimeError> {
+        let local = self.local_datetime()?;
+        Ok(local.ordinal())
+    }
+
+    pub fn set_day_of_year(&self, value: i64) -> Result<Self, BridgeTimeError> {
+        let current = i64::from(self.day_of_year()?);
+        let delta = value
+            .checked_sub(current)
+            .ok_or(BridgeTimeError::ArithmeticOverflow)?;
+        self.shift_local_by(Duration::days(delta))
+    }
+
+    pub fn iso_week(&self) -> Result<u32, BridgeTimeError> {
+        let local = self.local_datetime()?;
+        Ok(local.iso_week().week())
+    }
+
+    pub fn set_iso_week(&self, value: i64) -> Result<Self, BridgeTimeError> {
+        let current = i64::from(self.iso_week()?);
+        let delta = value
+            .checked_sub(current)
+            .ok_or(BridgeTimeError::ArithmeticOverflow)?;
+        self.shift_local_by(Duration::weeks(delta))
+    }
+
+    pub fn week_of_year(&self) -> Result<u32, BridgeTimeError> {
+        let local = self.local_datetime()?;
+        sunday_week_of_year(local.date_naive())
+    }
+
+    pub fn week(&self) -> Result<u32, BridgeTimeError> {
+        self.week_of_year()
+    }
+
+    pub fn set_week(&self, value: i64) -> Result<Self, BridgeTimeError> {
+        let current = i64::from(self.week_of_year()?);
+        let delta = value
+            .checked_sub(current)
+            .ok_or(BridgeTimeError::ArithmeticOverflow)?;
+        self.shift_local_by(Duration::weeks(delta))
+    }
+
+    pub fn is_today(&self) -> Result<bool, BridgeTimeError> {
+        self.matches_relative_day(0)
+    }
+
+    pub fn is_yesterday(&self) -> Result<bool, BridgeTimeError> {
+        self.matches_relative_day(-1)
+    }
+
+    pub fn is_tomorrow(&self) -> Result<bool, BridgeTimeError> {
+        self.matches_relative_day(1)
+    }
+
     pub fn is_before(&self, other: &BridgeTime) -> bool {
         self.utc_millis < other.utc_millis
     }
@@ -799,6 +933,26 @@ impl BridgeTime {
                 Self::from_resolved_local(tz, target)
             }
         }
+    }
+
+    fn shift_local_by(&self, duration: Duration) -> Result<Self, BridgeTimeError> {
+        let local = self.local_datetime()?;
+        let tz = local.timezone();
+        let shifted = local
+            .naive_local()
+            .checked_add_signed(duration)
+            .ok_or(BridgeTimeError::ArithmeticOverflow)?;
+        Self::from_resolved_local(tz, shifted)
+    }
+
+    fn matches_relative_day(&self, delta_days: i64) -> Result<bool, BridgeTimeError> {
+        let tz = self.as_tz()?;
+        let now_local_date = Utc::now().with_timezone(&tz).date_naive();
+        let target_date = now_local_date
+            .checked_add_signed(Duration::days(delta_days))
+            .ok_or(BridgeTimeError::ArithmeticOverflow)?;
+        let self_local_date = self.local_datetime()?.date_naive();
+        Ok(self_local_date == target_date)
     }
 
     fn add_unit(&self, amount: i64, unit: TimeUnit) -> Result<Self, BridgeTimeError> {
@@ -1111,6 +1265,104 @@ mod tests {
             invalid,
             Err(BridgeTimeError::InvalidInclusivity(_))
         ));
+    }
+
+    #[test]
+    fn explicit_component_getters_and_setters_work() {
+        let dt = BridgeTime::parse(
+            "2026-02-22T10:15:30.250Z".to_string(),
+            Some("UTC".to_string()),
+        )
+        .expect("parse should succeed");
+
+        assert_eq!(dt.year().expect("year"), 2026);
+        assert_eq!(dt.month().expect("month"), 1);
+        assert_eq!(dt.date().expect("date"), 22);
+        assert_eq!(dt.day().expect("day"), 0);
+        assert_eq!(dt.hour().expect("hour"), 10);
+        assert_eq!(dt.minute().expect("minute"), 15);
+        assert_eq!(dt.second().expect("second"), 30);
+        assert_eq!(dt.millisecond().expect("millisecond"), 250);
+
+        let shifted = dt
+            .set_year(2027)
+            .expect("set_year")
+            .set_month(3)
+            .expect("set_month")
+            .set_date(5)
+            .expect("set_date")
+            .set_hour(12)
+            .expect("set_hour")
+            .set_minute(45)
+            .expect("set_minute")
+            .set_second(5)
+            .expect("set_second")
+            .set_millisecond(900)
+            .expect("set_millisecond");
+
+        assert_eq!(
+            shifted
+                .format("YYYY-MM-DD HH:mm:ss.SSS".to_string())
+                .expect("format"),
+            "2027-04-05 12:45:05.900"
+        );
+    }
+
+    #[test]
+    fn day_of_year_week_and_relative_helpers_work() {
+        let dt = BridgeTime::parse("2026-02-22T10:15:30Z".to_string(), Some("UTC".to_string()))
+            .expect("parse should succeed");
+
+        assert_eq!(dt.day_of_year().expect("day_of_year"), 53);
+        assert_eq!(dt.week_of_year().expect("week_of_year"), 9);
+        assert_eq!(
+            dt.week().expect("week"),
+            dt.week_of_year().expect("week_of_year")
+        );
+        assert_eq!(dt.iso_week().expect("iso_week"), 8);
+
+        let next_day = dt.set_day_of_year(54).expect("set_day_of_year");
+        assert_eq!(
+            next_day.format("YYYY-MM-DD".to_string()).expect("format"),
+            "2026-02-23"
+        );
+
+        let next_week = dt
+            .set_week(i64::from(dt.week().expect("week")) + 1)
+            .expect("set_week");
+        assert_eq!(
+            next_week
+                .diff(&dt, "day".to_string(), Some(true))
+                .expect("diff"),
+            7.0
+        );
+
+        let next_iso_week = dt
+            .set_iso_week(i64::from(dt.iso_week().expect("iso_week")) + 1)
+            .expect("set_iso_week");
+        assert_eq!(
+            next_iso_week
+                .diff(&dt, "day".to_string(), Some(true))
+                .expect("diff"),
+            7.0
+        );
+
+        let today = BridgeTime::now(Some("UTC".to_string())).expect("now should succeed");
+        assert!(today.is_today().expect("is_today"));
+        assert!(
+            today
+                .add(1, "day".to_string())
+                .expect("add")
+                .is_tomorrow()
+                .expect("is_tomorrow")
+        );
+        assert!(
+            today
+                .subtract(1, "day".to_string())
+                .expect("subtract")
+                .is_yesterday()
+                .expect("is_yesterday")
+        );
     }
 }
 
