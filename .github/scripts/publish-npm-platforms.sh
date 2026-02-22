@@ -32,16 +32,27 @@ for dir in npm/*/; do
 
     echo "📦 Publishing $package_name..."
 
-    cat > "$dir/package.json" <<EOF
+    if [ -f "$dir/package.json" ]; then
+      npm pkg set --prefix "$dir" name="$package_name" >/dev/null
+      npm pkg set --prefix "$dir" version="$VERSION" >/dev/null
+      npm pkg set --prefix "$dir" main="$node_basename" >/dev/null
+      npm pkg set --prefix "$dir" files[0]="$node_basename" >/dev/null
+    else
+      platform_os=$(echo "$platform" | cut -d- -f1)
+      platform_cpu=$(echo "$platform" | cut -d- -f2)
+      cat > "$dir/package.json" <<EOF
 {
   "name": "$package_name",
   "version": "$VERSION",
   "main": "$node_basename",
-  "files": ["*.node"],
+  "files": ["$node_basename"],
+  "os": ["$platform_os"],
+  "cpu": ["$platform_cpu"],
   "license": "MIT",
   "engines": { "node": ">= 10" }
 }
 EOF
+    fi
 
     if [ ! -f "$dir/README.md" ]; then
       echo "# $package_name" > "$dir/README.md"
