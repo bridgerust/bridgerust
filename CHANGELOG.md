@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added versioned BridgeTime `native.js` / `native.d.ts` loader files for stable package publish and TypeScript compilation.
   - Removed unnecessary `protoc` installation from BridgeTime release workflows to avoid flaky Windows package-feed failures.
   - Narrowed BridgeTime Node release matrix to supported dynamic targets (darwin x64/arm64, linux x64 gnu, win32 x64 msvc).
+  - Fixed npm platform publish tag resolution by using explicit `NPM_TAG_NAME` input instead of relying on immutable GitHub ref variables.
 
 ## [0.1.19] - 2026-02-22
 
