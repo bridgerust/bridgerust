@@ -1,0 +1,39 @@
+[build-system]
+requires = ["maturin>=1.4,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "bridgetime"
+version = "0.1.0"
+description = "BridgeTime: Rust-powered Day.js/Moment-style datetime toolkit"
+readme = "README.md"
+authors = [{ name = "BridgeRust", email = "hello@kologojosias.com" }]
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+]
+
+[project.urls]
+Homepage = "https://github.com/bridgerust/bridgerust"
+Repository = "https://github.com/bridgerust/bridgerust"
+Issues = "https://github.com/bridgerust/bridgerust/issues"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[tool.maturin]
+manifest-path = "../../../crates/bridgetime/bridge/Cargo.toml"
+features = ["python"]
+module-name = "bridgetime"
+profile = "release"
+strip = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --tb=short"

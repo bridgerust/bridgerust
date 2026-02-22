@@ -1,0 +1,53 @@
+{
+  "name": "@bridgerust/bridgetime",
+  "version": "0.1.0",
+  "description": "BridgeTime: Rust-powered Day.js/Moment-style datetime toolkit",
+  "homepage": "https://github.com/bridgerust/bridgerust",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bridgerust/bridgerust"
+  },
+  "bugs": {
+    "url": "https://github.com/bridgerust/bridgerust/issues"
+  },
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "native.js",
+    "native.d.ts",
+    "*.node"
+  ],
+  "keywords": [
+    "date",
+    "time",
+    "datetime",
+    "dayjs",
+    "moment",
+    "rust",
+    "timezone"
+  ],
+  "napi": {
+    "binaryName": "bridgetime",
+    "targets": [
+      "aarch64-apple-darwin",
+      "x86_64-apple-darwin",
+      "x86_64-unknown-linux-musl",
+      "aarch64-unknown-linux-musl",
+      "i686-pc-windows-msvc",
+      "armv7-unknown-linux-gnueabihf"
+    ]
+  },
+  "scripts": {
+    "build": "napi build --platform --release --features nodejs --manifest-path ../../../../crates/bridgetime/bridge/Cargo.toml --js native.js --dts native.d.ts && tsc",
+    "build:debug": "napi build --platform --features nodejs --manifest-path ../../../../crates/bridgetime/bridge/Cargo.toml --js native.js --dts native.d.ts && tsc",
+    "prepublishOnly": "tsc && cp native.js dist/native.js && cp native.d.ts dist/native.d.ts || true",
+    "test": "node -e \"const { BridgeTime } = require('./dist'); const dt = BridgeTime.parse('2026-02-22T10:15:30Z', 'UTC'); console.log(dt.toIso());\""
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "^3.5.0",
+    "@types/node": "^24.0.3",
+    "typescript": "^5.9.3"
+  }
+}
