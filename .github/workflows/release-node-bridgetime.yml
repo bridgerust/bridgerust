@@ -85,18 +85,27 @@ jobs:
         working-directory: bindings/node/@bridgerust/bridgetime
         shell: bash
         run: |
-          npx napi build --target ${{ matrix.settings.target }} --release --strip --features nodejs --manifest-path ../../../../crates/bridgetime/bridge/Cargo.toml --js native.js --dts native.d.ts
-          npx tsc || true
+          cargo build --release --features nodejs --target ${{ matrix.settings.target }} --manifest-path ../../../../crates/bridgetime/bridge/Cargo.toml
 
           echo "📦 Built files:"
-          ls -la *.node || echo "No .node files found!"
+          TARGET_DIR="../../../../target/${{ matrix.settings.target }}/release"
+          CANDIDATE=""
+          if [[ "${{ matrix.settings.target }}" == *"windows"* ]]; then
+            CANDIDATE=$(find "$TARGET_DIR" -maxdepth 1 -type f -name "bridgetime*.dll" | head -1)
+          elif [[ "${{ matrix.settings.target }}" == *"apple-darwin"* ]]; then
+            CANDIDATE=$(find "$TARGET_DIR" -maxdepth 1 -type f -name "libbridgetime*.dylib" | head -1)
+          else
+            CANDIDATE=$(find "$TARGET_DIR" -maxdepth 1 -type f -name "libbridgetime*.so" | head -1)
+          fi
 
-          for file in *.node; do
-            if [ -f "$file" ]; then
-              mv "$file" "bridgetime.${{ matrix.settings.target }}.node"
-              echo "✅ Renamed: $file → bridgetime.${{ matrix.settings.target }}.node"
-            fi
-          done
+          if [ -z "$CANDIDATE" ]; then
+            echo "❌ No compiled shared library found in $TARGET_DIR"
+            ls -la "$TARGET_DIR" || true
+            exit 1
+          fi
+
+          cp "$CANDIDATE" "bridgetime.${{ matrix.settings.target }}.node"
+          ls -la "bridgetime.${{ matrix.settings.target }}.node"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -132,10 +141,16 @@ jobs:
         working-directory: bindings/node/@bridgerust/bridgetime
         shell: bash
         run: |
-          echo "🔍 Downloaded artifacts:"
-          find ${{ github.workspace }}/artifacts -type f -name "*.node" -exec ls -lh {} \;
+          ARTIFACT_ROOT="${{ github.workspace }}/artifacts"
+          if [ ! -d "$ARTIFACT_ROOT" ]; then
+            echo "❌ ERROR: No artifacts directory found at $ARTIFACT_ROOT"
+            exit 1
+          fi
 
-          find ${{ github.workspace }}/artifacts -name "*.node" -exec cp -v {} . \;
+          echo "🔍 Downloaded artifacts:"
+          find "$ARTIFACT_ROOT" -type f -name "*.node" -exec ls -lh {} \;
+
+          find "$ARTIFACT_ROOT" -name "*.node" -exec cp -v {} . \;
 
           echo "📂 Files in working directory:"
           ls -lh *.node

@@ -17,6 +17,7 @@
     "dist",
     "native.js",
     "native.d.ts",
+    "npm",
     "*.node"
   ],
   "keywords": [
