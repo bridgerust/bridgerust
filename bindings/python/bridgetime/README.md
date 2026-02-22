@@ -21,6 +21,7 @@ print(custom.to_iso())
 
 ny = now.to_timezone("America/New_York")
 print(ny.format("YYYY-MM-DD HH:mm:ss"))
+print(now.utc_offset(), now.is_utc())
 
 future = now.add(2, "week").start_of("day")
 print(future.to_iso())
@@ -30,6 +31,7 @@ print(now.set("day", 1).to_iso())  # set weekday (Sunday=0)
 print(now.days_in_month())
 print(now.quarter(), now.iso_weekday())
 print(now.day_of_year(), now.week(), now.iso_week())
+print(now.iso_week_year(), now.days_in_year(), now.weeks_in_year(), now.iso_weeks_in_year())
 print(now.is_today())
 print(now.add(30, "minute").from_now())  # in 30 minutes
 print(now.is_between(now.start_of("day"), now.end_of("day"), "day", "[]"))
@@ -41,8 +43,9 @@ print(supported_units())
 
 - Core: `parse`, `format`, `add`, `subtract`, `start_of`, `end_of`, `diff`
 - Custom parse helper: `parse_format(input, pattern, timezone?)`
+- Timezone helpers: `timezone`, `utc_offset`, `is_utc`, `to_timezone`
 - Calendar helpers: `get`, `set`, component getters/setters (`year`, `set_year`, etc), `days_in_month`, `is_leap_year`, `is_valid`
-- Week/day helpers: `day_of_year`, `set_day_of_year`, `quarter`, `set_quarter`, `iso_weekday`, `set_iso_weekday`, `week`, `week_of_year`, `set_week`, `iso_week`, `set_iso_week`
+- Week/day helpers: `day_of_year`, `set_day_of_year`, `quarter`, `set_quarter`, `iso_weekday`, `set_iso_weekday`, `week`, `week_of_year`, `set_week`, `iso_week`, `set_iso_week`, `iso_week_year`, `days_in_year`, `weeks_in_year`, `iso_weeks_in_year`
 - Relative-day helpers: `is_today`, `is_yesterday`, `is_tomorrow`
 - Relative-time helpers: `from_time`, `to_time`, `from_now`, `to_now`
 - Comparison helpers: `is_before`, `is_after`, `is_same`, `is_same_or_before`, `is_same_or_after`, `is_same_or_before_unit`, `is_same_or_after_unit`

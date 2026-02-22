@@ -27,6 +27,10 @@ def test_timezone_conversion_preserves_instant():
     dt = BridgeTime.parse("2026-02-22T12:00:00Z", "UTC")
     ny = dt.to_timezone("America/New_York")
     assert dt.unix_ms() == ny.unix_ms()
+    assert dt.utc_offset() == 0
+    assert ny.utc_offset() == -300
+    assert dt.is_utc() is True
+    assert ny.is_utc() is False
 
 
 def test_get_set_and_calendar_helpers():
@@ -100,6 +104,10 @@ def test_day_of_year_week_and_relative_day_helpers():
     assert dt.week_of_year() == 9
     assert dt.week() == dt.week_of_year()
     assert dt.iso_week() == 8
+    assert dt.iso_week_year() == 2026
+    assert dt.days_in_year() == 365
+    assert dt.weeks_in_year() == 53
+    assert dt.iso_weeks_in_year() == 53
 
     next_quarter = dt.set_quarter(2)
     assert next_quarter.format("YYYY-MM-DD") == "2026-05-22"

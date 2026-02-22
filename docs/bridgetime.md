@@ -19,6 +19,7 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
 - `start_of` / `end_of`
 - `diff` (integer or float)
 - Instant-preserving timezone conversion (`to_timezone`)
+- Timezone offset helpers: `utc_offset()` / `is_utc()`
 - Calendar helpers:
   - `get(field)` / `set(field, value)`
   - explicit component getters/setters (`year`, `month`, `date`, `day`, `hour`, `minute`, `second`, `millisecond`)
@@ -30,6 +31,7 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
   - `iso_weekday()` / `set_iso_weekday(value)`
   - `week()` / `week_of_year()` / `set_week(value)`
   - `iso_week()` / `set_iso_week(value)`
+  - `iso_week_year()` / `days_in_year()` / `weeks_in_year()` / `iso_weeks_in_year()`
 - Relative-day helpers:
   - `is_today()` / `is_yesterday()` / `is_tomorrow()`
 - Relative-time helpers:
@@ -64,6 +66,7 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
 - `format(pattern)`
 - `unix_ms()` / `unix()` / `value_of()`
 - `timezone()`
+- `utc_offset()` / `is_utc()`
 - `to_timezone(timezone)`
 - `add(amount, unit)`
 - `subtract(amount, unit)`
@@ -82,6 +85,7 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
 - `iso_weekday()` / `set_iso_weekday(value)`
 - `week()` / `week_of_year()` / `set_week(value)`
 - `iso_week()` / `set_iso_week(value)`
+- `iso_week_year()` / `days_in_year()` / `weeks_in_year()` / `iso_weeks_in_year()`
 - `is_today()` / `is_yesterday()` / `is_tomorrow()`
 - `from_time(other, without_suffix?)` / `to_time(other, without_suffix?)`
 - `from_now(without_suffix?)` / `to_now(without_suffix?)`

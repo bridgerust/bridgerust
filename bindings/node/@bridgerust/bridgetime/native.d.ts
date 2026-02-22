@@ -16,6 +16,8 @@ export declare class BridgeTime {
   unix(): bigint
   valueOf(): bigint
   timezone(): string
+  utcOffset(): number
+  isUtc(): boolean
   toTimezone(timezone: string): BridgeTime
   add(amount: bigint | number, unit: string): BridgeTime
   subtract(amount: bigint | number, unit: string): BridgeTime
@@ -51,9 +53,13 @@ export declare class BridgeTime {
   setIsoWeekday(value: bigint | number): BridgeTime
   isoWeek(): number
   setIsoWeek(value: bigint | number): BridgeTime
+  isoWeekYear(): bigint
   weekOfYear(): number
   week(): number
   setWeek(value: bigint | number): BridgeTime
+  weeksInYear(): number
+  isoWeeksInYear(): number
+  daysInYear(): number
   isToday(): boolean
   isYesterday(): boolean
   isTomorrow(): boolean
