@@ -1,0 +1,220 @@
+name: Build BridgeTime Node.js Bindings
+
+on:
+  push:
+    tags:
+      - "bridgetime-v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "BridgeTime tag to publish (e.g., bridgetime-v0.1.0)"
+        required: true
+        type: string
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  build:
+    name: Build ${{ matrix.settings.target }}
+    runs-on: ${{ matrix.settings.host }}
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - host: macos-15-intel
+            target: x86_64-apple-darwin
+
+          - host: macos-14
+            target: aarch64-apple-darwin
+
+          - host: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+
+          - host: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+
+          - host: windows-latest
+            target: x86_64-pc-windows-msvc
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free Disk Space (Linux)
+        if: matrix.settings.host == 'ubuntu-latest'
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          df -h
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.settings.target }}
+
+      - name: Install protobuf
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            sudo apt-get update && sudo apt-get install -y protobuf-compiler
+          elif [[ "$RUNNER_OS" == "macOS" ]]; then
+            brew install protobuf
+          elif [[ "$RUNNER_OS" == "Windows" ]]; then
+            choco install protoc -y
+          fi
+
+      - name: Setup toolchain (musl)
+        if: matrix.settings.target == 'x86_64-unknown-linux-musl'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+
+      - name: Install dependencies
+        working-directory: bindings/node/@bridgerust/bridgetime
+        run: npm install
+
+      - name: Build
+        working-directory: bindings/node/@bridgerust/bridgetime
+        shell: bash
+        run: |
+          npx @napi-rs/cli build --target ${{ matrix.settings.target }} --release --strip --features nodejs --manifest-path ../../../../crates/bridgetime/bridge/Cargo.toml --js native.js --dts native.d.ts
+          npx tsc || true
+
+          echo "📦 Built files:"
+          ls -la *.node || echo "No .node files found!"
+
+          for file in *.node; do
+            if [ -f "$file" ]; then
+              mv "$file" "bridgetime.${{ matrix.settings.target }}.node"
+              echo "✅ Renamed: $file → bridgetime.${{ matrix.settings.target }}.node"
+            fi
+          done
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bindings-${{ matrix.settings.target }}
+          path: bindings/node/@bridgerust/bridgetime/bridgetime.${{ matrix.settings.target }}.node
+          retention-days: 1
+
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: startsWith(github.ref, 'refs/tags/bridgetime-v') || (github.event_name == 'workflow_dispatch' && startsWith(github.event.inputs.tag, 'bridgetime-v'))
+    environment:
+      name: npm
+      url: https://npmjs.com/package/@bridgerust/bridgetime
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: bindings-*
+          path: artifacts
+
+      - name: Move artifacts
+        working-directory: bindings/node/@bridgerust/bridgetime
+        shell: bash
+        run: |
+          echo "🔍 Downloaded artifacts:"
+          find ${{ github.workspace }}/artifacts -type f -name "*.node" -exec ls -lh {} \;
+
+          find ${{ github.workspace }}/artifacts -name "*.node" -exec cp -v {} . \;
+
+          echo "📂 Files in working directory:"
+          ls -lh *.node
+
+      - name: Verify artifacts
+        working-directory: bindings/node/@bridgerust/bridgetime
+        run: |
+          COUNT=$(ls -1 *.node 2>/dev/null | wc -l)
+          if [ "$COUNT" -eq 0 ]; then
+            echo "❌ ERROR: No .node files found!"
+            exit 1
+          fi
+          echo "✅ Found $COUNT .node file(s)"
+
+      - name: Install dependencies
+        working-directory: bindings/node/@bridgerust/bridgetime
+        run: npm install
+
+      - name: Build TypeScript
+        working-directory: bindings/node/@bridgerust/bridgetime
+        run: |
+          echo "🔨 Building TypeScript to dist/..."
+          npx tsc
+          echo "✅ TypeScript build complete"
+
+          if [ -f "native.js" ]; then
+            cp native.js dist/native.js
+          fi
+          if [ -f "native.d.ts" ]; then
+            cp native.d.ts dist/native.d.ts
+          fi
+
+          if [ ! -f "dist/index.js" ]; then
+            echo "❌ ERROR: dist/index.js not found!"
+            exit 1
+          fi
+          if [ ! -f "dist/index.d.ts" ]; then
+            echo "❌ ERROR: dist/index.d.ts not found!"
+            exit 1
+          fi
+
+      - name: Prepare platform packages
+        working-directory: bindings/node/@bridgerust/bridgetime
+        shell: bash
+        run: |
+          mkdir -p npm/darwin-arm64 npm/darwin-x64 npm/linux-x64-gnu npm/linux-x64-musl npm/win32-x64-msvc
+
+          cp bridgetime.aarch64-apple-darwin.node npm/darwin-arm64/bridgetime.darwin-arm64.node
+          cp bridgetime.x86_64-apple-darwin.node npm/darwin-x64/bridgetime.darwin-x64.node
+          cp bridgetime.x86_64-unknown-linux-gnu.node npm/linux-x64-gnu/bridgetime.linux-x64-gnu.node
+          cp bridgetime.x86_64-unknown-linux-musl.node npm/linux-x64-musl/bridgetime.linux-x64-musl.node
+          cp bridgetime.x86_64-pc-windows-msvc.node npm/win32-x64-msvc/bridgetime.win32-x64-msvc.node
+
+          rm -f *.node
+
+      - name: Publish platform packages
+        working-directory: bindings/node/@bridgerust/bridgetime
+        shell: bash
+        env:
+          GITHUB_REF_NAME: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
+          NPM_TAG_PREFIX: bridgetime-v
+          NPM_PACKAGE_BASE: bridgetime
+          NPM_PACKAGE_SCOPE: '@bridgerust'
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+          bash $GITHUB_WORKSPACE/.github/scripts/publish-npm-platforms.sh
+
+      - name: Publish main package
+        working-directory: bindings/node/@bridgerust/bridgetime
+        run: |
+          TAG_NAME="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}"
+          VERSION=${TAG_NAME#bridgetime-v}
+          npm version $VERSION --no-git-tag-version --allow-same-version
+
+          npm pkg set optionalDependencies."@bridgerust/bridgetime-darwin-arm64"="$VERSION"
+          npm pkg set optionalDependencies."@bridgerust/bridgetime-darwin-x64"="$VERSION"
+          npm pkg set optionalDependencies."@bridgerust/bridgetime-linux-x64-gnu"="$VERSION"
+          npm pkg set optionalDependencies."@bridgerust/bridgetime-linux-x64-musl"="$VERSION"
+          npm pkg set optionalDependencies."@bridgerust/bridgetime-win32-x64-msvc"="$VERSION"
+
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+          npm publish --access public

@@ -1,39 +1,51 @@
 #!/bin/bash
 set -e
 
-VERSION=${GITHUB_REF_NAME#embex-v}
-if [ "$VERSION" = "$GITHUB_REF_NAME" ]; then
-  VERSION=${GITHUB_REF_NAME#v}
+PACKAGE_SCOPE="${NPM_PACKAGE_SCOPE:-@bridgerust}"
+PACKAGE_BASE="${NPM_PACKAGE_BASE:-embex}"
+TAG_PREFIX="${NPM_TAG_PREFIX:-embex-v}"
+
+if [ -z "$GITHUB_REF_NAME" ]; then
+  echo "❌ GITHUB_REF_NAME is required"
+  exit 1
 fi
-echo "🚀 Publishing version: $VERSION"
+
+if [[ "$GITHUB_REF_NAME" == "$TAG_PREFIX"* ]]; then
+  VERSION="${GITHUB_REF_NAME#"$TAG_PREFIX"}"
+else
+  VERSION="${GITHUB_REF_NAME#v}"
+fi
+
+if [ -z "$VERSION" ] || [ "$VERSION" = "$GITHUB_REF_NAME" ]; then
+  echo "❌ Could not extract version from tag: $GITHUB_REF_NAME (prefix: $TAG_PREFIX)"
+  exit 1
+fi
+
+echo "🚀 Publishing $PACKAGE_SCOPE/$PACKAGE_BASE platform packages @ $VERSION"
 
 for dir in npm/*/; do
-  if [ -d "$dir" ] && [ -f "$dir"/*.node ]; then
+  NODE_FILE=$(find "$dir" -maxdepth 1 -type f -name "*.node" | head -1)
+  if [ -d "$dir" ] && [ -n "$NODE_FILE" ]; then
     platform=$(basename "$dir")
-    echo "📦 Publishing @bridgerust/embex-$platform..."
+    node_basename=$(basename "$NODE_FILE")
+    package_name="$PACKAGE_SCOPE/$PACKAGE_BASE-$platform"
 
-    if [ -f "$dir/package.json" ]; then
-      echo "📝 Updating version in existing package.json for $platform"
-      # Use temporary file to avoid issues with sed/awk inline editing across platforms
-      # Simple regex replacement for version line
-      sed "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" "$dir/package.json" > "$dir/package.json.tmp" && mv "$dir/package.json.tmp" "$dir/package.json"
-    else
-      echo "🆕 Creating new package.json for $platform"
-      cat > "$dir/package.json" <<EOF
+    echo "📦 Publishing $package_name..."
+
+    cat > "$dir/package.json" <<EOF
 {
-  "name": "@bridgerust/embex-$platform",
+  "name": "$package_name",
   "version": "$VERSION",
-  "main": "embex.$platform.node",
+  "main": "$node_basename",
   "files": ["*.node"],
   "license": "MIT",
   "engines": { "node": ">= 10" }
 }
 EOF
-    fi
-    
+
     if [ ! -f "$dir/README.md" ]; then
-      echo "# @bridgerust/embex-$platform" > "$dir/README.md"
-      echo "Platform-specific binary for Embex. Install @bridgerust/embex instead." >> "$dir/README.md"
+      echo "# $package_name" > "$dir/README.md"
+      echo "Platform-specific binary for $PACKAGE_BASE. Install $PACKAGE_SCOPE/$PACKAGE_BASE instead." >> "$dir/README.md"
     fi
 
     cd "$dir"
