@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "bridgetime"
-version = "0.2.0"
+version = "0.2.1"
 description = "BridgeTime: Rust-powered Day.js/Moment-style datetime toolkit"
 readme = "README.md"
 authors = [{ name = "BridgeRust", email = "hello@kologojosias.com" }]

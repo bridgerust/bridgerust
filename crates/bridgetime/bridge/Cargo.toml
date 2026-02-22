@@ -1,6 +1,6 @@
 [package]
 name = "bridgetime-bridge"
-version = "0.2.0"
+version = "0.2.1"
 edition.workspace = true
 description = "BridgeTime: Rust-powered Day.js/Moment-style datetime library for Python and Node.js"
 authors.workspace = true
