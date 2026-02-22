@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-02-22
+
+### Changed
+
+- **BridgeTime release maintenance**:
+  - Bumped BridgeTime package versions for Python (`bridgetime`), Node.js (`@bridgerust/bridgetime`), and Rust bridge crate (`bridgetime-bridge`) to `0.2.1`.
+  - No API changes from `0.2.0`; this is a packaging/maintenance patch release.
+
 ## [0.2.0] - 2026-02-22
 
 ### Added
