@@ -87,6 +87,20 @@ If Trusted Publisher mode fails with `invalid-publisher`, configure the `bridget
 - tag pattern: `refs/tags/bridgetime-v*`
 - environment (if used): `pypi`
 
+### PyPI authentication note (Embex)
+
+Embex Python publish also supports two auth modes:
+
+- `PYPI_API_TOKEN` secret set: token-based publish.
+- No token secret: Trusted Publisher (OIDC) mode.
+
+If Trusted Publisher mode fails with `invalid-publisher`, configure the `embex` project on PyPI with matching GitHub claims for:
+
+- repository: `bridgerust/bridgerust`
+- workflow: `.github/workflows/release-python.yml`
+- tag pattern: `refs/tags/embex-v*`
+- environment (if used): `pypi`
+
 ## 5. Post-release verification
 
 Run `.github/workflows/test-published-packages.yml` (manual dispatch) or use local scripts:
