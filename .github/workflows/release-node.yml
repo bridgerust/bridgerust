@@ -89,7 +89,7 @@ jobs:
         working-directory: bindings/node/@bridgerust/embex
         shell: bash
         run: |
-          npx @napi-rs/cli build --target ${{ matrix.settings.target }} --release --strip --js native.js --dts native.d.ts
+          npx napi build --target ${{ matrix.settings.target }} --release --strip --js native.js --dts native.d.ts
           npx tsc || true
 
           # Debug: Show what files were created
