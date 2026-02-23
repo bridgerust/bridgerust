@@ -746,6 +746,7 @@ impl bridge_embex::Migration for DeclarativeMigrationAdapter {
 // CLI Entry Points
 // -----------------------------------------------------------------------------
 
+#[cfg(any(feature = "python", feature = "nodejs"))]
 fn normalize_cli_args(mut args: Vec<String>) -> Vec<String> {
     if args.is_empty() {
         args.push("embex".to_string());
