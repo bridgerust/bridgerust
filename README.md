@@ -7,13 +7,20 @@
 [![GitHub Stars](https://img.shields.io/github/stars/bridgerust/bridgerust?style=social)](https://github.com/bridgerust/bridgerust)
 [![Discord](https://img.shields.io/badge/Discord-Join%20Server-5865F2?logo=discord&logoColor=white)](https://discord.gg/ZvNAeaWN)
 
-[Why Embex?](#the-problem) - [Quick Start](#get-started-in-60-seconds) - [Docs](https://bridgerust.dev/embex) - [Discord](https://discord.gg/ZvNAeaWN) - [Examples](#what-developers-are-building)
+[Why Embex?](#the-problem) - [Embex Docs](https://bridgerust.dev/embex) - [BridgeTime](#also-in-this-repository-bridgetime) - [Discord](https://discord.gg/ZvNAeaWN) - [Examples](#what-developers-are-building)
 
 </div>
 
-## Also in this repository: BridgeTime (Preview)
+## Also in this repository: BridgeTime
+
+[![PyPI Version](https://img.shields.io/pypi/v/bridgetime?label=bridgetime%20(PyPI))](https://pypi.org/project/bridgetime)
+[![npm Version](https://img.shields.io/npm/v/@bridgerust/bridgetime?label=%40bridgerust%2Fbridgetime)](https://www.npmjs.com/package/@bridgerust/bridgetime)
 
 BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and Node.js.
+
+- Docs: [BridgeTime Guide](docs/bridgetime.md)
+- Python package: [bridgetime](https://pypi.org/project/bridgetime)
+- Node package: [@bridgerust/bridgetime](https://www.npmjs.com/package/@bridgerust/bridgetime)
 
 ```bash
 # Python
@@ -287,7 +294,7 @@ bridge-embex = { git = "https://github.com/bridgerust/bridgerust", path = "crate
 
 ## BridgeRust Framework
 
-This repository also contains the **BridgeRust** framework - a unified system for building cross-language Rust libraries. Embex is built with BridgeRust.
+This repository also contains the **BridgeRust** framework - a unified system for building cross-language Rust libraries. Embex and BridgeTime are built with BridgeRust.
 
 ### Packages & Status
 
