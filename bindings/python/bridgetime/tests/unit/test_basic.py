@@ -1,10 +1,21 @@
-from bridgetime import BridgeDuration, BridgeTime, supported_units
+from bridgetime import (
+    BridgeDuration,
+    BridgeTime,
+    bridge_duration,
+    bridge_time,
+    supported_units,
+)
 
 
 def test_supported_units():
     units = supported_units()
     assert "day" in units
     assert "month" in units
+
+
+def test_lowercase_aliases_are_available():
+    assert bridge_time is BridgeTime
+    assert bridge_duration is BridgeDuration
 
 
 def test_parse_add_and_format():

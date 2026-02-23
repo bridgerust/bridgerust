@@ -9,7 +9,7 @@ use chrono_tz::{OffsetComponents, Tz};
 use std::fmt::{Display, Formatter};
 
 #[cfg(feature = "python")]
-use pyo3::types::PyModuleMethods;
+use pyo3::types::{PyAnyMethods, PyModuleMethods};
 
 const AVG_DAYS_PER_MONTH: f64 = 30.436875;
 const AVG_DAYS_PER_YEAR: f64 = 365.2425;
@@ -2088,6 +2088,8 @@ fn bridgetime(
 ) -> bridgerust::pyo3::PyResult<()> {
     m.add_class::<BridgeDuration>()?;
     m.add_class::<BridgeTime>()?;
+    m.add("bridge_duration", m.getattr("BridgeDuration")?)?;
+    m.add("bridge_time", m.getattr("BridgeTime")?)?;
     m.add_function(bridgerust::pyo3::wrap_pyfunction!(supported_units, m)?)?;
     Ok(())
 }
