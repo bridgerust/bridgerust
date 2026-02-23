@@ -113,7 +113,7 @@ jobs:
 
       - name: Clippy check
         run: |
-          cargo clippy --workspace --manifest-path Cargo.toml \
+          cargo clippy --manifest-path Cargo.toml \
             --package bridgerust-macros \
             --package bridgerust \
             --package bridge \
@@ -134,34 +134,45 @@ jobs:
 
       - name: Check if packages already exist
         id: check_existing
+        shell: bash
         run: |
           VERSION="${{ steps.set_version.outputs.version }}"
 
-          # Check if versions already exist on crates.io
-          MACROS_EXISTS=$(curl -s "https://crates.io/api/v1/crates/bridgerust-macros/$VERSION" | jq -r '.version // empty')
-          MAIN_EXISTS=$(curl -s "https://crates.io/api/v1/crates/bridgerust/$VERSION" | jq -r '.version // empty')
-          CLI_EXISTS=$(curl -s "https://crates.io/api/v1/crates/bridge/$VERSION" | jq -r '.version // empty')
+          check_exists() {
+            local pkg="$1"
+            if curl -s "https://crates.io/api/v1/crates/$pkg/$VERSION" | jq -e '.version' >/dev/null 2>&1; then
+              echo "true"
+            else
+              echo "false"
+            fi
+          }
 
-          if [ -n "$MACROS_EXISTS" ] || [ -n "$MAIN_EXISTS" ] || [ -n "$CLI_EXISTS" ]; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Warning: Some packages already exist on crates.io"
-            [ -n "$MACROS_EXISTS" ] && echo "  - bridgerust-macros@$VERSION exists"
-            [ -n "$MAIN_EXISTS" ] && echo "  - bridgerust@$VERSION exists"
-            [ -n "$CLI_EXISTS" ] && echo "  - bridge@$VERSION exists"
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-            echo "All packages are new versions"
+          MACROS_EXISTS=$(check_exists "bridgerust-macros")
+          MAIN_EXISTS=$(check_exists "bridgerust")
+          CLI_EXISTS=$(check_exists "bridge")
+
+          echo "macros_exists=$MACROS_EXISTS" >> "$GITHUB_OUTPUT"
+          echo "main_exists=$MAIN_EXISTS" >> "$GITHUB_OUTPUT"
+          echo "cli_exists=$CLI_EXISTS" >> "$GITHUB_OUTPUT"
+
+          if [ "$MACROS_EXISTS" = "true" ]; then
+            echo "  - bridgerust-macros@$VERSION already exists"
+          fi
+          if [ "$MAIN_EXISTS" = "true" ]; then
+            echo "  - bridgerust@$VERSION already exists"
+          fi
+          if [ "$CLI_EXISTS" = "true" ]; then
+            echo "  - bridge@$VERSION already exists"
           fi
 
       - name: Publish bridgerust-macros
-        if: steps.check_existing.outputs.exists == 'false' && github.event.inputs.dry_run != 'true'
+        if: steps.check_existing.outputs.macros_exists != 'true' && github.event.inputs.dry_run != 'true'
         run: |
           cd crates/bridgerust-macros
           cargo publish --token ${{ secrets.CRATES_IO_TOKEN }}
-        continue-on-error: true
 
       - name: Wait for macros to be available
-        if: steps.check_existing.outputs.exists == 'false' && github.event.inputs.dry_run != 'true'
+        if: steps.check_existing.outputs.macros_exists != 'true' && github.event.inputs.dry_run != 'true'
         run: |
           echo "Waiting for bridgerust-macros to be available on crates.io..."
           for i in {1..30}; do
@@ -174,14 +185,13 @@ jobs:
           done
 
       - name: Publish bridgerust
-        if: steps.check_existing.outputs.exists == 'false' && github.event.inputs.dry_run != 'true'
+        if: steps.check_existing.outputs.main_exists != 'true' && github.event.inputs.dry_run != 'true'
         run: |
           cd crates/bridgerust
           cargo publish --token ${{ secrets.CRATES_IO_TOKEN }}
-        continue-on-error: true
 
       - name: Wait for main crate to be available
-        if: steps.check_existing.outputs.exists == 'false' && github.event.inputs.dry_run != 'true'
+        if: steps.check_existing.outputs.main_exists != 'true' && github.event.inputs.dry_run != 'true'
         run: |
           echo "Waiting for bridgerust to be available on crates.io..."
           for i in {1..30}; do
@@ -194,11 +204,10 @@ jobs:
           done
 
       - name: Publish bridge
-        if: steps.check_existing.outputs.exists == 'false' && github.event.inputs.dry_run != 'true'
+        if: steps.check_existing.outputs.cli_exists != 'true' && github.event.inputs.dry_run != 'true'
         run: |
           cd cli/bridge
           cargo publish --token ${{ secrets.CRATES_IO_TOKEN }}
-        continue-on-error: true
 
       - name: Dry run summary
         if: github.event.inputs.dry_run == 'true'
@@ -207,15 +216,27 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "✅ All checks passed!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Would publish:" >> $GITHUB_STEP_SUMMARY
-          echo "- bridgerust-macros@${{ steps.set_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- bridgerust@${{ steps.set_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- bridge@${{ steps.set_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "Publish plan:" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.check_existing.outputs.macros_exists }}" = "true" ]; then
+            echo "- bridgerust-macros@${{ steps.set_version.outputs.version }} (skip: already published)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- bridgerust-macros@${{ steps.set_version.outputs.version }} (will publish)" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ "${{ steps.check_existing.outputs.main_exists }}" = "true" ]; then
+            echo "- bridgerust@${{ steps.set_version.outputs.version }} (skip: already published)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- bridgerust@${{ steps.set_version.outputs.version }} (will publish)" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ "${{ steps.check_existing.outputs.cli_exists }}" = "true" ]; then
+            echo "- bridge@${{ steps.set_version.outputs.version }} (skip: already published)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- bridge@${{ steps.set_version.outputs.version }} (will publish)" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "To publish, run the workflow again with dry_run=false" >> $GITHUB_STEP_SUMMARY
 
       - name: Verify published packages
-        if: steps.check_existing.outputs.exists == 'false' && github.event.inputs.dry_run != 'true'
+        if: github.event.inputs.dry_run != 'true'
         run: |
           VERSION="${{ steps.set_version.outputs.version }}"
           echo "Verifying packages are available on crates.io..."
@@ -233,15 +254,27 @@ jobs:
           done
 
       - name: Publish summary
-        if: steps.check_existing.outputs.exists == 'false' && github.event.inputs.dry_run != 'true'
+        if: github.event.inputs.dry_run != 'true'
         run: |
           VERSION="${{ steps.set_version.outputs.version }}"
           echo "## Publish Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Published to crates.io:" >> $GITHUB_STEP_SUMMARY
-          echo "- [bridgerust-macros@$VERSION](https://crates.io/crates/bridgerust-macros/$VERSION)" >> $GITHUB_STEP_SUMMARY
-          echo "- [bridgerust@$VERSION](https://crates.io/crates/bridgerust/$VERSION)" >> $GITHUB_STEP_SUMMARY
-          echo "- [bridge@$VERSION](https://crates.io/crates/bridge/$VERSION)" >> $GITHUB_STEP_SUMMARY
+          echo "Published status:" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.check_existing.outputs.macros_exists }}" = "true" ]; then
+            echo "- [bridgerust-macros@$VERSION](https://crates.io/crates/bridgerust-macros/$VERSION) (already existed)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- [bridgerust-macros@$VERSION](https://crates.io/crates/bridgerust-macros/$VERSION) (published in this run)" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ "${{ steps.check_existing.outputs.main_exists }}" = "true" ]; then
+            echo "- [bridgerust@$VERSION](https://crates.io/crates/bridgerust/$VERSION) (already existed)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- [bridgerust@$VERSION](https://crates.io/crates/bridgerust/$VERSION) (published in this run)" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ "${{ steps.check_existing.outputs.cli_exists }}" = "true" ]; then
+            echo "- [bridge@$VERSION](https://crates.io/crates/bridge/$VERSION) (already existed)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- [bridge@$VERSION](https://crates.io/crates/bridge/$VERSION) (published in this run)" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Next steps:**" >> $GITHUB_STEP_SUMMARY
           echo "1. Commit version changes to Cargo.toml files" >> $GITHUB_STEP_SUMMARY

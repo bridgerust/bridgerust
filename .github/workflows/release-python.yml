@@ -146,7 +146,14 @@ jobs:
         run: |
           TAG_NAME="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}"
           TAG_VERSION="${TAG_NAME#embex-v}"
-          PYPROJECT_VERSION=$(grep -E '^version = "' bindings/python/embex/pyproject.toml | head -1 | sed -E 's/version = "([^"]+)"/\1/')
+          PYPROJECT_PATH="bindings/python/embex/pyproject.toml"
+
+          if [ ! -f "$PYPROJECT_PATH" ]; then
+            echo "Missing pyproject manifest: $PYPROJECT_PATH"
+            exit 1
+          fi
+
+          PYPROJECT_VERSION=$(grep -E '^version = "' "$PYPROJECT_PATH" | head -1 | sed -E 's/version = "([^"]+)"/\1/')
 
           if [ "$TAG_VERSION" != "$PYPROJECT_VERSION" ]; then
             echo "Tag version ($TAG_VERSION) does not match pyproject version ($PYPROJECT_VERSION)"

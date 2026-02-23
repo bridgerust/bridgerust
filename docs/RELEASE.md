@@ -72,6 +72,9 @@ git push origin bridgetime-v0.1.0
 - `embex-v*` triggers Python/Node publish plus GitHub release creation.
 - `bridgerust-v*` triggers crates.io publication for framework crates.
 - `bridgetime-v*` triggers BridgeTime Python/Node publish plus GitHub release creation.
+- Node publish lanes now verify `tag -> package.json version` before publish.
+- Python publish lanes now fail fast with a clear error if `pyproject.toml` is missing.
+- `publish-crates-io.yml` publishes per crate (`bridgerust-macros`, `bridgerust`, `bridge`) so retries can resume partial publishes safely.
 
 ### PyPI authentication note (BridgeTime)
 
