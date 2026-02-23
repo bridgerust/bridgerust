@@ -11,16 +11,16 @@ pip install bridgetime
 ## Quickstart
 
 ```python
-from bridgetime import BridgeDuration, BridgeTime, supported_units
+from bridgetime import bridge_duration, bridge_time, supported_units
 
-now = BridgeTime.now("UTC")
+now = bridge_time.now("UTC")
 print(now.to_iso())
 
-custom = BridgeTime.parse_format("22/02/2026 10:15", "DD/MM/YYYY HH:mm", "UTC")
+custom = bridge_time.parse_format("22/02/2026 10:15", "DD/MM/YYYY HH:mm", "UTC")
 print(custom.to_iso())
-from_array = BridgeTime.from_array([2026, 1, 22, 10, 15, 30, 250], "UTC")
+from_array = bridge_time.from_array([2026, 1, 22, 10, 15, 30, 250], "UTC")
 print(from_array.to_array())
-duration = BridgeDuration(90, "minute")
+duration = bridge_duration(90, "minute")
 print(duration.humanize(True))  # in 2 hours
 
 ny = now.to_timezone("America/New_York")
@@ -38,9 +38,9 @@ print(now.day_of_year(), now.week(), now.iso_week())
 print(now.iso_week_year(), now.days_in_year(), now.weeks_in_year(), now.iso_weeks_in_year())
 print(now.is_today())
 print(now.add(30, "minute").from_now())  # in 30 minutes
-print(now.add_duration(BridgeDuration.from_minutes(30)).to_iso())
+print(now.add_duration(bridge_duration.from_minutes(30)).to_iso())
 print(now.is_between(now.start_of("day"), now.end_of("day"), "day", "[]"))
-print(BridgeTime.min(now, future).to_iso(), BridgeTime.max(now, future).to_iso())
+print(bridge_time.min(now, future).to_iso(), bridge_time.max(now, future).to_iso())
 print(now.clamp(now.subtract(1, "day"), now.add(1, "day")).to_iso())
 
 print(supported_units())
@@ -49,16 +49,18 @@ print(supported_units())
 ## API Highlights
 
 - Core: `parse`, `format`, `add`, `subtract`, `start_of`, `end_of`, `diff`
-- Duration helpers: `BridgeDuration`, `BridgeTime.duration(value, unit?)`, `add_duration`, `subtract_duration`
+- Duration helpers: `bridge_duration` (alias for `BridgeDuration`), `bridge_time.duration(value, unit?)`, `add_duration`, `subtract_duration`
 - Custom parse helpers: `parse_format(input, pattern, timezone?)`, `from_array(components, timezone?)`, `to_array()`
 - Timezone helpers: `timezone`, `utc_offset`, `is_utc`, `is_dst`, `to_timezone`
 - Calendar helpers: `get`, `set`, component getters/setters (`year`, `set_year`, etc), `days_in_month`, `is_leap_year`, `is_valid`
 - Week/day helpers: `day_of_year`, `set_day_of_year`, `quarter`, `set_quarter`, `iso_weekday`, `set_iso_weekday`, `week`, `week_of_year`, `set_week`, `iso_week`, `set_iso_week`, `iso_week_year`, `days_in_year`, `weeks_in_year`, `iso_weeks_in_year`
 - Relative-day helpers: `is_today`, `is_yesterday`, `is_tomorrow`
 - Relative-time helpers: `from_time`, `to_time`, `from_now`, `to_now`
-- Min/max helpers: `BridgeTime.min(a, b)`, `BridgeTime.max(a, b)`, `clamp(start, end)`
+- Min/max helpers: `bridge_time.min(a, b)`, `bridge_time.max(a, b)`, `clamp(start, end)`
 - Comparison helpers: `is_before`, `is_after`, `is_same`, `is_same_or_before`, `is_same_or_after`, `is_same_or_before_unit`, `is_same_or_after_unit`
 - Unit/range helpers: `is_before_unit`, `is_after_unit`, `is_same_unit`, `is_between`
+
+`BridgeTime` and `BridgeDuration` remain available for compatibility.
 
 ## Build Locally
 

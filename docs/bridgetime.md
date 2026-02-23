@@ -15,7 +15,7 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
 - Parse custom formats with Day.js-style tokens (`parse_format`)
 - Parse/build via component arrays (`from_array`, `to_array`)
 - Day.js-style token formatting (`YYYY`, `MM`, `DD`, `HH`, `mm`, `ss`, `SSS`, `Z`)
-- Duration type with arithmetic and humanization (`BridgeDuration`)
+- Duration type with arithmetic and humanization (`BridgeDuration` / lowercase aliases)
 - Immutable date arithmetic across units:
   - `millisecond`, `second`, `minute`, `hour`, `day`, `week`, `month`, `quarter`, `year`
 - `start_of` / `end_of`
@@ -58,6 +58,11 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
 - Full Day.js plugin parity is not complete yet (for example locale packs and calendar-style formatting helpers).
 
 ## API Surface
+
+Lowercase aliases are available in bindings:
+
+- Python: `bridge_time` / `bridge_duration` (aliases for `BridgeTime` / `BridgeDuration`)
+- Node.js: `bridgeTime` / `bridgeDuration` (aliases for `BridgeTime` / `BridgeDuration`)
 
 ### Static methods
 
@@ -113,6 +118,8 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
 - `as_milliseconds()` / `as_seconds()` / `as_minutes()` / `as_hours()` / `as_days()` / `as_weeks()` / `as_months()` / `as_years()`
 - `humanize(with_suffix?)`
 - `add(other)` / `subtract(other)` / `negate()` / `abs()`
+
+`BridgeTime` and `BridgeDuration` remain the canonical class names and are fully supported.
 
 ## Local Development
 

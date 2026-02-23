@@ -11,16 +11,16 @@ npm install @bridgerust/bridgetime
 ## Quickstart
 
 ```ts
-import { BridgeDuration, BridgeTime, supportedUnits } from "@bridgerust/bridgetime";
+import { bridgeDuration, bridgeTime, supportedUnits } from "@bridgerust/bridgetime";
 
-const now = BridgeTime.now("UTC");
+const now = bridgeTime.now("UTC");
 console.log(now.toIso());
 
-const custom = BridgeTime.parseFormat("22/02/2026 10:15", "DD/MM/YYYY HH:mm", "UTC");
+const custom = bridgeTime.parseFormat("22/02/2026 10:15", "DD/MM/YYYY HH:mm", "UTC");
 console.log(custom.toIso());
-const fromArray = BridgeTime.fromArray([2026, 1, 22, 10, 15, 30, 250], "UTC");
+const fromArray = bridgeTime.fromArray([2026, 1, 22, 10, 15, 30, 250], "UTC");
 console.log(fromArray.toArray());
-const duration = new BridgeDuration(90, "minute");
+const duration = new bridgeDuration(90, "minute");
 console.log(duration.humanize(true)); // in 2 hours
 
 const ny = now.toTimezone("America/New_York");
@@ -38,9 +38,9 @@ console.log(now.dayOfYear(), now.week(), now.isoWeek());
 console.log(now.isoWeekYear(), now.daysInYear(), now.weeksInYear(), now.isoWeeksInYear());
 console.log(now.isToday());
 console.log(now.add(30, "minute").fromNow()); // in 30 minutes
-console.log(now.addDuration(BridgeDuration.fromMinutes(30)).toIso());
+console.log(now.addDuration(bridgeDuration.fromMinutes(30)).toIso());
 console.log(now.isBetween(now.startOf("day"), now.endOf("day"), "day", "[]"));
-console.log(BridgeTime.min(now, next).toIso(), BridgeTime.max(now, next).toIso());
+console.log(bridgeTime.min(now, next).toIso(), bridgeTime.max(now, next).toIso());
 console.log(now.clamp(now.subtract(1, "day"), now.add(1, "day")).toIso());
 
 console.log(supportedUnits());
@@ -49,16 +49,18 @@ console.log(supportedUnits());
 ## API Highlights
 
 - Core: `parse`, `format`, `add`, `subtract`, `startOf`, `endOf`, `diff`
-- Duration helpers: `BridgeDuration`, `BridgeTime.duration(value, unit?)`, `addDuration`, `subtractDuration`
+- Duration helpers: `bridgeDuration` (alias for `BridgeDuration`), `bridgeTime.duration(value, unit?)`, `addDuration`, `subtractDuration`
 - Custom parse helpers: `parseFormat(input, pattern, timezone?)`, `fromArray(components, timezone?)`, `toArray()`
 - Timezone helpers: `timezone`, `utcOffset`, `isUtc`, `isDst`, `toTimezone`
 - Calendar helpers: `get`, `set`, component getters/setters (`year`, `setYear`, etc), `daysInMonth`, `isLeapYear`, `isValid`
 - Week/day helpers: `dayOfYear`, `setDayOfYear`, `quarter`, `setQuarter`, `isoWeekday`, `setIsoWeekday`, `week`, `weekOfYear`, `setWeek`, `isoWeek`, `setIsoWeek`, `isoWeekYear`, `daysInYear`, `weeksInYear`, `isoWeeksInYear`
 - Relative-day helpers: `isToday`, `isYesterday`, `isTomorrow`
 - Relative-time helpers: `fromTime`, `toTime`, `fromNow`, `toNow`
-- Min/max helpers: `BridgeTime.min(a, b)`, `BridgeTime.max(a, b)`, `clamp(start, end)`
+- Min/max helpers: `bridgeTime.min(a, b)`, `bridgeTime.max(a, b)`, `clamp(start, end)`
 - Comparison helpers: `isBefore`, `isAfter`, `isSame`, `isSameOrBefore`, `isSameOrAfter`, `isSameOrBeforeUnit`, `isSameOrAfterUnit`
 - Unit/range helpers: `isBeforeUnit`, `isAfterUnit`, `isSameUnit`, `isBetween`
+
+`BridgeTime` and `BridgeDuration` remain available for compatibility.
 
 ## Build Locally
 
