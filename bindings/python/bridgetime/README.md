@@ -49,7 +49,7 @@ print(supported_units())
 ## API Highlights
 
 - Core: `parse`, `format`, `add`, `subtract`, `start_of`, `end_of`, `diff`
-- Duration helpers: `bridge_duration` (alias for `BridgeDuration`), `bridge_time.duration(value, unit?)`, `add_duration`, `subtract_duration`
+- Duration helpers: `bridge_duration`, `bridge_time.duration(value, unit?)`, `add_duration`, `subtract_duration`
 - Custom parse helpers: `parse_format(input, pattern, timezone?)`, `from_array(components, timezone?)`, `to_array()`
 - Timezone helpers: `timezone`, `utc_offset`, `is_utc`, `is_dst`, `to_timezone`
 - Calendar helpers: `get`, `set`, component getters/setters (`year`, `set_year`, etc), `days_in_month`, `is_leap_year`, `is_valid`
@@ -60,7 +60,7 @@ print(supported_units())
 - Comparison helpers: `is_before`, `is_after`, `is_same`, `is_same_or_before`, `is_same_or_after`, `is_same_or_before_unit`, `is_same_or_after_unit`
 - Unit/range helpers: `is_before_unit`, `is_after_unit`, `is_same_unit`, `is_between`
 
-`BridgeTime` and `BridgeDuration` remain available for compatibility.
+Uppercase exports (`BridgeTime`, `BridgeDuration`) are no longer part of the public Python API.
 
 ## Build Locally
 

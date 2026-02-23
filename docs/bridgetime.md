@@ -15,7 +15,7 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
 - Parse custom formats with Day.js-style tokens (`parse_format`)
 - Parse/build via component arrays (`from_array`, `to_array`)
 - Day.js-style token formatting (`YYYY`, `MM`, `DD`, `HH`, `mm`, `ss`, `SSS`, `Z`)
-- Duration type with arithmetic and humanization (`BridgeDuration` / lowercase aliases)
+- Duration type with arithmetic and humanization (`bridge_duration` / `bridgeDuration`)
 - Immutable date arithmetic across units:
   - `millisecond`, `second`, `minute`, `hour`, `day`, `week`, `month`, `quarter`, `year`
 - `start_of` / `end_of`
@@ -43,7 +43,7 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
 - Range helpers:
   - `clamp(start, end)`
 - Static ordering helpers:
-  - `BridgeTime.min(a, b)` / `BridgeTime.max(a, b)`
+  - `bridge_time.min(a, b)` / `bridge_time.max(a, b)` and `bridgeTime.min(a, b)` / `bridgeTime.max(a, b)`
 - Comparison and range helpers:
   - `is_before` / `is_after` / `is_same`
   - `is_before_unit` / `is_after_unit` / `is_same_unit`
@@ -59,21 +59,21 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
 
 ## API Surface
 
-Lowercase aliases are available in bindings:
+Public binding exports:
 
-- Python: `bridge_time` / `bridge_duration` (aliases for `BridgeTime` / `BridgeDuration`)
-- Node.js: `bridgeTime` / `bridgeDuration` (aliases for `BridgeTime` / `BridgeDuration`)
+- Python: `bridge_time` / `bridge_duration`
+- Node.js: `bridgeTime` / `bridgeDuration`
 
 ### Static methods
 
-- `BridgeTime.now(timezone?)`
-- `BridgeTime.parse(input, timezone?)`
-- `BridgeTime.parse_format(input, pattern, timezone?)`
-- `BridgeTime.from_array(components, timezone?)`
-- `BridgeTime.from_unix_ms(unix_ms, timezone?)`
-- `BridgeTime.from_unix(unix_seconds, timezone?)`
-- `BridgeTime.duration(value, unit?)`
-- `BridgeTime.min(a, b)` / `BridgeTime.max(a, b)`
+- `bridge_time.now(timezone?)` / `bridgeTime.now(timezone?)`
+- `bridge_time.parse(input, timezone?)` / `bridgeTime.parse(input, timezone?)`
+- `bridge_time.parse_format(input, pattern, timezone?)` / `bridgeTime.parseFormat(input, pattern, timezone?)`
+- `bridge_time.from_array(components, timezone?)` / `bridgeTime.fromArray(components, timezone?)`
+- `bridge_time.from_unix_ms(unix_ms, timezone?)` / `bridgeTime.fromUnixMs(unix_ms, timezone?)`
+- `bridge_time.from_unix(unix_seconds, timezone?)` / `bridgeTime.fromUnix(unix_seconds, timezone?)`
+- `bridge_time.duration(value, unit?)` / `bridgeTime.duration(value, unit?)`
+- `bridge_time.min(a, b)` / `bridge_time.max(a, b)` and `bridgeTime.min(a, b)` / `bridgeTime.max(a, b)`
 
 ### Instance methods
 
@@ -111,15 +111,15 @@ Lowercase aliases are available in bindings:
 - `clamp(start, end)`
 - `days_in_month()` / `is_leap_year()` / `is_valid()`
 
-### Duration methods (`BridgeDuration`)
+### Duration methods (`bridge_duration` / `bridgeDuration`)
 
-- `BridgeDuration(value, unit?)`
-- `BridgeDuration.from_milliseconds(...)`, `from_seconds(...)`, `from_minutes(...)`, `from_hours(...)`, `from_days(...)`, `from_weeks(...)`, `from_months(...)`, `from_years(...)`
+- `bridge_duration(value, unit?)` / `new bridgeDuration(value, unit?)`
+- `bridge_duration.from_milliseconds(...)`, `from_seconds(...)`, `from_minutes(...)`, `from_hours(...)`, `from_days(...)`, `from_weeks(...)`, `from_months(...)`, `from_years(...)`
 - `as_milliseconds()` / `as_seconds()` / `as_minutes()` / `as_hours()` / `as_days()` / `as_weeks()` / `as_months()` / `as_years()`
 - `humanize(with_suffix?)`
 - `add(other)` / `subtract(other)` / `negate()` / `abs()`
 
-`BridgeTime` and `BridgeDuration` remain the canonical class names and are fully supported.
+Uppercase exports (`BridgeTime`, `BridgeDuration`) were removed from public Python/Node bindings.
 
 ## Local Development
 

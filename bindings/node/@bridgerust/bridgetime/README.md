@@ -49,7 +49,7 @@ console.log(supportedUnits());
 ## API Highlights
 
 - Core: `parse`, `format`, `add`, `subtract`, `startOf`, `endOf`, `diff`
-- Duration helpers: `bridgeDuration` (alias for `BridgeDuration`), `bridgeTime.duration(value, unit?)`, `addDuration`, `subtractDuration`
+- Duration helpers: `bridgeDuration`, `bridgeTime.duration(value, unit?)`, `addDuration`, `subtractDuration`
 - Custom parse helpers: `parseFormat(input, pattern, timezone?)`, `fromArray(components, timezone?)`, `toArray()`
 - Timezone helpers: `timezone`, `utcOffset`, `isUtc`, `isDst`, `toTimezone`
 - Calendar helpers: `get`, `set`, component getters/setters (`year`, `setYear`, etc), `daysInMonth`, `isLeapYear`, `isValid`
@@ -60,7 +60,7 @@ console.log(supportedUnits());
 - Comparison helpers: `isBefore`, `isAfter`, `isSame`, `isSameOrBefore`, `isSameOrAfter`, `isSameOrBeforeUnit`, `isSameOrAfterUnit`
 - Unit/range helpers: `isBeforeUnit`, `isAfterUnit`, `isSameUnit`, `isBetween`
 
-`BridgeTime` and `BridgeDuration` remain available for compatibility.
+Uppercase exports (`BridgeTime`, `BridgeDuration`) are no longer part of the public Node.js API.
 
 ## Build Locally
 
