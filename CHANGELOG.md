@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.20] - 2026-02-23
+
+### Fixed
+
+- **Release reliability**:
+  - Fixed Node.js publish pipeline cache initialization failures in GitHub Actions by disabling auto package-manager cache for release jobs.
+  - Added explicit tag/version validation in Node.js publish jobs to prevent publishing mismatched package versions.
+  - Added clear manifest existence checks in Python publish jobs for actionable failures when release metadata files are missing.
+
 ## [0.2.2] - 2026-02-23
 
 ### Changed
