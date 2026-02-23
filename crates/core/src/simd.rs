@@ -274,8 +274,8 @@ unsafe fn dot_product_avx2(a: &[f32], b: &[f32]) -> f32 {
     let chunks = len / 8;
     for i in 0..chunks {
         let idx = i * 8;
-        let va = _mm256_loadu_ps(a.as_ptr().add(idx));
-        let vb = _mm256_loadu_ps(b.as_ptr().add(idx));
+        let va = unsafe { _mm256_loadu_ps(a.as_ptr().add(idx)) };
+        let vb = unsafe { _mm256_loadu_ps(b.as_ptr().add(idx)) };
         sum = _mm256_add_ps(sum, _mm256_mul_ps(va, vb));
     }
 
