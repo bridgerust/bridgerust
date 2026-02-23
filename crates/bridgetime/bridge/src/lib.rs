@@ -2090,6 +2090,8 @@ fn bridgetime(
     m.add_class::<BridgeTime>()?;
     m.add("bridge_duration", m.getattr("BridgeDuration")?)?;
     m.add("bridge_time", m.getattr("BridgeTime")?)?;
+    m.delattr("BridgeDuration")?;
+    m.delattr("BridgeTime")?;
     m.add_function(bridgerust::pyo3::wrap_pyfunction!(supported_units, m)?)?;
     Ok(())
 }
