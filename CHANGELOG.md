@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-02-23
+
+### Changed
+
+- **BridgeTime API surface**:
+  - Removed uppercase public binding exports (`BridgeTime`, `BridgeDuration`) from Python and Node.js package entrypoints.
+  - Standardized public constructor/class exports to lowercase names:
+    - Python: `bridge_time`, `bridge_duration`
+    - Node.js: `bridgeTime`, `bridgeDuration`
+  - Updated binding tests, docs, and package smoke-test script to the lowercase API.
+
 ## [0.2.1] - 2026-02-22
 
 ### Changed
