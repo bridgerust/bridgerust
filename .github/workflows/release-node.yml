@@ -57,7 +57,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          package-manager-cache: false
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -127,7 +126,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          package-manager-cache: false
 
       - name: Verify tag/version alignment
         shell: bash

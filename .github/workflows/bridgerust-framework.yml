@@ -154,7 +154,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          package-manager-cache: false
 
       - name: Install maturin and pytest
         run: pip install maturin pytest
