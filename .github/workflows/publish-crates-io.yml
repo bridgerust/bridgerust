@@ -169,7 +169,7 @@ jobs:
         if: steps.check_existing.outputs.macros_exists != 'true' && github.event.inputs.dry_run != 'true'
         run: |
           cd crates/bridgerust-macros
-          cargo publish --token ${{ secrets.CRATES_IO_TOKEN }}
+          cargo publish --allow-dirty
 
       - name: Wait for macros to be available
         if: steps.check_existing.outputs.macros_exists != 'true' && github.event.inputs.dry_run != 'true'
@@ -188,7 +188,7 @@ jobs:
         if: steps.check_existing.outputs.main_exists != 'true' && github.event.inputs.dry_run != 'true'
         run: |
           cd crates/bridgerust
-          cargo publish --token ${{ secrets.CRATES_IO_TOKEN }}
+          cargo publish --allow-dirty
 
       - name: Wait for main crate to be available
         if: steps.check_existing.outputs.main_exists != 'true' && github.event.inputs.dry_run != 'true'
@@ -207,7 +207,7 @@ jobs:
         if: steps.check_existing.outputs.cli_exists != 'true' && github.event.inputs.dry_run != 'true'
         run: |
           cd cli/bridge
-          cargo publish --token ${{ secrets.CRATES_IO_TOKEN }}
+          cargo publish --allow-dirty
 
       - name: Dry run summary
         if: github.event.inputs.dry_run == 'true'

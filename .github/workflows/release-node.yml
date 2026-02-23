@@ -83,7 +83,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: bindings/node/@bridgerust/embex
-        run: npm ci
+        run: npm install
 
       - name: Build
         working-directory: bindings/node/@bridgerust/embex
@@ -179,7 +179,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: bindings/node/@bridgerust/embex
-        run: npm ci
+        run: npm install
 
       - name: Build TypeScript
         working-directory: bindings/node/@bridgerust/embex
