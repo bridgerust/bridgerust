@@ -154,7 +154,27 @@ jobs:
           fi
           echo "Version check passed: $TAG_VERSION"
 
+      - name: Resolve publish auth mode
+        id: auth
+        shell: bash
+        env:
+          PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          if [ -n "$PYPI_API_TOKEN" ]; then
+            echo "mode=token" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=trusted" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish to PyPI
+        if: steps.auth.outputs.mode == 'token'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          skip-existing: true
+
+      - name: Publish to PyPI (Trusted Publisher)
+        if: steps.auth.outputs.mode == 'trusted'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           skip-existing: true
