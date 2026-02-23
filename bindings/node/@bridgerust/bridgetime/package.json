@@ -1,6 +1,6 @@
 {
   "name": "@bridgerust/bridgetime",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "BridgeTime: Rust-powered Day.js/Moment-style datetime toolkit",
   "homepage": "https://github.com/bridgerust/bridgerust",
   "repository": {
@@ -42,7 +42,7 @@
     "build": "napi build --platform --release --features nodejs --manifest-path ../../../../crates/bridgetime/bridge/Cargo.toml --js native.js --dts native.d.ts && tsc",
     "build:debug": "napi build --platform --features nodejs --manifest-path ../../../../crates/bridgetime/bridge/Cargo.toml --js native.js --dts native.d.ts && tsc",
     "prepublishOnly": "tsc && cp native.js dist/native.js && cp native.d.ts dist/native.d.ts || true",
-    "test": "node -e \"const { BridgeTime } = require('./dist'); const dt = BridgeTime.parse('2026-02-22T10:15:30Z', 'UTC'); console.log(dt.toIso());\""
+    "test": "node -e \"const { bridgeTime } = require('./dist'); const dt = bridgeTime.parse('2026-02-22T10:15:30Z', 'UTC'); console.log(dt.toIso());\""
   },
   "devDependencies": {
     "@napi-rs/cli": "^3.5.0",
