@@ -100,19 +100,6 @@ The **BridgeRust** framework is the foundation both products are built on. It el
 | **bridgerust-macros** | [crates/bridgerust-macros](crates/bridgerust-macros) | [![Crates.io](https://img.shields.io/crates/v/bridgerust-macros.svg)](https://crates.io/crates/bridgerust-macros) | [![Downloads](https://img.shields.io/crates/d/bridgerust-macros.svg)](https://crates.io/crates/bridgerust-macros) | [![Docs.rs](https://docs.rs/bridgerust-macros/badge.svg)](https://docs.rs/bridgerust-macros) |
 | **bridge-core** | [crates/core](crates/core) | [![Crates.io](https://img.shields.io/crates/v/bridge-core.svg)](https://crates.io/crates/bridge-core) | [![Downloads](https://img.shields.io/crates/d/bridge-core.svg)](https://crates.io/crates/bridge-core) | [![Docs.rs](https://docs.rs/bridge-core/badge.svg)](https://docs.rs/bridge-core) |
 
-**Embex — Rust crates**
-
-| Crate | Source | Version | Downloads |
-|:------|:-------|:--------|:----------|
-| **bridge-embex** (client) | [crates/embex/client](crates/embex/client) | [![Crates.io](https://img.shields.io/crates/v/bridge-embex.svg)](https://crates.io/crates/bridge-embex) | [![Downloads](https://img.shields.io/crates/d/bridge-embex.svg)](https://crates.io/crates/bridge-embex) |
-| **bridge-embex-qdrant** | [crates/embex/adapters/qdrant](crates/embex/adapters/qdrant) | [![Crates.io](https://img.shields.io/crates/v/bridge-embex-qdrant.svg)](https://crates.io/crates/bridge-embex-qdrant) | [![Downloads](https://img.shields.io/crates/d/bridge-embex-qdrant.svg)](https://crates.io/crates/bridge-embex-qdrant) |
-| **bridge-embex-pinecone** | [crates/embex/adapters/pinecone](crates/embex/adapters/pinecone) | [![Crates.io](https://img.shields.io/crates/v/bridge-embex-pinecone.svg)](https://crates.io/crates/bridge-embex-pinecone) | [![Downloads](https://img.shields.io/crates/d/bridge-embex-pinecone.svg)](https://crates.io/crates/bridge-embex-pinecone) |
-| **bridge-embex-chroma** | [crates/embex/adapters/chroma](crates/embex/adapters/chroma) | [![Crates.io](https://img.shields.io/crates/v/bridge-embex-chroma.svg)](https://crates.io/crates/bridge-embex-chroma) | [![Downloads](https://img.shields.io/crates/d/bridge-embex-chroma.svg)](https://crates.io/crates/bridge-embex-chroma) |
-| **bridge-embex-lancedb** | [crates/embex/adapters/lancedb](crates/embex/adapters/lancedb) | [![Crates.io](https://img.shields.io/crates/v/bridge-embex-lancedb.svg)](https://crates.io/crates/bridge-embex-lancedb) | [![Downloads](https://img.shields.io/crates/d/bridge-embex-lancedb.svg)](https://crates.io/crates/bridge-embex-lancedb) |
-| **bridge-embex-pgvector** | [crates/embex/adapters/pgvector](crates/embex/adapters/pgvector) | [![Crates.io](https://img.shields.io/crates/v/bridge-embex-pgvector.svg)](https://crates.io/crates/bridge-embex-pgvector) | [![Downloads](https://img.shields.io/crates/d/bridge-embex-pgvector.svg)](https://crates.io/crates/bridge-embex-pgvector) |
-| **bridge-embex-weaviate** | [crates/embex/adapters/weaviate](crates/embex/adapters/weaviate) | [![Crates.io](https://img.shields.io/crates/v/bridge-embex-weaviate.svg)](https://crates.io/crates/bridge-embex-weaviate) | [![Downloads](https://img.shields.io/crates/d/bridge-embex-weaviate.svg)](https://crates.io/crates/bridge-embex-weaviate) |
-| **bridge-embex-milvus** | [crates/embex/adapters/milvus](crates/embex/adapters/milvus) | [![Crates.io](https://img.shields.io/crates/v/bridge-embex-milvus.svg)](https://crates.io/crates/bridge-embex-milvus) | [![Downloads](https://img.shields.io/crates/d/bridge-embex-milvus.svg)](https://crates.io/crates/bridge-embex-milvus) |
-
 **Language bindings**
 
 | Package | Ecosystem | Source | Version |
