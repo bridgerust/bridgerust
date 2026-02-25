@@ -2,10 +2,14 @@
 
 <div align="center">
 
-[![PyPI Downloads](<https://img.shields.io/badge/dynamic/xml?url=https%3A%2F%2Fstatic.pepy.tech%2Fbadge%2Fembex%2Fmonth&query=%2F%2F*%5Blocal-name()%20%3D%20%27text%27%5D%5Blast()%5D&label=PyPI%20downloads&suffix=%2Fmonth&color=blue>)](https://pepy.tech/projects/embex)
-[![npm Downloads](https://img.shields.io/npm/dm/@bridgerust/embex?label=npm%20downloads)](https://www.npmjs.com/package/@bridgerust/embex)
 [![GitHub Stars](https://img.shields.io/github/stars/bridgerust/bridgerust?style=social)](https://github.com/bridgerust/bridgerust)
+[![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-green)](LICENSE)
 [![Discord](https://img.shields.io/badge/Discord-Join%20Server-5865F2?logo=discord&logoColor=white)](https://discord.gg/ZvNAeaWN)
+
+[![embex PyPI](https://img.shields.io/pypi/v/embex?label=embex%20(PyPI))](https://pypi.org/project/embex)
+[![embex npm](https://img.shields.io/npm/v/@bridgerust/embex?label=%40bridgerust%2Fembex)](https://www.npmjs.com/package/@bridgerust/embex)
+[![bridgetime PyPI](https://img.shields.io/pypi/v/bridgetime?label=bridgetime%20(PyPI))](https://pypi.org/project/bridgetime)
+[![bridgetime npm](https://img.shields.io/npm/v/@bridgerust/bridgetime?label=%40bridgerust%2Fbridgetime)](https://www.npmjs.com/package/@bridgerust/bridgetime)
 
 [Embex](#embex--universal-vector-database-client) - [BridgeTime](#bridgetime--datetime-toolkit) - [BridgeRust Framework](#bridgerust-framework) - [Discord](https://discord.gg/ZvNAeaWN) - [Contributing](docs/CONTRIBUTING.md)
 
