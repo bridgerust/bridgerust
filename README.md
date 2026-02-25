@@ -7,11 +7,47 @@
 [![GitHub Stars](https://img.shields.io/github/stars/bridgerust/bridgerust?style=social)](https://github.com/bridgerust/bridgerust)
 [![Discord](https://img.shields.io/badge/Discord-Join%20Server-5865F2?logo=discord&logoColor=white)](https://discord.gg/ZvNAeaWN)
 
-[Why Embex?](#the-problem) - [Embex Docs](https://bridgerust.dev/embex) - [BridgeTime](#also-in-this-repository-bridgetime) - [Discord](https://discord.gg/ZvNAeaWN) - [Examples](#what-developers-are-building)
+[Why Embex?](#the-problem) - [Embex Docs](https://bridgerust.dev/embex) - [BridgeTime](#bridgetime) - [BridgeRust Framework](#bridgerust-framework) - [Discord](https://discord.gg/ZvNAeaWN) - [Examples](#what-developers-are-building)
 
 </div>
 
-## Also in this repository: BridgeTime
+## What's in this repo?
+
+This is a monorepo. It ships two end-user products (**Embex** and **BridgeTime**) and the underlying **BridgeRust** framework that powers them.
+
+| Package | Ecosystem | Purpose | Install |
+|:--------|:----------|:--------|:--------|
+| **embex** | Python | Universal vector DB client | `pip install embex` |
+| **@bridgerust/embex** | Node.js | Universal vector DB client | `npm install @bridgerust/embex` |
+| **bridgetime** | Python | Rust-powered datetime toolkit | `pip install bridgetime` |
+| **@bridgerust/bridgetime** | Node.js | Rust-powered datetime toolkit | `npm install @bridgerust/bridgetime` |
+| **bridgerust** | Rust crate | Cross-language binding framework | `cargo add bridgerust` |
+| **bridgerust-macros** | Rust crate | `#[export]` proc-macros | re-exported by `bridgerust` |
+| **bridge** | CLI | Scaffold new BridgeRust libraries | `cargo install bridge` |
+| **embex-cli** | CLI | Manage Embex collections from the terminal | `cargo install embex-cli` |
+
+---
+
+## Architecture
+
+```
+crates/core  (SIMD vector utilities)
+  └── crates/bridgerust-macros  (#[export] proc-macros)
+        └── crates/bridgerust  (cross-language framework)
+              ├── crates/embex/**  (vector DB client — 7 adapters)
+              │     ├── bindings/python/embex        → PyPI: embex
+              │     └── bindings/node/@bridgerust/embex  → npm: @bridgerust/embex
+              └── crates/bridgetime/bridge  (datetime toolkit)
+                    ├── bindings/python/bridgetime       → PyPI: bridgetime
+                    └── bindings/node/@bridgerust/bridgetime  → npm: @bridgerust/bridgetime
+```
+
+---
+
+<details>
+<summary><strong>BridgeTime</strong> — Rust-powered datetime toolkit for Python &amp; Node.js</summary>
+
+## BridgeTime
 
 [![PyPI Version](https://img.shields.io/pypi/v/bridgetime?label=bridgetime%20(PyPI))](https://pypi.org/project/bridgetime)
 [![npm Version](https://img.shields.io/npm/v/@bridgerust/bridgetime?label=%40bridgerust%2Fbridgetime)](https://www.npmjs.com/package/@bridgerust/bridgetime)
@@ -32,10 +68,14 @@ npm install @bridgerust/bridgetime
 
 BridgeTime package sources:
 
-- `crates/bridgetime/bridge`
-- `bindings/python/bridgetime`
-- `bindings/node/@bridgerust/bridgetime`
-- Docs: `docs/bridgetime.md`, `bindings/python/bridgetime/README.md`, `bindings/node/@bridgerust/bridgetime/README.md`
+- [`crates/bridgetime/bridge`](crates/bridgetime/bridge)
+- [`bindings/python/bridgetime`](bindings/python/bridgetime)
+- [`bindings/node/@bridgerust/bridgetime`](bindings/node/@bridgerust/bridgetime)
+- Docs: [`docs/bridgetime.md`](docs/bridgetime.md), [`bindings/python/bridgetime/README.md`](bindings/python/bridgetime/README.md), [`bindings/node/@bridgerust/bridgetime/README.md`](bindings/node/@bridgerust/bridgetime/README.md)
+
+</details>
+
+---
 
 ## The Problem
 
@@ -266,6 +306,13 @@ npm install @bridgerust/embex
 bridge-embex = { git = "https://github.com/bridgerust/bridgerust", path = "crates/embex/client" }
 ```
 
+### CLI Tools
+
+```bash
+cargo install bridge      # scaffold new BridgeRust libraries
+cargo install embex-cli   # manage Embex collections from the terminal
+```
+
 ## Features
 
 - **Universal API**: Switch providers without code changes
@@ -298,11 +345,42 @@ This repository also contains the **BridgeRust** framework - a unified system fo
 
 ### Packages & Status
 
-| Crate                                             | Version                                                                                                           | Downloads                                                                                                         | Docs                                                                                                    |
-| :------------------------------------------------ | :---------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------ |
-| **[bridgerust](crates/bridgerust)**               | [![Crates.io](https://img.shields.io/crates/v/bridgerust.svg)](https://crates.io/crates/bridgerust)               | [![Downloads](https://img.shields.io/crates/d/bridgerust.svg)](https://crates.io/crates/bridgerust)               | [![Docs](https://img.shields.io/badge/docs-read-green)](https://bridgerust.dev/bridgerust/introduction) |
-| **[bridgerust-macros](crates/bridgerust-macros)** | [![Crates.io](https://img.shields.io/crates/v/bridgerust-macros.svg)](https://crates.io/crates/bridgerust-macros) | [![Downloads](https://img.shields.io/crates/d/bridgerust-macros.svg)](https://crates.io/crates/bridgerust-macros) | [![Docs.rs](https://docs.rs/bridgerust-macros/badge.svg)](https://docs.rs/bridgerust-macros)            |
-| **[bridge (CLI)](cli/bridge)**                    | [![Crates.io](https://img.shields.io/crates/v/bridge.svg)](https://crates.io/crates/bridge)                       | [![Downloads](https://img.shields.io/crates/d/bridge.svg)](https://crates.io/crates/bridge)                       | -                                                                                                       |
+**Framework**
+
+| Crate | Source | Version | Downloads | Docs |
+|:------|:-------|:--------|:----------|:-----|
+| **bridgerust** | [crates/bridgerust](crates/bridgerust) | [![Crates.io](https://img.shields.io/crates/v/bridgerust.svg)](https://crates.io/crates/bridgerust) | [![Downloads](https://img.shields.io/crates/d/bridgerust.svg)](https://crates.io/crates/bridgerust) | [![Docs](https://img.shields.io/badge/docs-read-green)](https://bridgerust.dev/bridgerust/introduction) |
+| **bridgerust-macros** | [crates/bridgerust-macros](crates/bridgerust-macros) | [![Crates.io](https://img.shields.io/crates/v/bridgerust-macros.svg)](https://crates.io/crates/bridgerust-macros) | [![Downloads](https://img.shields.io/crates/d/bridgerust-macros.svg)](https://crates.io/crates/bridgerust-macros) | [![Docs.rs](https://docs.rs/bridgerust-macros/badge.svg)](https://docs.rs/bridgerust-macros) |
+| **bridge-core** | [crates/core](crates/core) | [![Crates.io](https://img.shields.io/crates/v/bridge-core.svg)](https://crates.io/crates/bridge-core) | [![Downloads](https://img.shields.io/crates/d/bridge-core.svg)](https://crates.io/crates/bridge-core) | [![Docs.rs](https://docs.rs/bridge-core/badge.svg)](https://docs.rs/bridge-core) |
+
+**Embex — Rust crates**
+
+| Crate | Source | Version | Downloads |
+|:------|:-------|:--------|:----------|
+| **bridge-embex** (client) | [crates/embex/client](crates/embex/client) | [![Crates.io](https://img.shields.io/crates/v/bridge-embex.svg)](https://crates.io/crates/bridge-embex) | [![Downloads](https://img.shields.io/crates/d/bridge-embex.svg)](https://crates.io/crates/bridge-embex) |
+| **bridge-embex-qdrant** | [crates/embex/adapters/qdrant](crates/embex/adapters/qdrant) | [![Crates.io](https://img.shields.io/crates/v/bridge-embex-qdrant.svg)](https://crates.io/crates/bridge-embex-qdrant) | [![Downloads](https://img.shields.io/crates/d/bridge-embex-qdrant.svg)](https://crates.io/crates/bridge-embex-qdrant) |
+| **bridge-embex-pinecone** | [crates/embex/adapters/pinecone](crates/embex/adapters/pinecone) | [![Crates.io](https://img.shields.io/crates/v/bridge-embex-pinecone.svg)](https://crates.io/crates/bridge-embex-pinecone) | [![Downloads](https://img.shields.io/crates/d/bridge-embex-pinecone.svg)](https://crates.io/crates/bridge-embex-pinecone) |
+| **bridge-embex-chroma** | [crates/embex/adapters/chroma](crates/embex/adapters/chroma) | [![Crates.io](https://img.shields.io/crates/v/bridge-embex-chroma.svg)](https://crates.io/crates/bridge-embex-chroma) | [![Downloads](https://img.shields.io/crates/d/bridge-embex-chroma.svg)](https://crates.io/crates/bridge-embex-chroma) |
+| **bridge-embex-lancedb** | [crates/embex/adapters/lancedb](crates/embex/adapters/lancedb) | [![Crates.io](https://img.shields.io/crates/v/bridge-embex-lancedb.svg)](https://crates.io/crates/bridge-embex-lancedb) | [![Downloads](https://img.shields.io/crates/d/bridge-embex-lancedb.svg)](https://crates.io/crates/bridge-embex-lancedb) |
+| **bridge-embex-pgvector** | [crates/embex/adapters/pgvector](crates/embex/adapters/pgvector) | [![Crates.io](https://img.shields.io/crates/v/bridge-embex-pgvector.svg)](https://crates.io/crates/bridge-embex-pgvector) | [![Downloads](https://img.shields.io/crates/d/bridge-embex-pgvector.svg)](https://crates.io/crates/bridge-embex-pgvector) |
+| **bridge-embex-weaviate** | [crates/embex/adapters/weaviate](crates/embex/adapters/weaviate) | [![Crates.io](https://img.shields.io/crates/v/bridge-embex-weaviate.svg)](https://crates.io/crates/bridge-embex-weaviate) | [![Downloads](https://img.shields.io/crates/d/bridge-embex-weaviate.svg)](https://crates.io/crates/bridge-embex-weaviate) |
+| **bridge-embex-milvus** | [crates/embex/adapters/milvus](crates/embex/adapters/milvus) | [![Crates.io](https://img.shields.io/crates/v/bridge-embex-milvus.svg)](https://crates.io/crates/bridge-embex-milvus) | [![Downloads](https://img.shields.io/crates/d/bridge-embex-milvus.svg)](https://crates.io/crates/bridge-embex-milvus) |
+
+**Language bindings**
+
+| Package | Ecosystem | Source | Version |
+|:--------|:----------|:-------|:--------|
+| **embex** | Python (PyPI) | [bindings/python/embex](bindings/python/embex) | [![PyPI](https://img.shields.io/pypi/v/embex.svg)](https://pypi.org/project/embex) |
+| **@bridgerust/embex** | Node.js (npm) | [bindings/node/@bridgerust/embex](bindings/node/@bridgerust/embex) | [![npm](https://img.shields.io/npm/v/@bridgerust/embex.svg)](https://www.npmjs.com/package/@bridgerust/embex) |
+| **bridgetime** | Python (PyPI) | [bindings/python/bridgetime](bindings/python/bridgetime) | [![PyPI](https://img.shields.io/pypi/v/bridgetime.svg)](https://pypi.org/project/bridgetime) |
+| **@bridgerust/bridgetime** | Node.js (npm) | [bindings/node/@bridgerust/bridgetime](bindings/node/@bridgerust/bridgetime) | [![npm](https://img.shields.io/npm/v/@bridgerust/bridgetime.svg)](https://www.npmjs.com/package/@bridgerust/bridgetime) |
+
+**CLI tools**
+
+| Tool | Source | Version | Description |
+|:-----|:-------|:--------|:------------|
+| **bridge** | [cli/bridge](cli/bridge) | [![Crates.io](https://img.shields.io/crates/v/bridge.svg)](https://crates.io/crates/bridge) | Scaffold new BridgeRust libraries |
+| **embex-cli** | [cli/embex-cli](cli/embex-cli) | [![Crates.io](https://img.shields.io/crates/v/embex-cli.svg)](https://crates.io/crates/embex-cli) | Manage Embex collections from the terminal |
 
 ### Framework Documentation
 
