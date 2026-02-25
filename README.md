@@ -1,4 +1,4 @@
-# Embex
+# BridgeRust
 
 <div align="center">
 
@@ -7,13 +7,13 @@
 [![GitHub Stars](https://img.shields.io/github/stars/bridgerust/bridgerust?style=social)](https://github.com/bridgerust/bridgerust)
 [![Discord](https://img.shields.io/badge/Discord-Join%20Server-5865F2?logo=discord&logoColor=white)](https://discord.gg/ZvNAeaWN)
 
-[Why Embex?](#the-problem) - [Embex Docs](https://bridgerust.dev/embex) - [BridgeTime](#bridgetime) - [BridgeRust Framework](#bridgerust-framework) - [Discord](https://discord.gg/ZvNAeaWN) - [Examples](#what-developers-are-building)
+[Embex](#embex--universal-vector-database-client) - [BridgeTime](#bridgetime--datetime-toolkit) - [BridgeRust Framework](#bridgerust-framework) - [Discord](https://discord.gg/ZvNAeaWN) - [Contributing](docs/CONTRIBUTING.md)
 
 </div>
 
-## What's in this repo?
+BridgeRust is a monorepo shipping two AI-infrastructure products — **Embex** and **BridgeTime** — and the **BridgeRust** framework that powers them: a unified system for building cross-language Rust libraries deployable to Python and Node.js.
 
-This is a monorepo. It ships two end-user products (**Embex** and **BridgeTime**) and the underlying **BridgeRust** framework that powers them.
+## What's in this repo?
 
 | Package | Ecosystem | Purpose | Install |
 |:--------|:----------|:--------|:--------|
@@ -44,304 +44,51 @@ crates/core  (SIMD vector utilities)
 
 ---
 
-<details>
-<summary><strong>BridgeTime</strong> — Rust-powered datetime toolkit for Python &amp; Node.js</summary>
+## Products
 
-## BridgeTime
+### Embex — Universal Vector Database Client
+
+[![PyPI](https://img.shields.io/pypi/v/embex?color=blue)](https://pypi.org/project/embex/)
+[![NPM](https://img.shields.io/npm/v/@bridgerust/embex?color=red)](https://www.npmjs.com/package/@bridgerust/embex)
+
+One API. Seven databases. 4× faster than native clients.
+
+Embex abstracts vector database fragmentation into a single, production-ready API. Switch from LanceDB to Qdrant to Pinecone by changing one config line — no code rewrites. Built on a Rust core with SIMD acceleration.
+
+```bash
+pip install embex              # Python
+npm install @bridgerust/embex  # Node.js
+```
+
+Supported providers: **LanceDB** • **Qdrant** • **Pinecone** • **Chroma** • **PgVector** • **Milvus** • **Weaviate**
+
+→ [Full documentation](crates/embex/README.md) • [Docs site](https://bridgerust.dev/embex) • [Quick Start](https://bridgerust.dev/embex/quickstart)
+
+---
+
+### BridgeTime — Datetime Toolkit
 
 [![PyPI Version](https://img.shields.io/pypi/v/bridgetime?label=bridgetime%20(PyPI))](https://pypi.org/project/bridgetime)
 [![npm Version](https://img.shields.io/npm/v/@bridgerust/bridgetime?label=%40bridgerust%2Fbridgetime)](https://www.npmjs.com/package/@bridgerust/bridgetime)
 
-BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and Node.js.
-
-- Docs: [BridgeTime Guide](docs/bridgetime.md)
-- Python package: [bridgetime](https://pypi.org/project/bridgetime)
-- Node package: [@bridgerust/bridgetime](https://www.npmjs.com/package/@bridgerust/bridgetime)
+A Rust-powered Day.js/Moment-style datetime toolkit for Python and Node.js. Same familiar API, backed by a fast Rust core.
 
 ```bash
-# Python
-pip install bridgetime
-
-# Node.js
-npm install @bridgerust/bridgetime
+pip install bridgetime              # Python
+npm install @bridgerust/bridgetime  # Node.js
 ```
 
-BridgeTime package sources:
+Sources: [`crates/bridgetime/bridge`](crates/bridgetime/bridge) • [`bindings/python/bridgetime`](bindings/python/bridgetime) • [`bindings/node/@bridgerust/bridgetime`](bindings/node/@bridgerust/bridgetime)
 
-- [`crates/bridgetime/bridge`](crates/bridgetime/bridge)
-- [`bindings/python/bridgetime`](bindings/python/bridgetime)
-- [`bindings/node/@bridgerust/bridgetime`](bindings/node/@bridgerust/bridgetime)
-- Docs: [`docs/bridgetime.md`](docs/bridgetime.md), [`bindings/python/bridgetime/README.md`](bindings/python/bridgetime/README.md), [`bindings/node/@bridgerust/bridgetime/README.md`](bindings/node/@bridgerust/bridgetime/README.md)
-
-</details>
+→ [Full documentation](docs/bridgetime.md) • [Python README](bindings/python/bridgetime/README.md) • [Node README](bindings/node/@bridgerust/bridgetime/README.md)
 
 ---
 
-## The Problem
-
-Every vector database has a different API:
-
-```python
-# Pinecone
-index.upsert(vectors=[(id, values, metadata)])
-results = index.query(vector=query, top_k=5)
-
-# Qdrant
-client.upsert(collection_name=name, points=points)
-results = client.search(collection_name=name, query_vector=query, limit=5)
-
-# Weaviate
-client.data_object.create(data_object, class_name)
-results = client.query.get(class_name).with_near_vector(query).do()
-```
-
-Switching providers = **rewriting your entire codebase**.
-
-## The Solution
-
-One API. Seven databases:
-
-```python
-# Works with ANY provider
-await client.collection("products").insert(vectors)
-results = await client.collection("products").search(vector=query, top_k=5)
-```
-
-Switch from LanceDB to Qdrant? **Change one line**:
-
-```diff
-- client = await EmbexClient.new_async(provider="lancedb", url="./data")
-+ client = await EmbexClient.new_async(provider="qdrant", url="http://localhost:6333")
-```
-
-**👇 See it in action:**
-
-<!-- ![Embex Demo](https://raw.githubusercontent.com/bridgerust/bridgerust/main/assets/demo.gif)
-_(Note: Add a 10-second terminal recording showing: install → create collection → insert → search → results)_ -->
-
-## Real Migration Example
-
-Sarah built a RAG chatbot with Pinecone. 6 months later, costs hit $500/mo.
-
-**With traditional clients:** 2-3 days rewriting code + testing  
-**With Embex:** 2 minutes changing config
-
-```python
-# Before (Pinecone-specific)
-from pinecone import Pinecone
-pc = Pinecone(api_key="...")
-index = pc.Index("products")
-
-# After (Embex)
-from embex import EmbexClient
-client = await EmbexClient.new_async(
-    provider="qdrant",  # Changed from "pinecone"
-    url=os.getenv("QDRANT_URL")
-)
-```
-
-**Result:** Same functionality. $450/mo saved. Zero code changes.
-
-## Why Rust Core Matters
-
-Pure Python/JS vector operations are slow. Embex uses Rust with SIMD acceleration:
-
-| Operation                         | Pure Python | Embex (Rust) | Speedup  |
-| --------------------------------- | ----------- | ------------ | -------- |
-| Vector normalization (Batch 1000) | 45ms        | 11ms         | **4.1x** |
-| Cosine similarity (Batch 1000)    | 230ms       | 58ms         | **4.0x** |
-| Metadata filtering                | 180ms       | 42ms         | **4.3x** |
-
-_Benchmarked on M1 Max, average of 1000 runs_
-
-The difference compounds: **4x faster operations** × **thousands of vectors** = significant time saved.
-
-## Provider Benchmarks
-
-Real-world performance vs native Python clients (10k vectors, 384d):
-
-| Provider     | Client    | Insert (ops/s) | Speedup  | Search Latency |
-| :----------- | :-------- | :------------- | :------- | :------------- |
-| **Qdrant**   | **Embex** | **24,825**     | **4.3x** | **1.95ms**     |
-|              | Native    | 5,754          |          | 4.69ms         |
-| **Weaviate** | **Embex** | **5,163**      | **4.1x** | **1.77ms**     |
-|              | Native    | 1,256          |          | 4.03ms         |
-| **Chroma**   | Embex     | 3,136          | 1.0x     | 3.97ms         |
-|              | Native    | 3,077          |          | 3.46ms         |
-
-![Benchmark Insert](assets/benchmark_insert.png)
-![Benchmark Search](assets/benchmark_search.png)
-
-## What Developers Are Building
-
-🤖 **AI Chatbots with Memory**  
- Store conversation history for context-aware responses
-
-🔍 **Semantic Search Engines**  
- Search documentation, code, or content by meaning, not keywords
-
-🎯 **Recommendation Systems**  
- E-commerce product recommendations with embeddings
-
-📚 **Knowledge Bases**  
- RAG systems for internal documentation and support
-
-🎨 **Image Search**  
- Find similar images using vision embeddings
-
-> "Embex let me prototype with LanceDB locally, then deploy to Qdrant Cloud without changing a line of code. Saved 2 days of migration work."
-
-[Share what you built →](https://github.com/bridgerust/bridgerust/discussions)
-
-## Get Started in 60 Seconds
-
-**Python:**
-
-```bash
-# Install
-pip install embex lancedb sentence-transformers
-
-# Quick test
-python3 << EOF
-import asyncio
-from embex import EmbexClient
-
-async def main():
-    client = await EmbexClient.new_async('lancedb', './data')
-    print('✅ Embex ready!')
-
-asyncio.run(main())
-EOF
-```
-
-**Node.js:**
-
-```bash
-npm install @bridgerust/embex lancedb
-node -e "
-const {EmbexClient} = require('@bridgerust/embex');
-EmbexClient.new({provider: 'lancedb', url: './data'})
-  .then(() => console.log('✅ Embex ready!'));
-"
-```
-
-→ **Next:** See [**Getting Started Guide**](https://bridgerust.dev/embex/quickstart)
-
-## Embex vs. Alternatives
-
-| Feature                           | Raw Clients | LangChain | LlamaIndex | **Embex**        |
-| --------------------------------- | ----------- | --------- | ---------- | ---------------- |
-| Universal API                     | ❌          | ✅        | ✅         | ✅               |
-| Switch providers (0 code changes) | ❌          | ❌        | ❌         | ✅               |
-| Performance (Rust core)           | ⚡ Fast     | 🐌 Slow   | 🐌 Slow    | ⚡ **4x Faster** |
-| Zero Docker setup                 | Varies      | ❌        | ❌         | ✅ (LanceDB)     |
-| Connection pooling                | Manual      | ❌        | ❌         | ✅               |
-| Local development                 | Complex     | Complex   | Complex    | ✅ (LanceDB)     |
-| Production ready                  | ✅          | ⚠️        | ⚠️         | ✅               |
-
-**When to use each:**
-
-- **Raw clients:** You're committed to one database forever
-- **LangChain/LlamaIndex:** You need full RAG framework with LLM chains
-- **Embex:** You want vector operations only, with flexibility to switch providers
-
-## Supported Providers
-
-LanceDB • Qdrant • Pinecone • Chroma • PgVector • Milvus • Weaviate
-
-## Development → Production Roadmap
-
-| Stage               | Recommendation        | Why?                                |
-| :------------------ | :-------------------- | :---------------------------------- |
-| **Day 1: Learning** | **LanceDB**           | Runs locally. No Docker. Free.      |
-| **Week 2: Staging** | **Qdrant / Pinecone** | Managed cloud. Connection pooling.  |
-| **Month 1: Scale**  | **Milvus**            | Billion-scale vectors. Distributed. |
-| **Anytime**         | **PgVector**          | You already use PostgreSQL.         |
-
-## Community
-
-- 💬 **Discord:** Get help, share projects, discuss features → [Join Server](https://discord.gg/ZvNAeaWN)
-- � **Reddit:** Join the discussion → [r/embex](https://www.reddit.com/r/embex/)
-- �💡 **GitHub Discussions:** Feature requests and Q&A
-- 🐛 **Issues:** Bug reports
-- 📝 **Blog:** Tutorials and case studies → [bridgerust.dev/embex](https://bridgerust.dev/embex/introduction)
-
-**Built something cool with Embex?** Share it in #showcase on Discord or tag us on Twitter!
-
-## FAQ
-
-**Q: How is Embex different from LangChain's VectorStores?**  
-A: LangChain couples vector operations with LLM chains. Embex is vector-only, 4x faster (Rust core), and switching providers requires 0 code changes (vs. rewriting VectorStore initialization).
-
-**Q: Does Embex support hybrid search (vector + keyword)?**  
-A: Yes! Coming in v0.3. Currently supports pure vector and metadata filtering.
-
-**Q: Can I use Embex in production?**  
-A: Yes! Embex includes production features like connection pooling, automatic retries, and observability hooks. Currently used in production by developers running RAG chatbots, semantic search engines, and recommendation systems. See [deployment guide](https://bridgerust.dev/embex/deployment) for best practices.
-
-**Q: Which provider should I start with?**  
-A: LanceDB for local dev (zero setup), then Qdrant/Pinecone for production (managed, scalable).
-
-**Q: Do you support [X database]?**  
-A: Current: LanceDB, Qdrant, Pinecone, Chroma, PgVector, Milvus, Weaviate. Roadmap: Elasticsearch, OpenSearch, Redis. [Request here](https://github.com/bridgerust/bridgerust/issues).
-
-## Installation
-
-### Python
-
-```bash
-pip install embex
-```
-
-### Node.js
-
-```bash
-npm install @bridgerust/embex
-```
-
-### Rust (Development)
-
-```toml
-[dependencies]
-bridge-embex = { git = "https://github.com/bridgerust/bridgerust", path = "crates/embex/client" }
-```
-
-### CLI Tools
-
-```bash
-cargo install bridge      # scaffold new BridgeRust libraries
-cargo install embex-cli   # manage Embex collections from the terminal
-```
-
-## Features
-
-- **Universal API**: Switch providers without code changes
-- **High Performance**: Rust core with SIMD acceleration (4x faster)
-- **Zero Setup**: Start with LanceDB (embedded, local)
-- **Production Ready**: Connection pooling, migrations, observability
-
-## Documentation
-
-- [**Getting Started**](https://bridgerust.dev/embex/quickstart)
-- [**API Reference**](https://bridgerust.dev/embex/api-reference)
-- [**Providers Guide**](https://bridgerust.dev/embex/providers)
-
-## 🚀 Next Steps
-
-1. ⭐ **Star this repo** if Embex saves you time
-2. 💬 **Join Discord** for help and to share what you build
-3. 📖 **Try the tutorial:** [Build a chatbot in 10 minutes](https://bridgerust.dev/embex/tutorial)
-
-**Quick links:**
-
-- [Installation Guide](https://bridgerust.dev/embex/installation)
-- [Python API Docs](https://bridgerust.dev/embex/api/python) • [Node.js API Docs](https://bridgerust.dev/embex/api/nodejs)
-- [Migration Examples](https://bridgerust.dev/embex/migrations)
-- [Performance Benchmarks](https://bridgerust.dev/embex/benchmarks)
-
 ## BridgeRust Framework
 
-This repository also contains the **BridgeRust** framework - a unified system for building cross-language Rust libraries. Embex and BridgeTime are built with BridgeRust.
+The **BridgeRust** framework is the foundation both products are built on. It eliminates the complexity of managing separate PyO3 (Python) and napi-rs (Node.js) bindings by providing a single `#[export]` macro.
+
+→ [Framework README](crates/bridgerust/README.md) • [Getting Started](docs/getting-started-bridgerust.md)
 
 ### Packages & Status
 
@@ -390,6 +137,8 @@ This repository also contains the **BridgeRust** framework - a unified system fo
 - [Examples](docs/EXAMPLES.md)
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
 - [Comprehensive Example](examples/bridgerust-example/)
+
+---
 
 ## Contributing
 
