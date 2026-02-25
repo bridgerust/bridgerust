@@ -41,6 +41,12 @@ export default defineConfig({
           ],
         },
         {
+          label: "BridgeTime",
+          items: [
+            { label: "Overview", link: "/bridgetime" },
+          ],
+        },
+        {
           label: "Embex",
           items: [
             { label: "Introduction", link: "/embex/introduction" },

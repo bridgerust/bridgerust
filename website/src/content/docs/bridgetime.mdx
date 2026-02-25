@@ -1,0 +1,151 @@
+---
+title: BridgeTime — Datetime Toolkit
+description: Rust-powered Day.js/Moment-style datetime toolkit for Python and Node.js. Same familiar API, backed by a fast Rust core.
+---
+
+import {
+  Tabs,
+  TabItem,
+  Card,
+  CardGrid,
+  LinkCard,
+} from "@astrojs/starlight/components";
+
+[![PyPI](https://img.shields.io/pypi/v/bridgetime?label=bridgetime%20(PyPI))](https://pypi.org/project/bridgetime)
+[![npm](https://img.shields.io/npm/v/@bridgerust/bridgetime?label=%40bridgerust%2Fbridgetime)](https://www.npmjs.com/package/@bridgerust/bridgetime)
+
+**BridgeTime** is a Rust-powered datetime toolkit with a Day.js/Moment-style API for Python and Node.js. One Rust core, two native libraries, familiar API surface.
+
+## Installation
+
+<Tabs>
+  <TabItem label="Python">
+    ```bash
+    pip install bridgetime
+    ```
+  </TabItem>
+  <TabItem label="Node.js">
+    ```bash
+    npm install @bridgerust/bridgetime
+    ```
+  </TabItem>
+</Tabs>
+
+## Quick Start
+
+<Tabs>
+  <TabItem label="Python">
+    ```python
+    from bridgetime import bridge_time, bridge_duration
+
+    # Current time in a timezone
+    now = bridge_time.now("UTC")
+    print(now.to_iso())
+
+    # Parse, format, arithmetic
+    future = now.add(2, "week").start_of("day")
+    print(future.format("YYYY-MM-DD HH:mm:ss"))
+
+    # Timezone conversion
+    ny = now.to_timezone("America/New_York")
+    print(ny.format("YYYY-MM-DD HH:mm:ss"))
+
+    # Relative time
+    print(now.add(30, "minute").from_now())  # "in 30 minutes"
+
+    # Durations
+    duration = bridge_duration(90, "minute")
+    print(duration.humanize(True))  # "in 2 hours"
+    ```
+  </TabItem>
+  <TabItem label="Node.js">
+    ```typescript
+    import { bridgeTime, bridgeDuration } from "@bridgerust/bridgetime";
+
+    // Current time in a timezone
+    const now = bridgeTime.now("UTC");
+    console.log(now.toIso());
+
+    // Parse, format, arithmetic
+    const future = now.add(2, "week").startOf("day");
+    console.log(future.format("YYYY-MM-DD HH:mm:ss"));
+
+    // Timezone conversion
+    const ny = now.toTimezone("America/New_York");
+    console.log(ny.format("YYYY-MM-DD HH:mm:ss"));
+
+    // Relative time
+    console.log(now.add(30, "minute").fromNow()); // "in 30 minutes"
+
+    // Durations
+    const duration = bridgeDuration(90, "minute");
+    console.log(duration.humanize(true)); // "in 2 hours"
+    ```
+  </TabItem>
+</Tabs>
+
+## Features
+
+<CardGrid>
+  <Card title="Familiar API" icon="pencil">
+    Day.js / Moment.js-style methods: `parse`, `format`, `add`, `subtract`, `startOf`, `endOf`, `diff`. Drop-in replacement for most common date operations.
+  </Card>
+  <Card title="Rust Core" icon="rocket">
+    Powered by the same BridgeRust framework as Embex. Native performance with zero overhead between Rust and the host language.
+  </Card>
+  <Card title="Timezone Support" icon="approve-check-circle">
+    Full IANA timezone support (`America/New_York`, `Europe/Paris`, etc.). Timezone-aware arithmetic, DST detection, UTC offset helpers.
+  </Card>
+  <Card title="Rich API Surface" icon="star">
+    Durations, relative time (`fromNow`, `toNow`), ISO week helpers, quarter helpers, day-of-year, range helpers, comparison methods.
+  </Card>
+</CardGrid>
+
+## API Highlights
+
+**Parsing**
+- `bridge_time.now(tz)` — current time
+- `bridge_time.parse(iso_string, tz?)` — parse ISO string
+- `bridge_time.parse_format(input, pattern, tz?)` — custom format tokens (`DD/MM/YYYY HH:mm`)
+- `bridge_time.from_array([year, month, day, h, m, s, ms], tz?)` / `.to_array()`
+
+**Formatting**
+- `.format("YYYY-MM-DD HH:mm:ss")` — Day.js-style tokens
+- `.to_iso()` — ISO 8601 string
+
+**Arithmetic**
+- `.add(value, unit)` / `.subtract(value, unit)`
+- `.start_of(unit)` / `.end_of(unit)`
+- `.diff(other, unit, float?)` — difference between two datetimes
+
+**Timezones**
+- `.to_timezone(iana_name)` — convert timezone
+- `.utc_offset()` / `.is_utc()` / `.is_dst()`
+
+**Calendar helpers**
+- `.year()`, `.month()`, `.date()`, `.day()`, `.hour()`, `.minute()`, `.second()`, `.millisecond()`
+- `.days_in_month()` / `.is_leap_year()` / `.is_valid()`
+- `.quarter()` / `.iso_weekday()` / `.week()` / `.iso_week()` / `.day_of_year()`
+
+**Relative time**
+- `.from_now()` / `.to_now()` — human-readable relative strings
+- `.is_today()` / `.is_yesterday()` / `.is_tomorrow()`
+
+**Comparison & ranges**
+- `.is_before(other)` / `.is_after(other)` / `.is_same(other)`
+- `.is_between(start, end, unit?, inclusivity?)` — e.g. `"[]"`, `"()"`
+- `.clamp(start, end)`
+- `bridge_time.min(a, b)` / `bridge_time.max(a, b)`
+
+**Durations**
+- `bridge_duration(value, unit)` — create a duration
+- `.humanize(with_suffix?)` — e.g. `"in 2 hours"`, `"3 days ago"`
+- `.add_duration(duration)` / `.subtract_duration(duration)`
+
+## Package Sources
+
+- Rust core: [`crates/bridgetime/bridge`](https://github.com/bridgerust/bridgerust/tree/main/crates/bridgetime/bridge)
+- Python binding: [`bindings/python/bridgetime`](https://github.com/bridgerust/bridgerust/tree/main/bindings/python/bridgetime)
+- Node.js binding: [`bindings/node/@bridgerust/bridgetime`](https://github.com/bridgerust/bridgerust/tree/main/bindings/node/@bridgerust/bridgetime)
+
+Built with the [BridgeRust](/bridgerust/introduction) framework.
