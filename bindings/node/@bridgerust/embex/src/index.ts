@@ -15,30 +15,44 @@ declare module "../native" {
   interface Collection {
     insertStream(
       points: AsyncIterable<Point>,
+      batchSize?: number,
       parallel?: number
     ): Promise<void>;
   }
 }
 
-// Monkey patch
+const nativeInsertStream = (Collection.prototype as any).insertStream;
+
+// API-level adapter: accepts AsyncIterable while delegating to native ReadableStream path.
 (Collection.prototype as any).insertStream = async function (
   this: Collection,
   points: AsyncIterable<Point>,
+  batchSize: number = 1000,
   parallel: number = 5
 ) {
-  const BATCH_SIZE = 100;
-  let batch: Point[] = [];
+  if (batchSize <= 0) {
+    throw new Error("batchSize must be greater than 0");
+  }
 
+  let batch: Point[] = [];
   for await (const point of points) {
     batch.push(point);
-    if (batch.length >= BATCH_SIZE) {
-      await this.insertBatch(batch, BATCH_SIZE, parallel);
+    if (batch.length >= batchSize) {
+      if (typeof nativeInsertStream === "function") {
+        await nativeInsertStream.call(this, batch, batchSize, parallel);
+      } else {
+        await this.insertBatch(batch, batchSize, parallel);
+      }
       batch = [];
     }
   }
 
   if (batch.length > 0) {
-    await this.insertBatch(batch, BATCH_SIZE, parallel);
+    if (typeof nativeInsertStream === "function") {
+      await nativeInsertStream.call(this, batch, batchSize, parallel);
+    } else {
+      await this.insertBatch(batch, batchSize, parallel);
+    }
   }
 };
 

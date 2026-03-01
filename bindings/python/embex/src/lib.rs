@@ -41,11 +41,14 @@ struct PyMigrationAdapter {
 impl Migration for PyMigrationAdapter {
     fn version(&self) -> String {
         Python::attach(|py| {
+            let fallback = format!(
+                "invalid_python_migration_{:x}",
+                self.inner.bind(py).as_ptr() as usize
+            );
             self.inner
                 .getattr(py, "version")
-                .expect("Migration must have version")
-                .extract(py)
-                .expect("Version must be string")
+                .and_then(|value| value.extract(py))
+                .unwrap_or(fallback)
         })
     }
 
@@ -54,18 +57,22 @@ impl Migration for PyMigrationAdapter {
             inner: RustClient::from_db(db),
         };
 
-        let fut = Python::attach(|py| {
-            let py_client = Py::new(py, client).expect("Failed to create python client");
-            let awaitable = self
-                .inner
-                .call_method1(py, "up", (py_client,))
-                .expect("Failed to call up");
+        let fut = Python::attach(|py| -> PyResult<_> {
+            let py_client = Py::new(py, client)?;
+            let awaitable = self.inner.call_method1(py, "up", (py_client,))?;
             pyo3_async_runtimes::tokio::into_future(awaitable.bind(py).clone())
-                .expect("Failed to convert future")
-        });
+        })
+        .map_err(|e| {
+            bridge_embex::error::EmbexError::Validation(format!(
+                "Failed to invoke python migration up(): {e}"
+            ))
+        })?;
 
-        fut.await
-            .map_err(|e| bridge_embex::error::EmbexError::Validation(e.to_string()))?;
+        fut.await.map_err(|e| {
+            bridge_embex::error::EmbexError::Validation(format!(
+                "Python migration up() failed: {e}"
+            ))
+        })?;
         Ok(())
     }
 
@@ -74,18 +81,22 @@ impl Migration for PyMigrationAdapter {
             inner: RustClient::from_db(db),
         };
 
-        let fut = Python::attach(|py| {
-            let py_client = Py::new(py, client).expect("Failed to create python client");
-            let awaitable = self
-                .inner
-                .call_method1(py, "down", (py_client,))
-                .expect("Failed to call down");
+        let fut = Python::attach(|py| -> PyResult<_> {
+            let py_client = Py::new(py, client)?;
+            let awaitable = self.inner.call_method1(py, "down", (py_client,))?;
             pyo3_async_runtimes::tokio::into_future(awaitable.bind(py).clone())
-                .expect("Failed to convert future")
-        });
+        })
+        .map_err(|e| {
+            bridge_embex::error::EmbexError::Validation(format!(
+                "Failed to invoke python migration down(): {e}"
+            ))
+        })?;
 
-        fut.await
-            .map_err(|e| bridge_embex::error::EmbexError::Validation(e.to_string()))?;
+        fut.await.map_err(|e| {
+            bridge_embex::error::EmbexError::Validation(format!(
+                "Python migration down() failed: {e}"
+            ))
+        })?;
         Ok(())
     }
 }
@@ -311,7 +322,11 @@ struct SearchResponse {
 impl SearchResponse {
     fn dict(&self, py: Python) -> PyResult<Py<PyAny>> {
         let dict = PyDict::new(py);
-        let results_list = PyList::new(py, self.results.iter().map(|r| r.dict(py).unwrap()))?;
+        let mut serialized_results = Vec::with_capacity(self.results.len());
+        for result in &self.results {
+            serialized_results.push(result.dict(py)?);
+        }
+        let results_list = PyList::new(py, serialized_results)?;
         dict.set_item("results", results_list)?;
         dict.set_item("aggregations", &self.aggregations)?;
         Ok(dict.into())
@@ -742,17 +757,22 @@ impl Collection {
                 let points: Vec<EmbexPoint> = res
                     .points
                     .into_iter()
-                    .map(|p| {
+                    .map(|p| -> PyResult<EmbexPoint> {
                         let metadata = p
                             .metadata
-                            .map(|m| m.into_iter().map(|(k, v)| (k, json_to_py(py, v))).collect());
-                        EmbexPoint {
+                            .map(|m| {
+                                m.into_iter()
+                                    .map(|(k, v)| Ok((k, json_to_py(py, v)?)))
+                                    .collect::<PyResult<HashMap<_, _>>>()
+                            })
+                            .transpose()?;
+                        Ok(EmbexPoint {
                             id: p.id,
                             vector: p.vector,
                             metadata,
-                        }
+                        })
                     })
-                    .collect();
+                    .collect::<PyResult<Vec<_>>>()?;
 
                 Ok(ScrollResponse {
                     points,
@@ -876,30 +896,34 @@ fn py_to_json<'py>(py: Python<'py>, obj: &Py<PyAny>) -> PyResult<Value> {
     Ok(Value::String(bound.to_string()))
 }
 
-fn json_to_py(py: Python, v: Value) -> Py<PyAny> {
+fn json_to_py(py: Python, v: Value) -> PyResult<Py<PyAny>> {
     match v {
-        Value::Null => py.None(),
-        Value::Bool(b) => b.into_py_any(py).unwrap(),
+        Value::Null => Ok(py.None()),
+        Value::Bool(b) => b.into_py_any(py),
         Value::Number(n) => {
             if let Some(i) = n.as_i64() {
-                i.into_py_any(py).unwrap()
+                i.into_py_any(py)
             } else if let Some(f) = n.as_f64() {
-                f.into_py_any(py).unwrap()
+                f.into_py_any(py)
             } else {
-                n.to_string().into_py_any(py).unwrap()
+                n.to_string().into_py_any(py)
             }
         }
-        Value::String(s) => s.into_py_any(py).unwrap(),
+        Value::String(s) => s.into_py_any(py),
         Value::Array(a) => {
-            let list = PyList::new(py, a.into_iter().map(|i| json_to_py(py, i))).unwrap();
-            list.into()
+            let mut converted = Vec::with_capacity(a.len());
+            for item in a {
+                converted.push(json_to_py(py, item)?);
+            }
+            let list = PyList::new(py, converted)?;
+            Ok(list.into())
         }
         Value::Object(o) => {
             let dict = PyDict::new(py);
             for (k, v) in o {
-                dict.set_item(k, json_to_py(py, v)).ok();
+                dict.set_item(k, json_to_py(py, v)?)?;
             }
-            dict.into()
+            Ok(dict.into())
         }
     }
 }
@@ -907,13 +931,14 @@ fn json_to_py(py: Python, v: Value) -> Py<PyAny> {
 fn convert_search_response(py: Python, res: RustSearchResponse) -> PyResult<SearchResponse> {
     let mut py_results = Vec::with_capacity(res.results.len());
     for r in res.results {
-        let py_metadata = r.metadata.map(|m| {
-            let mut map = HashMap::new();
-            for (k, v) in m {
-                map.insert(k, json_to_py(py, v));
-            }
-            map
-        });
+        let py_metadata = r
+            .metadata
+            .map(|m| {
+                m.into_iter()
+                    .map(|(k, v)| Ok((k, json_to_py(py, v)?)))
+                    .collect::<PyResult<HashMap<_, _>>>()
+            })
+            .transpose()?;
 
         py_results.push(SearchResult {
             id: r.id,
@@ -925,7 +950,7 @@ fn convert_search_response(py: Python, res: RustSearchResponse) -> PyResult<Sear
 
     let mut py_aggregations = HashMap::new();
     for (k, v) in res.aggregations {
-        py_aggregations.insert(k, json_to_py(py, v));
+        py_aggregations.insert(k, json_to_py(py, v)?);
     }
 
     Ok(SearchResponse {
@@ -1109,7 +1134,7 @@ fn cli_main<'p>(py: Python<'p>, args: Vec<String>) -> PyResult<Bound<'p, PyAny>>
     })
 }
 
-#[pymodule]
+#[pymodule(gil_used = false)]
 fn embex(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<EmbexClient>()?;
     m.add_class::<Collection>()?;

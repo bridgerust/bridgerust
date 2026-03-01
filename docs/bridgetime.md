@@ -55,7 +55,8 @@ BridgeTime is a Rust-powered Day.js/Moment-style datetime toolkit for Python and
 
 - Shared parity between Python and Node.js is high because both bindings use the same Rust core.
 - Core datetime operations are covered.
-- Full Day.js plugin parity is not complete yet (for example locale packs and calendar-style formatting helpers).
+- Locale packs (`en`, `fr`, `es`, `de`, `pt`) and calendar-style formatting are now available.
+- Remaining parity gaps are advanced plugin behaviors beyond core locale/calendar coverage.
 
 ## API Surface
 
@@ -69,16 +70,21 @@ Public binding exports:
 - `bridge_time.now(timezone?)` / `bridgeTime.now(timezone?)`
 - `bridge_time.parse(input, timezone?)` / `bridgeTime.parse(input, timezone?)`
 - `bridge_time.parse_format(input, pattern, timezone?)` / `bridgeTime.parseFormat(input, pattern, timezone?)`
+- `bridge_time.parse_batch(inputs, timezone?)` / `bridgeTime.parseBatch(inputs, timezone?)`
+- `bridge_time.parse_format_batch(inputs, pattern, timezone?)` / `bridgeTime.parseFormatBatch(inputs, pattern, timezone?)`
+- `bridge_time.format_batch(unix_millis, pattern, timezone?, locale?)` / `bridgeTime.formatBatch(unixMillis, pattern, timezone?, locale?)`
 - `bridge_time.from_array(components, timezone?)` / `bridgeTime.fromArray(components, timezone?)`
 - `bridge_time.from_unix_ms(unix_ms, timezone?)` / `bridgeTime.fromUnixMs(unix_ms, timezone?)`
 - `bridge_time.from_unix(unix_seconds, timezone?)` / `bridgeTime.fromUnix(unix_seconds, timezone?)`
 - `bridge_time.duration(value, unit?)` / `bridgeTime.duration(value, unit?)`
+- `supported_locales()` / `supportedLocales()`
 - `bridge_time.min(a, b)` / `bridge_time.max(a, b)` and `bridgeTime.min(a, b)` / `bridgeTime.max(a, b)`
 
 ### Instance methods
 
 - `to_iso()`
 - `format(pattern)`
+- `format_locale(pattern, locale?)`
 - `unix_ms()` / `unix()` / `value_of()`
 - `timezone()`
 - `to_array()`
@@ -107,6 +113,7 @@ Public binding exports:
 - `is_today()` / `is_yesterday()` / `is_tomorrow()`
 - `from_time(other, without_suffix?)` / `to_time(other, without_suffix?)`
 - `from_now(without_suffix?)` / `to_now(without_suffix?)`
+- `calendar(reference?, locale?)`
 - `is_same_or_before_unit(other, unit)` / `is_same_or_after_unit(other, unit)`
 - `clamp(start, end)`
 - `days_in_month()` / `is_leap_year()` / `is_valid()`

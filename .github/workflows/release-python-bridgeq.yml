@@ -1,0 +1,170 @@
+name: Build BridgeQ Python Wheels
+
+on:
+  push:
+    tags:
+      - "bridgeq-v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "BridgeQ tag to publish (e.g., bridgeq-v0.1.0)"
+        required: true
+        type: string
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  build-wheels:
+    name: Build wheel for ${{ matrix.platform.os }} ${{ matrix.platform.target }}
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - runner: macos-15-intel
+            target: x86_64-apple-darwin
+            os: macos
+
+          - runner: macos-14
+            target: aarch64-apple-darwin
+            os: macos
+
+          - runner: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            os: linux
+
+          - runner: windows-latest
+            target: x86_64-pc-windows-msvc
+            os: windows
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free Disk Space (Linux only)
+        if: matrix.platform.os == 'linux'
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo docker system prune -af
+          df -h
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform.target }}
+
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.platform.target }}
+          args: --release --out dist --strip
+          sccache: "true"
+          manylinux: auto
+          working-directory: bindings/python/bridgeq
+          rust-toolchain: stable
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.platform.target }}
+          path: bindings/python/bridgeq/dist/*.whl
+          retention-days: 1
+
+  build-sdist:
+    name: Build source distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build sdist
+        uses: PyO3/maturin-action@v1
+        with:
+          command: sdist
+          args: --out dist
+          working-directory: bindings/python/bridgeq
+
+      - name: Upload sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: bindings/python/bridgeq/dist/*.tar.gz
+          retention-days: 1
+
+  publish:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    needs: [build-wheels, build-sdist]
+    if: startsWith(github.ref, 'refs/tags/bridgeq-v') || (github.event_name == 'workflow_dispatch' && startsWith(github.event.inputs.tag, 'bridgeq-v'))
+    environment:
+      name: pypi
+      url: https://pypi.org/project/bridgeq
+    permissions:
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-*
+          merge-multiple: true
+          path: dist
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: sdist
+          path: dist
+
+      - name: Verify tag/version alignment
+        shell: bash
+        run: |
+          TAG_NAME="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}"
+          TAG_VERSION="${TAG_NAME#bridgeq-v}"
+          PYPROJECT_PATH="bindings/python/bridgeq/pyproject.toml"
+
+          if [ ! -f "$PYPROJECT_PATH" ]; then
+            echo "Missing pyproject manifest: $PYPROJECT_PATH"
+            exit 1
+          fi
+
+          PYPROJECT_VERSION=$(grep -E '^version = "' "$PYPROJECT_PATH" | head -1 | sed -E 's/version = "([^"]+)"/\1/')
+
+          if [ "$TAG_VERSION" != "$PYPROJECT_VERSION" ]; then
+            echo "Tag version ($TAG_VERSION) does not match pyproject version ($PYPROJECT_VERSION)"
+            exit 1
+          fi
+          echo "Version check passed: $TAG_VERSION"
+
+      - name: Resolve publish auth mode
+        id: auth
+        shell: bash
+        env:
+          PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          if [ -n "$PYPI_API_TOKEN" ]; then
+            echo "mode=token" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=trusted" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish to PyPI
+        if: steps.auth.outputs.mode == 'token'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          skip-existing: true
+
+      - name: Publish to PyPI (Trusted Publisher)
+        if: steps.auth.outputs.mode == 'trusted'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true

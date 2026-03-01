@@ -396,7 +396,11 @@ A: Yes. Embex includes connection pooling, automatic retries, and observability 
 A: LanceDB for local dev (zero setup), then Qdrant/Pinecone for production (managed, scalable).
 
 **Q: Do you support [X database]?**
-A: Current: LanceDB, Qdrant, Pinecone, Chroma, PgVector, Milvus, Weaviate. Roadmap: Elasticsearch, OpenSearch, Redis. [Request here](https://github.com/bridgerust/bridgerust/issues).
+A: Current: LanceDB, Qdrant, Pinecone, Chroma, PgVector, Milvus, Weaviate.
+
+Priority track (wired for integration, implementation in progress): Elasticsearch, OpenSearch, Redis.
+
+[Request here](https://github.com/bridgerust/bridgerust/issues).
 
 ---
 

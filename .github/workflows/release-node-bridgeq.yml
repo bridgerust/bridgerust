@@ -1,0 +1,223 @@
+name: Build BridgeQ Node.js Bindings
+
+on:
+  push:
+    tags:
+      - "bridgeq-v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "BridgeQ tag to publish (e.g., bridgeq-v0.1.0)"
+        required: true
+        type: string
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  build:
+    name: Build ${{ matrix.settings.target }}
+    runs-on: ${{ matrix.settings.host }}
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - host: macos-15-intel
+            target: x86_64-apple-darwin
+
+          - host: macos-14
+            target: aarch64-apple-darwin
+
+          - host: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+
+          - host: windows-latest
+            target: x86_64-pc-windows-msvc
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free Disk Space (Linux)
+        if: matrix.settings.host == 'ubuntu-latest'
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          df -h
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.settings.target }}
+
+      - name: Install dependencies
+        working-directory: bindings/node/@bridgerust/bridgeq
+        run: npm install
+
+      - name: Build
+        working-directory: bindings/node/@bridgerust/bridgeq
+        shell: bash
+        run: |
+          npx napi build --target ${{ matrix.settings.target }} --release --strip --js native.js --dts native.d.ts
+          npx tsc || true
+
+          echo "📦 Built files:"
+          ls -la *.node || echo "No .node files found!"
+
+          for file in *.node; do
+            if [ -f "$file" ]; then
+              mv "$file" "bridgeq.${{ matrix.settings.target }}.node"
+              echo "✅ Renamed: $file → bridgeq.${{ matrix.settings.target }}.node"
+            fi
+          done
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bindings-${{ matrix.settings.target }}
+          path: bindings/node/@bridgerust/bridgeq/bridgeq.${{ matrix.settings.target }}.node
+          retention-days: 1
+
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: startsWith(github.ref, 'refs/tags/bridgeq-v') || (github.event_name == 'workflow_dispatch' && startsWith(github.event.inputs.tag, 'bridgeq-v'))
+    environment:
+      name: npm
+      url: https://npmjs.com/package/@bridgerust/bridgeq
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Verify tag/version alignment
+        shell: bash
+        run: |
+          TAG_NAME="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}"
+          TAG_VERSION="${TAG_NAME#bridgeq-v}"
+          PACKAGE_JSON="bindings/node/@bridgerust/bridgeq/package.json"
+
+          if [ ! -f "$PACKAGE_JSON" ]; then
+            echo "Missing package manifest: $PACKAGE_JSON"
+            exit 1
+          fi
+
+          PACKAGE_VERSION=$(node -p "require('./$PACKAGE_JSON').version")
+          if [ "$TAG_VERSION" != "$PACKAGE_VERSION" ]; then
+            echo "Tag version ($TAG_VERSION) does not match package.json version ($PACKAGE_VERSION)"
+            exit 1
+          fi
+          echo "Version check passed: $TAG_VERSION"
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: bindings-*
+          path: artifacts
+
+      - name: Move artifacts
+        working-directory: bindings/node/@bridgerust/bridgeq
+        shell: bash
+        run: |
+          ARTIFACT_ROOT="${{ github.workspace }}/artifacts"
+          if [ ! -d "$ARTIFACT_ROOT" ]; then
+            echo "❌ ERROR: No artifacts directory found at $ARTIFACT_ROOT"
+            exit 1
+          fi
+
+          echo "🔍 Downloaded artifacts:"
+          find "$ARTIFACT_ROOT" -type f -name "*.node" -exec ls -lh {} \;
+
+          find "$ARTIFACT_ROOT" -name "*.node" -exec cp -v {} . \;
+
+          echo "📂 Files in working directory:"
+          ls -lh *.node
+
+      - name: Verify artifacts
+        working-directory: bindings/node/@bridgerust/bridgeq
+        run: |
+          COUNT=$(ls -1 *.node 2>/dev/null | wc -l)
+          if [ "$COUNT" -eq 0 ]; then
+            echo "❌ ERROR: No .node files found!"
+            exit 1
+          fi
+          echo "✅ Found $COUNT .node file(s)"
+
+      - name: Install dependencies
+        working-directory: bindings/node/@bridgerust/bridgeq
+        run: npm install
+
+      - name: Build TypeScript
+        working-directory: bindings/node/@bridgerust/bridgeq
+        run: |
+          echo "🔨 Building TypeScript to dist/..."
+          npx tsc
+          echo "✅ TypeScript build complete"
+
+          if [ -f "native.js" ]; then
+            cp native.js dist/native.js
+          fi
+          if [ -f "native.d.ts" ]; then
+            cp native.d.ts dist/native.d.ts
+          fi
+
+          if [ ! -f "dist/index.js" ]; then
+            echo "❌ ERROR: dist/index.js not found!"
+            exit 1
+          fi
+          if [ ! -f "dist/index.d.ts" ]; then
+            echo "❌ ERROR: dist/index.d.ts not found!"
+            exit 1
+          fi
+
+      - name: Prepare platform packages
+        working-directory: bindings/node/@bridgerust/bridgeq
+        shell: bash
+        run: |
+          mkdir -p npm/darwin-arm64 npm/darwin-x64 npm/linux-x64-gnu npm/win32-x64-msvc
+
+          cp bridgeq.aarch64-apple-darwin.node npm/darwin-arm64/bridgeq.darwin-arm64.node
+          cp bridgeq.x86_64-apple-darwin.node npm/darwin-x64/bridgeq.darwin-x64.node
+          cp bridgeq.x86_64-unknown-linux-gnu.node npm/linux-x64-gnu/bridgeq.linux-x64-gnu.node
+          cp bridgeq.x86_64-pc-windows-msvc.node npm/win32-x64-msvc/bridgeq.win32-x64-msvc.node
+
+          rm -f *.node
+
+      - name: Publish platform packages
+        working-directory: bindings/node/@bridgerust/bridgeq
+        shell: bash
+        env:
+          NPM_TAG_NAME: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
+          NPM_TAG_PREFIX: bridgeq-v
+          NPM_PACKAGE_BASE: bridgeq
+          NPM_PACKAGE_SCOPE: '@bridgerust'
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+          bash $GITHUB_WORKSPACE/.github/scripts/publish-npm-platforms.sh
+
+      - name: Publish main package
+        working-directory: bindings/node/@bridgerust/bridgeq
+        run: |
+          TAG_NAME="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}"
+          VERSION=${TAG_NAME#bridgeq-v}
+          npm version $VERSION --no-git-tag-version --allow-same-version
+
+          npm pkg set optionalDependencies."@bridgerust/bridgeq-darwin-arm64"="$VERSION"
+          npm pkg set optionalDependencies."@bridgerust/bridgeq-darwin-x64"="$VERSION"
+          npm pkg set optionalDependencies."@bridgerust/bridgeq-linux-x64-gnu"="$VERSION"
+          npm pkg set optionalDependencies."@bridgerust/bridgeq-win32-x64-msvc"="$VERSION"
+
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+          npm publish --access public

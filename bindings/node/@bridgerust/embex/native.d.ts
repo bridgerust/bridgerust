@@ -35,6 +35,7 @@ export declare class Collection {
    */
   createAuto(dimension?: number | undefined | null, distance?: string | undefined | null): Promise<void>
   insertBatch(points: Array<Point>, batchSize?: number | undefined | null, parallel?: number | undefined | null): Promise<void>
+  insertStream(points: Array<Point>, batchSize?: number | undefined | null, parallel?: number | undefined | null): Promise<void>
   /** Scroll through points in the collection (paginated export). */
   scroll(offset?: string | undefined | null, limit?: number | undefined | null): Promise<ScrollResponse>
 }

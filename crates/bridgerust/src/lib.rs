@@ -15,6 +15,7 @@ pub mod collections;
 pub mod convert;
 pub mod error;
 pub mod types;
+pub mod validation;
 
 #[cfg(feature = "nodejs")]
 pub use napi;

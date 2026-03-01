@@ -9,6 +9,17 @@ struct ExportArgs {
     is_object: bool,
 }
 
+#[derive(Default, Clone, PartialEq)]
+struct ValidationRules {
+    required: bool,
+    email: bool,
+    url: bool,
+    min: Option<f64>,
+    max: Option<f64>,
+    len: Option<usize>,
+    pattern: Option<String>,
+}
+
 impl syn::parse::Parse for ExportArgs {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let mut is_object = false;
@@ -128,6 +139,170 @@ pub fn bridge_module(_attr: TokenStream, item: TokenStream) -> TokenStream {
     }
 
     quote!(#input).into()
+}
+
+fn parse_validation_rules(
+    attr: &syn::Attribute,
+    current: &mut ValidationRules,
+) -> Result<(), syn::Error> {
+    let metas = attr.parse_args_with(
+        syn::punctuated::Punctuated::<syn::Meta, syn::Token![,]>::parse_terminated,
+    )?;
+
+    for meta in metas {
+        match meta {
+            syn::Meta::Path(path) => {
+                if path.is_ident("required") {
+                    current.required = true;
+                } else if path.is_ident("email") {
+                    current.email = true;
+                } else if path.is_ident("url") {
+                    current.url = true;
+                } else {
+                    return Err(syn::Error::new_spanned(
+                        path,
+                        "Unsupported #[validate] flag. Supported flags: required, email, url",
+                    ));
+                }
+            }
+            syn::Meta::NameValue(nv) => {
+                let key = nv
+                    .path
+                    .get_ident()
+                    .map(ToString::to_string)
+                    .unwrap_or_default();
+                match key.as_str() {
+                    "min" => current.min = Some(parse_numeric_literal(&nv.value)?),
+                    "max" => current.max = Some(parse_numeric_literal(&nv.value)?),
+                    "len" => current.len = Some(parse_usize_literal(&nv.value)?),
+                    "pattern" => current.pattern = Some(parse_string_literal(&nv.value)?),
+                    _ => {
+                        return Err(syn::Error::new_spanned(
+                            nv.path,
+                            "Unsupported #[validate] key. Supported keys: min, max, len, pattern",
+                        ));
+                    }
+                }
+            }
+            syn::Meta::List(list) => {
+                return Err(syn::Error::new_spanned(
+                    list,
+                    "Unsupported #[validate(...)] list form. Use flags or key/value pairs",
+                ));
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn parse_numeric_literal(expr: &syn::Expr) -> Result<f64, syn::Error> {
+    let syn::Expr::Lit(syn::ExprLit { lit, .. }) = expr else {
+        return Err(syn::Error::new_spanned(
+            expr,
+            "Expected numeric literal in #[validate(...)]",
+        ));
+    };
+
+    match lit {
+        syn::Lit::Int(v) => v
+            .base10_parse::<f64>()
+            .map_err(|_| syn::Error::new_spanned(v, "Invalid integer literal")),
+        syn::Lit::Float(v) => v
+            .base10_parse::<f64>()
+            .map_err(|_| syn::Error::new_spanned(v, "Invalid float literal")),
+        _ => Err(syn::Error::new_spanned(
+            lit,
+            "Expected numeric literal in #[validate(...)]",
+        )),
+    }
+}
+
+fn parse_usize_literal(expr: &syn::Expr) -> Result<usize, syn::Error> {
+    let syn::Expr::Lit(syn::ExprLit {
+        lit: syn::Lit::Int(v),
+        ..
+    }) = expr
+    else {
+        return Err(syn::Error::new_spanned(
+            expr,
+            "Expected unsigned integer literal in #[validate(len = ...)]",
+        ));
+    };
+
+    v.base10_parse::<usize>()
+        .map_err(|_| syn::Error::new_spanned(v, "Invalid usize literal"))
+}
+
+fn parse_string_literal(expr: &syn::Expr) -> Result<String, syn::Error> {
+    let syn::Expr::Lit(syn::ExprLit {
+        lit: syn::Lit::Str(v),
+        ..
+    }) = expr
+    else {
+        return Err(syn::Error::new_spanned(
+            expr,
+            "Expected string literal in #[validate(pattern = ...)]",
+        ));
+    };
+
+    Ok(v.value())
+}
+
+fn is_option_type(ty: &syn::Type) -> bool {
+    if let syn::Type::Path(type_path) = ty
+        && let Some(segment) = type_path.path.segments.last()
+    {
+        return segment.ident == "Option";
+    }
+    false
+}
+
+fn is_string_type(ty: &syn::Type) -> bool {
+    if let syn::Type::Path(type_path) = ty
+        && let Some(segment) = type_path.path.segments.last()
+    {
+        return segment.ident == "String";
+    }
+    false
+}
+
+fn is_len_type(ty: &syn::Type) -> bool {
+    if let syn::Type::Path(type_path) = ty
+        && let Some(segment) = type_path.path.segments.last()
+    {
+        let ident = segment.ident.to_string();
+        return matches!(
+            ident.as_str(),
+            "String" | "Vec" | "HashMap" | "HashSet" | "BTreeMap"
+        );
+    }
+    false
+}
+
+fn is_numeric_type(ty: &syn::Type) -> bool {
+    if let syn::Type::Path(type_path) = ty
+        && let Some(segment) = type_path.path.segments.last()
+    {
+        let ident = segment.ident.to_string();
+        return matches!(
+            ident.as_str(),
+            "u8" | "u16"
+                | "u32"
+                | "u64"
+                | "u128"
+                | "usize"
+                | "i8"
+                | "i16"
+                | "i32"
+                | "i64"
+                | "i128"
+                | "isize"
+                | "f32"
+                | "f64"
+        );
+    }
+    false
 }
 
 fn process_item_for_bridge(item: &mut syn::Item) {
@@ -417,6 +592,8 @@ fn export_struct(mut input_struct: ItemStruct, args: ExportArgs) -> TokenStream 
     let mut fields_py = syn::punctuated::Punctuated::<syn::Field, syn::token::Comma>::new();
     // Prepare fields for Node (without PyO3 attrs)
     let mut fields_node = syn::punctuated::Punctuated::<syn::Field, syn::token::Comma>::new();
+    let mut validation_checks: Vec<proc_macro2::TokenStream> = Vec::new();
+    let struct_ident = input_struct.ident.clone();
 
     if let syn::Fields::Named(fields) = &mut input_struct.fields {
         for field in &mut fields.named {
@@ -427,12 +604,202 @@ fn export_struct(mut input_struct: ItemStruct, args: ExportArgs) -> TokenStream 
             // Base attributes (common)
             let mut base_attrs = Vec::new();
             let mut is_readonly = false;
+            let mut rules = ValidationRules::default();
             for attr in &field.attrs {
                 if attr.path().is_ident("readonly") {
                     is_readonly = true;
+                } else if attr.path().is_ident("validate") {
+                    if let Err(err) = parse_validation_rules(attr, &mut rules) {
+                        return err.to_compile_error().into();
+                    }
                 } else {
                     base_attrs.push(attr.clone());
                 }
+            }
+
+            if rules != ValidationRules::default() {
+                let Some(field_ident) = &field.ident else {
+                    return syn::Error::new_spanned(field, "Named field expected")
+                        .to_compile_error()
+                        .into();
+                };
+
+                let field_name = field_ident.to_string();
+                let ty = &field.ty;
+                let field_expr = quote!(self.#field_ident);
+                let option_type = is_option_type(ty);
+                let string_type = is_string_type(ty);
+                let len_type = is_len_type(ty);
+                let numeric_type = is_numeric_type(ty);
+                let min_value = rules.min;
+                let max_value = rules.max;
+                let len_value = rules.len;
+                let pattern_value = rules.pattern.clone();
+
+                let required_check = if rules.required {
+                    if option_type {
+                        quote! {
+                            ::bridgerust::validation::required_value(#field_name, #field_expr.is_some())?;
+                        }
+                    } else if string_type {
+                        quote! {
+                            ::bridgerust::validation::required_value(
+                                #field_name,
+                                !#field_expr.trim().is_empty()
+                            )?;
+                        }
+                    } else {
+                        quote! {
+                            ::bridgerust::validation::required_value(#field_name, true)?;
+                        }
+                    }
+                } else {
+                    quote! {}
+                };
+
+                let email_check = if rules.email {
+                    if string_type {
+                        quote! {
+                            if !::bridgerust::validation::is_valid_email(&#field_expr) {
+                                return Err(::bridgerust::BridgeError(
+                                    format!("Validation failed for `{}`: invalid email", #field_name)
+                                ));
+                            }
+                        }
+                    } else {
+                        return syn::Error::new_spanned(
+                            ty,
+                            "#[validate(email)] can only be applied to String fields",
+                        )
+                        .to_compile_error()
+                        .into();
+                    }
+                } else {
+                    quote! {}
+                };
+
+                let url_check = if rules.url {
+                    if string_type {
+                        quote! {
+                            if !::bridgerust::validation::is_valid_url(&#field_expr) {
+                                return Err(::bridgerust::BridgeError(
+                                    format!("Validation failed for `{}`: invalid URL", #field_name)
+                                ));
+                            }
+                        }
+                    } else {
+                        return syn::Error::new_spanned(
+                            ty,
+                            "#[validate(url)] can only be applied to String fields",
+                        )
+                        .to_compile_error()
+                        .into();
+                    }
+                } else {
+                    quote! {}
+                };
+
+                let min_check = if let Some(min) = min_value {
+                    if numeric_type {
+                        quote! {
+                            ::bridgerust::validation::min_value(#field_name, #field_expr as f64, #min)?;
+                        }
+                    } else if len_type {
+                        quote! {
+                            ::bridgerust::validation::min_value(
+                                #field_name,
+                                #field_expr.len() as f64,
+                                #min
+                            )?;
+                        }
+                    } else {
+                        return syn::Error::new_spanned(
+                            ty,
+                            "#[validate(min = ...)] expects a numeric, String, or collection field",
+                        )
+                        .to_compile_error()
+                        .into();
+                    }
+                } else {
+                    quote! {}
+                };
+
+                let max_check = if let Some(max) = max_value {
+                    if numeric_type {
+                        quote! {
+                            ::bridgerust::validation::max_value(#field_name, #field_expr as f64, #max)?;
+                        }
+                    } else if len_type {
+                        quote! {
+                            ::bridgerust::validation::max_value(
+                                #field_name,
+                                #field_expr.len() as f64,
+                                #max
+                            )?;
+                        }
+                    } else {
+                        return syn::Error::new_spanned(
+                            ty,
+                            "#[validate(max = ...)] expects a numeric, String, or collection field",
+                        )
+                        .to_compile_error()
+                        .into();
+                    }
+                } else {
+                    quote! {}
+                };
+
+                let len_check = if let Some(len) = len_value {
+                    if len_type {
+                        quote! {
+                            ::bridgerust::validation::exact_len(#field_name, #field_expr.len(), #len)?;
+                        }
+                    } else {
+                        return syn::Error::new_spanned(
+                            ty,
+                            "#[validate(len = ...)] expects a String or collection field",
+                        )
+                        .to_compile_error()
+                        .into();
+                    }
+                } else {
+                    quote! {}
+                };
+
+                let pattern_check = if let Some(pattern) = pattern_value {
+                    if string_type {
+                        quote! {
+                            if !::bridgerust::validation::matches_pattern(&#field_expr, #pattern) {
+                                return Err(::bridgerust::BridgeError(
+                                    format!(
+                                        "Validation failed for `{}`: value does not match pattern `{}`",
+                                        #field_name,
+                                        #pattern
+                                    )
+                                ));
+                            }
+                        }
+                    } else {
+                        return syn::Error::new_spanned(
+                            ty,
+                            "#[validate(pattern = ...)] can only be applied to String fields",
+                        )
+                        .to_compile_error()
+                        .into();
+                    }
+                } else {
+                    quote! {}
+                };
+
+                validation_checks.push(quote! {
+                    #required_check
+                    #email_check
+                    #url_check
+                    #min_check
+                    #max_check
+                    #len_check
+                    #pattern_check
+                });
             }
 
             if matches!(field.vis, syn::Visibility::Public(_)) {
@@ -445,14 +812,6 @@ fn export_struct(mut input_struct: ItemStruct, args: ExportArgs) -> TokenStream 
                     fp.attrs.push(syn::parse_quote!(#[pyo3(get, set)]));
                 }
 
-                // Check for validation
-                for attr in &field.attrs {
-                    if attr.path().is_ident("validate") {
-                        // TODO: Generate validation logic
-                        // parsing attr args is hard here without full context.
-                        // For now we just allow the attribute to exist.
-                    }
-                }
                 // Add Napi attrs if needed (for mixed builds)
                 if is_readonly && !args.is_object {
                     fp.attrs.push(syn::parse_quote!(#[cfg_attr(feature = "nodejs", ::bridgerust::napi_derive::napi(readonly))]));
@@ -507,6 +866,13 @@ fn export_struct(mut input_struct: ItemStruct, args: ExportArgs) -> TokenStream 
         #[cfg(not(feature = "python"))]
         #napi_attr
         #struct_node
+
+        impl ::bridgerust::validation::RuntimeValidate for #struct_ident {
+            fn runtime_validate(&self) -> ::bridgerust::Result<()> {
+                #(#validation_checks)*
+                Ok(())
+            }
+        }
     };
     TokenStream::from(expanded)
 }

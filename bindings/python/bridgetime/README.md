@@ -11,7 +11,7 @@ pip install bridgetime
 ## Quickstart
 
 ```python
-from bridgetime import bridge_duration, bridge_time, supported_units
+from bridgetime import bridge_duration, bridge_time, supported_locales, supported_units
 
 now = bridge_time.now("UTC")
 print(now.to_iso())
@@ -38,18 +38,27 @@ print(now.day_of_year(), now.week(), now.iso_week())
 print(now.iso_week_year(), now.days_in_year(), now.weeks_in_year(), now.iso_weeks_in_year())
 print(now.is_today())
 print(now.add(30, "minute").from_now())  # in 30 minutes
+print(now.calendar())
+print(now.format_locale("dddd, D MMMM YYYY HH:mm", "fr"))
 print(now.add_duration(bridge_duration.from_minutes(30)).to_iso())
 print(now.is_between(now.start_of("day"), now.end_of("day"), "day", "[]"))
 print(bridge_time.min(now, future).to_iso(), bridge_time.max(now, future).to_iso())
 print(now.clamp(now.subtract(1, "day"), now.add(1, "day")).to_iso())
 
 print(supported_units())
+print(supported_locales())
+
+parsed = bridge_time.parse_batch(["2026-02-22T10:15:30Z", "2026-02-23T10:15:30Z"], "UTC")
+rendered = bridge_time.format_batch(parsed, "dddd, DD MMM YYYY", "UTC", "es")
+print(rendered)
 ```
 
 ## API Highlights
 
 - Core: `parse`, `format`, `add`, `subtract`, `start_of`, `end_of`, `diff`
+- Locale/calendar: `format_locale`, `calendar`, `supported_locales`
 - Duration helpers: `bridge_duration`, `bridge_time.duration(value, unit?)`, `add_duration`, `subtract_duration`
+- Batch parse/format helpers: `parse_batch`, `parse_format_batch`, `format_batch`
 - Custom parse helpers: `parse_format(input, pattern, timezone?)`, `from_array(components, timezone?)`, `to_array()`
 - Timezone helpers: `timezone`, `utc_offset`, `is_utc`, `is_dst`, `to_timezone`
 - Calendar helpers: `get`, `set`, component getters/setters (`year`, `set_year`, etc), `days_in_month`, `is_leap_year`, `is_valid`

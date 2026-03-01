@@ -93,7 +93,8 @@ impl ToNapiValue for MigrationItem {
 
 #[export]
 pub struct EmbexClient {
-    inner: RustClient,
+    inner: Option<RustClient>,
+    init_error: Option<String>,
 }
 
 #[export]
@@ -109,10 +110,16 @@ impl EmbexClient {
             idle_timeout_secs: 90,
             pool_size: 10,
         };
-        // Using expect() to bypass Napi fallible constructor limitation
-        let client = RustClient::new(config)
-            .expect("Failed to initialize EmbexClient: Invalid configuration");
-        Self { inner: client }
+        match RustClient::new(config) {
+            Ok(client) => Self {
+                inner: Some(client),
+                init_error: None,
+            },
+            Err(e) => Self {
+                inner: None,
+                init_error: Some(e.to_string()),
+            },
+        }
     }
 
     pub async fn new_async(
@@ -132,17 +139,22 @@ impl EmbexClient {
         let client = RustClient::new_async(config)
             .await
             .map_err(|e| BridgeError(e.to_string()).into_platform())?;
-        Ok(Self { inner: client })
+        Ok(Self {
+            inner: Some(client),
+            init_error: None,
+        })
     }
 
-    pub fn collection(&self, name: String) -> Collection {
-        Collection {
-            inner: self.inner.collection(&name),
-        }
+    pub fn collection(&self, name: String) -> BridgeResult<Collection> {
+        let client = self.client()?;
+        Ok(Collection {
+            inner: client.collection(&name),
+        })
     }
 
     pub async fn delete_collection(&self, name: String) -> BridgeResult<()> {
-        let col = self.inner.collection(&name);
+        let client = self.client()?;
+        let col = client.collection(&name);
         col.delete_collection()
             .await
             .map_err(|e| BridgeError(e.to_string()).into_platform())?;
@@ -188,7 +200,8 @@ impl EmbexClient {
             })
             .collect::<BridgeResult<Vec<_>>>()?;
 
-        let manager = MigrationManager::new(self.inner.db());
+        let client = self.client()?;
+        let manager = MigrationManager::new(client.db());
 
         let fut = async move { manager.run_migrations(adapters).await };
 
@@ -211,6 +224,19 @@ impl EmbexClient {
     }
 }
 
+impl EmbexClient {
+    fn client(&self) -> BridgeResult<&RustClient> {
+        self.inner.as_ref().ok_or_else(|| {
+            BridgeError(
+                self.init_error
+                    .clone()
+                    .unwrap_or_else(|| "EmbexClient is not initialized".to_string()),
+            )
+            .into_platform()
+        })
+    }
+}
+
 #[cfg(feature = "python")]
 struct PyMigrationAdapter {
     inner: Py<PyAny>,
@@ -221,11 +247,14 @@ struct PyMigrationAdapter {
 impl bridge_embex::Migration for PyMigrationAdapter {
     fn version(&self) -> String {
         Python::with_gil(|py| {
+            let fallback = format!(
+                "invalid_python_migration_{:x}",
+                self.inner.bind(py).as_ptr() as usize
+            );
             self.inner
-                .call_method0(py, "version")
-                .expect("Migration must have version() method")
-                .extract(py)
-                .expect("version() must return string")
+                .getattr(py, "version")
+                .and_then(|value| value.extract(py))
+                .unwrap_or(fallback)
         })
     }
 
@@ -234,12 +263,23 @@ impl bridge_embex::Migration for PyMigrationAdapter {
         db: std::sync::Arc<dyn bridge_embex::VectorDatabase>,
     ) -> bridge_embex::Result<()> {
         let rust_client = bridge_embex::EmbexClient::from_db(db);
-        let bridge_client = EmbexClient { inner: rust_client };
+        let bridge_client = EmbexClient {
+            inner: Some(rust_client),
+            init_error: None,
+        };
 
         let py_future = Python::with_gil(|py| {
-            let py_client =
-                Py::new(py, bridge_client).expect("Failed to create python client wrapper");
-            self.inner.call_method1(py, "up", (py_client,))
+            let py_client = Py::new(py, bridge_client).map_err(|e| {
+                bridge_embex::EmbexError::Other(anyhow::anyhow!(
+                    "Failed to create python client wrapper: {}",
+                    e
+                ))
+            })?;
+            self.inner
+                .call_method1(py, "up", (py_client,))
+                .map_err(|e| {
+                    bridge_embex::EmbexError::Other(anyhow::anyhow!("Failed to call up(): {}", e))
+                })
         });
 
         match py_future {
@@ -258,10 +298,7 @@ impl bridge_embex::Migration for PyMigrationAdapter {
                     ))),
                 }
             }
-            Err(e) => Err(bridge_embex::EmbexError::Other(anyhow::anyhow!(
-                "Failed to call up(): {}",
-                e
-            ))),
+            Err(e) => Err(e),
         }
     }
 
@@ -270,12 +307,23 @@ impl bridge_embex::Migration for PyMigrationAdapter {
         db: std::sync::Arc<dyn bridge_embex::VectorDatabase>,
     ) -> bridge_embex::Result<()> {
         let rust_client = bridge_embex::EmbexClient::from_db(db);
-        let bridge_client = EmbexClient { inner: rust_client };
+        let bridge_client = EmbexClient {
+            inner: Some(rust_client),
+            init_error: None,
+        };
 
         let py_future = Python::with_gil(|py| {
-            let py_client =
-                Py::new(py, bridge_client).expect("Failed to create python client wrapper");
-            self.inner.call_method1(py, "down", (py_client,))
+            let py_client = Py::new(py, bridge_client).map_err(|e| {
+                bridge_embex::EmbexError::Other(anyhow::anyhow!(
+                    "Failed to create python client wrapper: {}",
+                    e
+                ))
+            })?;
+            self.inner
+                .call_method1(py, "down", (py_client,))
+                .map_err(|e| {
+                    bridge_embex::EmbexError::Other(anyhow::anyhow!("Failed to call down(): {}", e))
+                })
         });
 
         match py_future {
@@ -294,10 +342,7 @@ impl bridge_embex::Migration for PyMigrationAdapter {
                     ))),
                 }
             }
-            Err(e) => Err(bridge_embex::EmbexError::Other(anyhow::anyhow!(
-                "Failed to call down(): {}",
-                e
-            ))),
+            Err(e) => Err(e),
         }
     }
 }

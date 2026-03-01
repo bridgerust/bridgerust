@@ -4,16 +4,22 @@ use std::sync::Arc;
 
 #[cfg(feature = "chroma")]
 use bridge_embex_chroma::ChromaAdapter;
+#[cfg(feature = "elasticsearch")]
+use bridge_embex_elasticsearch::ElasticsearchAdapter;
 #[cfg(feature = "lancedb")]
 use bridge_embex_lancedb::LanceDBAdapter;
 #[cfg(feature = "milvus")]
 use bridge_embex_milvus::MilvusAdapter;
+#[cfg(feature = "opensearch")]
+use bridge_embex_opensearch::OpenSearchAdapter;
 #[cfg(feature = "pgvector")]
 use bridge_embex_pgvector::PgVectorAdapter;
 #[cfg(feature = "pinecone")]
 use bridge_embex_pinecone::PineconeAdapter;
 #[cfg(feature = "qdrant")]
 use bridge_embex_qdrant::QdrantAdapter;
+#[cfg(feature = "redis")]
+use bridge_embex_redis::RedisAdapter;
 #[cfg(feature = "weaviate")]
 use bridge_embex_weaviate::WeaviateAdapter;
 
@@ -111,6 +117,21 @@ impl AdapterFactory {
                 config.api_key.as_deref(),
                 Some(config.pool_size),
             )?));
+        }
+
+        #[cfg(feature = "elasticsearch")]
+        if config.provider == "elasticsearch" {
+            return Ok(Arc::new(ElasticsearchAdapter::new(&config.url)?));
+        }
+
+        #[cfg(feature = "opensearch")]
+        if config.provider == "opensearch" {
+            return Ok(Arc::new(OpenSearchAdapter::new(&config.url)?));
+        }
+
+        #[cfg(feature = "redis")]
+        if config.provider == "redis" {
+            return Ok(Arc::new(RedisAdapter::new(&config.url)?));
         }
 
         Err(bridge_embex_core::error::EmbexError::Config(format!(

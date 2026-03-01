@@ -10,7 +10,18 @@ description = "Vector DB ORM engine for BridgeRust (Facade)"
 
 [features]
 default = ["all"]
-all = ["qdrant", "pinecone", "chroma", "lancedb", "pgvector", "weaviate", "milvus"]
+all = [
+    "qdrant",
+    "pinecone",
+    "chroma",
+    "lancedb",
+    "pgvector",
+    "weaviate",
+    "milvus",
+    "elasticsearch",
+    "opensearch",
+    "redis",
+]
 
 # Individual adapters
 qdrant = ["dep:bridge-embex-qdrant"]
@@ -20,6 +31,9 @@ lancedb = ["dep:bridge-embex-lancedb"]
 pgvector = ["dep:bridge-embex-pgvector"]
 weaviate = ["dep:bridge-embex-weaviate"]
 milvus = ["dep:bridge-embex-milvus"]
+elasticsearch = ["dep:bridge-embex-elasticsearch"]
+opensearch = ["dep:bridge-embex-opensearch"]
+redis = ["dep:bridge-embex-redis"]
 
 [dependencies]
 bridge-embex-core = { path = "../core", version = "0.1.17" }
@@ -33,6 +47,9 @@ bridge-embex-lancedb = { path = "../adapters/lancedb", version = "0.1.17", optio
 bridge-embex-pgvector = { path = "../adapters/pgvector", version = "0.1.17", optional = true }
 bridge-embex-weaviate = { path = "../adapters/weaviate", version = "0.1.17", optional = true }
 bridge-embex-milvus = { path = "../adapters/milvus", version = "0.1.17", optional = true }
+bridge-embex-elasticsearch = { path = "../adapters/elasticsearch", version = "0.1.17", optional = true }
+bridge-embex-opensearch = { path = "../adapters/opensearch", version = "0.1.17", optional = true }
+bridge-embex-redis = { path = "../adapters/redis", version = "0.1.17", optional = true }
 
 # Shared dependencies for the orchestrator
 anyhow = "1.0.100"

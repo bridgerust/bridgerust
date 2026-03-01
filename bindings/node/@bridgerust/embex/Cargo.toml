@@ -8,7 +8,18 @@ crate-type = ["cdylib"]
 
 [features]
 default = ["all"]
-all = ["qdrant", "pinecone", "chroma", "lancedb", "pgvector", "weaviate", "milvus"]
+all = [
+    "qdrant",
+    "pinecone",
+    "chroma",
+    "lancedb",
+    "pgvector",
+    "weaviate",
+    "milvus",
+    "elasticsearch",
+    "opensearch",
+    "redis",
+]
 qdrant = ["bridge-embex/qdrant"]
 pinecone = ["bridge-embex/pinecone"]
 chroma = ["bridge-embex/chroma"]
@@ -16,9 +27,12 @@ lancedb = ["bridge-embex/lancedb"]
 pgvector = ["bridge-embex/pgvector"]
 weaviate = ["bridge-embex/weaviate"]
 milvus = ["bridge-embex/milvus"]
+elasticsearch = ["bridge-embex/elasticsearch"]
+opensearch = ["bridge-embex/opensearch"]
+redis = ["bridge-embex/redis"]
 
 [dependencies]
-napi = { version = "3.7.1", features = ["async", "serde-json"] }
+napi = { version = "3.7.1", features = ["napi8", "async", "serde-json"] }
 napi-derive = "3.4.1"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.147"

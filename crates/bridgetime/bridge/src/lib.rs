@@ -19,10 +19,371 @@ const MS_PER_HOUR: f64 = 3_600_000.0;
 const MS_PER_DAY: f64 = 86_400_000.0;
 const MS_PER_WEEK: f64 = 604_800_000.0;
 
+#[derive(Debug, Clone, Copy)]
+struct LocalePack {
+    code: &'static str,
+    months_long: [&'static str; 12],
+    months_short: [&'static str; 12],
+    weekdays_long: [&'static str; 7],
+    weekdays_short: [&'static str; 7],
+    calendar_today: &'static str,
+    calendar_tomorrow: &'static str,
+    calendar_yesterday: &'static str,
+    calendar_at: &'static str,
+    meridiem_am: &'static str,
+    meridiem_pm: &'static str,
+}
+
+const LOCALE_EN: LocalePack = LocalePack {
+    code: "en",
+    months_long: [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+    ],
+    months_short: [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    ],
+    weekdays_long: [
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+    ],
+    weekdays_short: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    calendar_today: "Today",
+    calendar_tomorrow: "Tomorrow",
+    calendar_yesterday: "Yesterday",
+    calendar_at: "at",
+    meridiem_am: "AM",
+    meridiem_pm: "PM",
+};
+
+const LOCALE_FR: LocalePack = LocalePack {
+    code: "fr",
+    months_long: [
+        "janvier",
+        "fevrier",
+        "mars",
+        "avril",
+        "mai",
+        "juin",
+        "juillet",
+        "aout",
+        "septembre",
+        "octobre",
+        "novembre",
+        "decembre",
+    ],
+    months_short: [
+        "janv.", "fevr.", "mars", "avr.", "mai", "juin", "juil.", "aout", "sept.", "oct.", "nov.",
+        "dec.",
+    ],
+    weekdays_long: [
+        "dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi",
+    ],
+    weekdays_short: ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."],
+    calendar_today: "Aujourd'hui",
+    calendar_tomorrow: "Demain",
+    calendar_yesterday: "Hier",
+    calendar_at: "a",
+    meridiem_am: "AM",
+    meridiem_pm: "PM",
+};
+
+const LOCALE_ES: LocalePack = LocalePack {
+    code: "es",
+    months_long: [
+        "enero",
+        "febrero",
+        "marzo",
+        "abril",
+        "mayo",
+        "junio",
+        "julio",
+        "agosto",
+        "septiembre",
+        "octubre",
+        "noviembre",
+        "diciembre",
+    ],
+    months_short: [
+        "ene.", "feb.", "mar.", "abr.", "may.", "jun.", "jul.", "ago.", "sept.", "oct.", "nov.",
+        "dic.",
+    ],
+    weekdays_long: [
+        "domingo",
+        "lunes",
+        "martes",
+        "miercoles",
+        "jueves",
+        "viernes",
+        "sabado",
+    ],
+    weekdays_short: ["dom.", "lun.", "mar.", "mie.", "jue.", "vie.", "sab."],
+    calendar_today: "Hoy",
+    calendar_tomorrow: "Manana",
+    calendar_yesterday: "Ayer",
+    calendar_at: "a las",
+    meridiem_am: "AM",
+    meridiem_pm: "PM",
+};
+
+const LOCALE_DE: LocalePack = LocalePack {
+    code: "de",
+    months_long: [
+        "Januar",
+        "Februar",
+        "Marz",
+        "April",
+        "Mai",
+        "Juni",
+        "Juli",
+        "August",
+        "September",
+        "Oktober",
+        "November",
+        "Dezember",
+    ],
+    months_short: [
+        "Jan.", "Feb.", "Mar.", "Apr.", "Mai", "Jun.", "Jul.", "Aug.", "Sep.", "Okt.", "Nov.",
+        "Dez.",
+    ],
+    weekdays_long: [
+        "Sonntag",
+        "Montag",
+        "Dienstag",
+        "Mittwoch",
+        "Donnerstag",
+        "Freitag",
+        "Samstag",
+    ],
+    weekdays_short: ["So.", "Mo.", "Di.", "Mi.", "Do.", "Fr.", "Sa."],
+    calendar_today: "Heute",
+    calendar_tomorrow: "Morgen",
+    calendar_yesterday: "Gestern",
+    calendar_at: "um",
+    meridiem_am: "AM",
+    meridiem_pm: "PM",
+};
+
+const LOCALE_PT: LocalePack = LocalePack {
+    code: "pt",
+    months_long: [
+        "janeiro",
+        "fevereiro",
+        "marco",
+        "abril",
+        "maio",
+        "junho",
+        "julho",
+        "agosto",
+        "setembro",
+        "outubro",
+        "novembro",
+        "dezembro",
+    ],
+    months_short: [
+        "jan.", "fev.", "mar.", "abr.", "mai.", "jun.", "jul.", "ago.", "set.", "out.", "nov.",
+        "dez.",
+    ],
+    weekdays_long: [
+        "domingo",
+        "segunda-feira",
+        "terca-feira",
+        "quarta-feira",
+        "quinta-feira",
+        "sexta-feira",
+        "sabado",
+    ],
+    weekdays_short: ["dom.", "seg.", "ter.", "qua.", "qui.", "sex.", "sab."],
+    calendar_today: "Hoje",
+    calendar_tomorrow: "Amanha",
+    calendar_yesterday: "Ontem",
+    calendar_at: "as",
+    meridiem_am: "AM",
+    meridiem_pm: "PM",
+};
+
+fn parse_locale(locale: Option<&str>) -> Result<LocalePack, BridgeTimeError> {
+    let raw = locale.unwrap_or("en").trim();
+    if raw.is_empty() {
+        return Ok(LOCALE_EN);
+    }
+
+    let normalized = raw.to_ascii_lowercase();
+    let base = normalized.split('-').next().unwrap_or("en");
+    match base {
+        "en" => Ok(LOCALE_EN),
+        "fr" => Ok(LOCALE_FR),
+        "es" => Ok(LOCALE_ES),
+        "de" => Ok(LOCALE_DE),
+        "pt" => Ok(LOCALE_PT),
+        _ => Err(BridgeTimeError::InvalidLocale(raw.to_string())),
+    }
+}
+
+fn offset_to_strings(offset_minutes: i32) -> (String, String) {
+    let sign = if offset_minutes >= 0 { '+' } else { '-' };
+    let abs = offset_minutes.abs();
+    let hh = abs / 60;
+    let mm = abs % 60;
+    (
+        format!("{sign}{hh:02}:{mm:02}"),
+        format!("{sign}{hh:02}{mm:02}"),
+    )
+}
+
+fn render_dayjs_like_pattern(
+    local: DateTime<Tz>,
+    pattern: &str,
+    locale: LocalePack,
+) -> Result<String, BridgeTimeError> {
+    let naive = local.naive_local();
+    let mut out = String::with_capacity(pattern.len() + 8);
+    let bytes = pattern.as_bytes();
+    let mut i = 0usize;
+
+    while i < bytes.len() {
+        if bytes[i] == b'[' {
+            let mut j = i + 1;
+            while j < bytes.len() && bytes[j] != b']' {
+                j += 1;
+            }
+
+            if j >= bytes.len() {
+                out.push_str(&pattern[i + 1..]);
+                break;
+            }
+
+            out.push_str(&pattern[i + 1..j]);
+            i = j + 1;
+            continue;
+        }
+
+        let rest = &pattern[i..];
+        let appended = if rest.starts_with("YYYY") {
+            out.push_str(&format!("{:04}", naive.year()));
+            4
+        } else if rest.starts_with("YY") {
+            out.push_str(&format!("{:02}", naive.year().rem_euclid(100)));
+            2
+        } else if rest.starts_with("MMMM") {
+            let idx = naive.month0() as usize;
+            out.push_str(locale.months_long[idx]);
+            4
+        } else if rest.starts_with("MMM") {
+            let idx = naive.month0() as usize;
+            out.push_str(locale.months_short[idx]);
+            3
+        } else if rest.starts_with("MM") {
+            out.push_str(&format!("{:02}", naive.month()));
+            2
+        } else if rest.starts_with("M") {
+            out.push_str(&format!("{}", naive.month()));
+            1
+        } else if rest.starts_with("DD") {
+            out.push_str(&format!("{:02}", naive.day()));
+            2
+        } else if rest.starts_with("D") {
+            out.push_str(&format!("{}", naive.day()));
+            1
+        } else if rest.starts_with("dddd") {
+            let idx = naive.weekday().num_days_from_sunday() as usize;
+            out.push_str(locale.weekdays_long[idx]);
+            4
+        } else if rest.starts_with("ddd") {
+            let idx = naive.weekday().num_days_from_sunday() as usize;
+            out.push_str(locale.weekdays_short[idx]);
+            3
+        } else if rest.starts_with("HH") {
+            out.push_str(&format!("{:02}", naive.hour()));
+            2
+        } else if rest.starts_with("H") {
+            out.push_str(&format!("{}", naive.hour()));
+            1
+        } else if rest.starts_with("hh") {
+            let mut hour = naive.hour() % 12;
+            if hour == 0 {
+                hour = 12;
+            }
+            out.push_str(&format!("{hour:02}"));
+            2
+        } else if rest.starts_with("h") {
+            let mut hour = naive.hour() % 12;
+            if hour == 0 {
+                hour = 12;
+            }
+            out.push_str(&format!("{hour}"));
+            1
+        } else if rest.starts_with("mm") {
+            out.push_str(&format!("{:02}", naive.minute()));
+            2
+        } else if rest.starts_with("m") {
+            out.push_str(&format!("{}", naive.minute()));
+            1
+        } else if rest.starts_with("ss") {
+            out.push_str(&format!("{:02}", naive.second()));
+            2
+        } else if rest.starts_with("s") {
+            out.push_str(&format!("{}", naive.second()));
+            1
+        } else if rest.starts_with("SSS") {
+            out.push_str(&format!("{:03}", naive.and_utc().timestamp_subsec_millis()));
+            3
+        } else if rest.starts_with("ZZ") {
+            let (colon, plain) = offset_to_strings(local.offset().fix().local_minus_utc() / 60);
+            let _ = colon;
+            out.push_str(&plain);
+            2
+        } else if rest.starts_with("Z") {
+            let (colon, plain) = offset_to_strings(local.offset().fix().local_minus_utc() / 60);
+            let _ = plain;
+            out.push_str(&colon);
+            1
+        } else if rest.starts_with("A") {
+            out.push_str(if naive.hour() < 12 {
+                locale.meridiem_am
+            } else {
+                locale.meridiem_pm
+            });
+            1
+        } else if rest.starts_with("a") {
+            let meridiem = if naive.hour() < 12 {
+                locale.meridiem_am
+            } else {
+                locale.meridiem_pm
+            };
+            out.push_str(&meridiem.to_ascii_lowercase());
+            1
+        } else {
+            out.push(rest.chars().next().unwrap_or_default());
+            rest.chars().next().map(|c| c.len_utf8()).unwrap_or(1)
+        };
+
+        i += appended;
+    }
+
+    Ok(out)
+}
+
 #[error]
 #[derive(Debug, Clone)]
 pub enum BridgeTimeError {
     InvalidTimezone(String),
+    InvalidLocale(String),
     InvalidDateInput(String),
     InvalidTimestamp(i64),
     InvalidUnit(String),
@@ -37,6 +398,7 @@ impl Display for BridgeTimeError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::InvalidTimezone(tz) => write!(f, "Invalid timezone: {tz}"),
+            Self::InvalidLocale(locale) => write!(f, "Invalid locale: {locale}"),
             Self::InvalidDateInput(value) => write!(f, "Invalid date input: {value}"),
             Self::InvalidTimestamp(value) => write!(f, "Invalid timestamp (ms): {value}"),
             Self::InvalidUnit(unit) => write!(
@@ -476,6 +838,17 @@ pub fn supported_units() -> Vec<String> {
 }
 
 #[bridge]
+pub fn supported_locales() -> Vec<String> {
+    vec![
+        LOCALE_EN.code.to_string(),
+        LOCALE_FR.code.to_string(),
+        LOCALE_ES.code.to_string(),
+        LOCALE_DE.code.to_string(),
+        LOCALE_PT.code.to_string(),
+    ]
+}
+
+#[bridge]
 pub struct BridgeDuration {
     milliseconds: i64,
 }
@@ -654,6 +1027,52 @@ impl BridgeTime {
         })
     }
 
+    /// Batch parse ISO/naive datetime strings and return unix timestamps (ms).
+    pub fn parse_batch(
+        inputs: Vec<String>,
+        timezone: Option<String>,
+    ) -> Result<Vec<i64>, BridgeTimeError> {
+        let tz = resolve_timezone(timezone)?;
+        let mut out = Vec::with_capacity(inputs.len());
+        for input in inputs {
+            out.push(parse_datetime_input(&input, tz)?);
+        }
+        Ok(out)
+    }
+
+    /// Batch parse datetime strings with a Day.js-style pattern.
+    pub fn parse_format_batch(
+        inputs: Vec<String>,
+        pattern: String,
+        timezone: Option<String>,
+    ) -> Result<Vec<i64>, BridgeTimeError> {
+        let tz = resolve_timezone(timezone)?;
+        let mut out = Vec::with_capacity(inputs.len());
+        for input in inputs {
+            out.push(parse_datetime_with_format(&input, &pattern, tz)?);
+        }
+        Ok(out)
+    }
+
+    /// Batch format unix timestamps with locale support.
+    pub fn format_batch(
+        unix_millis: Vec<i64>,
+        pattern: String,
+        timezone: Option<String>,
+        locale: Option<String>,
+    ) -> Result<Vec<String>, BridgeTimeError> {
+        let tz = resolve_timezone(timezone)?;
+        let locale = parse_locale(locale.as_deref())?;
+
+        let mut out = Vec::with_capacity(unix_millis.len());
+        for value in unix_millis {
+            let utc = utc_from_millis(value)?;
+            let local = utc.with_timezone(&tz);
+            out.push(render_dayjs_like_pattern(local, &pattern, locale)?);
+        }
+        Ok(out)
+    }
+
     pub fn from_array(
         components: Vec<i64>,
         timezone: Option<String>,
@@ -735,6 +1154,17 @@ impl BridgeTime {
         let local = self.local_datetime()?;
         let chrono_pattern = convert_dayjs_pattern(&pattern);
         Ok(local.format(&chrono_pattern).to_string())
+    }
+
+    /// Locale-aware format helper for month/day names and meridiem output.
+    pub fn format_locale(
+        &self,
+        pattern: String,
+        locale: Option<String>,
+    ) -> Result<String, BridgeTimeError> {
+        let local = self.local_datetime()?;
+        let locale = parse_locale(locale.as_deref())?;
+        render_dayjs_like_pattern(local, &pattern, locale)
     }
 
     pub fn unix_ms(&self) -> i64 {
@@ -1173,6 +1603,60 @@ impl BridgeTime {
     pub fn to_now(&self, without_suffix: Option<bool>) -> Result<String, BridgeTimeError> {
         let now = Self::now(Some(self.timezone.clone()))?;
         self.to_time(&now, without_suffix)
+    }
+
+    /// Day.js calendar-style formatting with locale packs.
+    ///
+    /// Buckets:
+    /// - same day: Today at HH:mm
+    /// - +/-1 day: Tomorrow/Yesterday at HH:mm
+    /// - +/-6 days: Weekday at HH:mm
+    /// - otherwise: YYYY-MM-DD HH:mm
+    pub fn calendar(
+        &self,
+        reference: Option<&BridgeTime>,
+        locale: Option<String>,
+    ) -> Result<String, BridgeTimeError> {
+        let locale = parse_locale(locale.as_deref())?;
+        let current = self.local_datetime()?;
+        let reference_local = if let Some(reference) = reference {
+            reference
+                .to_timezone(self.timezone.clone())?
+                .local_datetime()?
+        } else {
+            Self::now(Some(self.timezone.clone()))?.local_datetime()?
+        };
+
+        let day_delta = current
+            .date_naive()
+            .signed_duration_since(reference_local.date_naive())
+            .num_days();
+        let time = render_dayjs_like_pattern(current, "HH:mm", locale)?;
+
+        if day_delta == 0 {
+            return Ok(format!(
+                "{} {} {}",
+                locale.calendar_today, locale.calendar_at, time
+            ));
+        }
+        if day_delta == 1 {
+            return Ok(format!(
+                "{} {} {}",
+                locale.calendar_tomorrow, locale.calendar_at, time
+            ));
+        }
+        if day_delta == -1 {
+            return Ok(format!(
+                "{} {} {}",
+                locale.calendar_yesterday, locale.calendar_at, time
+            ));
+        }
+        if day_delta.unsigned_abs() < 7 {
+            let weekday = render_dayjs_like_pattern(current, "dddd", locale)?;
+            return Ok(format!("{weekday} {} {time}", locale.calendar_at));
+        }
+
+        render_dayjs_like_pattern(current, "YYYY-MM-DD HH:mm", locale)
     }
 
     pub fn min(first: &BridgeTime, second: &BridgeTime) -> BridgeTime {
@@ -2079,10 +2563,65 @@ mod tests {
             BridgeTime::duration(2, Some("hour".to_string())).expect("BridgeTime::duration");
         assert_eq!(static_duration.as_minutes(), 120.0);
     }
+
+    #[test]
+    fn locale_formatting_and_calendar_work() {
+        let dt = BridgeTime::parse("2026-02-22T10:15:30Z".to_string(), Some("UTC".to_string()))
+            .expect("parse should succeed");
+        let formatted = dt
+            .format_locale(
+                "dddd, D MMMM YYYY HH:mm".to_string(),
+                Some("fr".to_string()),
+            )
+            .expect("format_locale should succeed");
+        assert!(formatted.contains("dimanche"));
+
+        let reference =
+            BridgeTime::parse("2026-02-22T00:00:00Z".to_string(), Some("UTC".to_string()))
+                .expect("parse should succeed");
+        let calendar = dt
+            .calendar(Some(&reference), Some("en".to_string()))
+            .expect("calendar should succeed");
+        assert!(calendar.starts_with("Today at "));
+    }
+
+    #[test]
+    fn batch_parse_and_format_work() {
+        let parsed = BridgeTime::parse_batch(
+            vec![
+                "2026-02-22T10:15:30Z".to_string(),
+                "2026-02-23T10:15:30Z".to_string(),
+            ],
+            Some("UTC".to_string()),
+        )
+        .expect("parse_batch should succeed");
+        assert_eq!(parsed.len(), 2);
+
+        let parsed_fmt = BridgeTime::parse_format_batch(
+            vec![
+                "22/02/2026 10:15".to_string(),
+                "23/02/2026 10:15".to_string(),
+            ],
+            "DD/MM/YYYY HH:mm".to_string(),
+            Some("UTC".to_string()),
+        )
+        .expect("parse_format_batch should succeed");
+        assert_eq!(parsed_fmt.len(), 2);
+
+        let rendered = BridgeTime::format_batch(
+            parsed_fmt,
+            "dddd, DD MMM YYYY".to_string(),
+            Some("UTC".to_string()),
+            Some("es".to_string()),
+        )
+        .expect("format_batch should succeed");
+        assert_eq!(rendered.len(), 2);
+        assert!(rendered[0].contains("domingo"));
+    }
 }
 
 #[cfg(feature = "python")]
-#[bridgerust::pyo3::pymodule]
+#[bridgerust::pyo3::pymodule(gil_used = false)]
 fn bridgetime(
     m: &bridgerust::pyo3::Bound<'_, bridgerust::pyo3::types::PyModule>,
 ) -> bridgerust::pyo3::PyResult<()> {
@@ -2093,5 +2632,6 @@ fn bridgetime(
     m.delattr("BridgeDuration")?;
     m.delattr("BridgeTime")?;
     m.add_function(bridgerust::pyo3::wrap_pyfunction!(supported_units, m)?)?;
+    m.add_function(bridgerust::pyo3::wrap_pyfunction!(supported_locales, m)?)?;
     Ok(())
 }

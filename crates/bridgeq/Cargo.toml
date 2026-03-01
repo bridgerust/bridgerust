@@ -1,0 +1,21 @@
+[package]
+name = "bridgeq"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "High-performance queue core for Python and Node.js bindings"
+
+[dependencies]
+
+[dev-dependencies]
+bridgeq-postgres = { path = "../bridgeq-postgres" }
+bridgeq-redis = { path = "../bridgeq-redis" }
+criterion = { version = "0.5.1", features = ["async_tokio"] }
+tokio = { version = "1.48", features = ["rt-multi-thread"] }
+
+[[bench]]
+name = "adapters"
+harness = false

@@ -37,7 +37,14 @@ struct User {
 }
 ```
 
-> **Note:** Validation attributes are currently experimental and emit a compile-time warning. Runtime enforcement is planned for a future release.
+> **Note:** `#[validate(...)]` now generates runtime validation checks on exported structs via BridgeRust's validation runtime (`RuntimeValidate`).
+
+```rust
+use bridgerust::validation::RuntimeValidate;
+
+let user = User { email: "a@b.com".to_string() };
+user.runtime_validate()?;
+```
 
 ## Exporting Methods
 

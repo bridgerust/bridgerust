@@ -1,0 +1,19 @@
+[package]
+name = "bridgeq-python"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "Python bindings for bridgeq"
+license.workspace = true
+repository.workspace = true
+
+[lib]
+name = "bridgeq"
+crate-type = ["cdylib"]
+
+[dependencies]
+bridgeq = { path = "../../../crates/bridgeq" }
+bridgeq-postgres = { path = "../../../crates/bridgeq-postgres" }
+bridgeq-redis = { path = "../../../crates/bridgeq-redis" }
+pyo3 = { version = "0.27.2", features = ["extension-module", "abi3-py38"] }
+tokio = { version = "1.48", features = ["rt-multi-thread"] }

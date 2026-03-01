@@ -25,10 +25,15 @@ BridgeRust is a monorepo shipping two AI-infrastructure products — **Embex** a
 | **@bridgerust/embex** | Node.js | Universal vector DB client | `npm install @bridgerust/embex` |
 | **bridgetime** | Python | Rust-powered datetime toolkit | `pip install bridgetime` |
 | **@bridgerust/bridgetime** | Node.js | Rust-powered datetime toolkit | `npm install @bridgerust/bridgetime` |
+| **bridgeq** | Python (preview) | Rust-powered queue toolkit | `pip install bridgeq` |
+| **@bridgerust/bridgeq** | Node.js (preview) | Rust-powered queue toolkit | `npm install @bridgerust/bridgeq` |
 | **bridgerust** | Rust crate | Cross-language binding framework | `cargo add bridgerust` |
 | **bridgerust-macros** | Rust crate | `#[export]` proc-macros | re-exported by `bridgerust` |
 | **bridge** | CLI | Scaffold new BridgeRust libraries | `cargo install bridge` |
 | **embex-cli** | CLI | Manage Embex collections from the terminal | `cargo install embex-cli` |
+| **bridgeq** | Rust crate (experimental) | Queue core for upcoming cross-language task queue | workspace crate |
+| **bridgeq-redis** | Rust crate (alpha) | Durable Redis adapter for bridgeq | workspace crate |
+| **bridgeq-postgres** | Rust crate (alpha) | Durable PostgreSQL adapter for bridgeq | workspace crate |
 
 ---
 
@@ -127,6 +132,7 @@ The **BridgeRust** framework is the foundation both products are built on. It el
 - [Migration Guide](docs/MIGRATION_GUIDE.md)
 - [Examples](docs/EXAMPLES.md)
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
+- [New Libraries Track](docs/new_libraries.md)
 - [Comprehensive Example](examples/bridgerust-example/)
 
 ---

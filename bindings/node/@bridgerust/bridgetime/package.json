@@ -1,6 +1,6 @@
 {
   "name": "@bridgerust/bridgetime",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "BridgeTime: Rust-powered Day.js/Moment-style datetime toolkit",
   "homepage": "https://github.com/bridgerust/bridgerust",
   "repository": {

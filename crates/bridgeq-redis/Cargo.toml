@@ -1,0 +1,17 @@
+[package]
+name = "bridgeq-redis"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Durable Redis adapter for bridgeq"
+
+[dependencies]
+bridgeq = { path = "../bridgeq" }
+redis = { version = "0.32.7", features = ["aio", "tokio-comp"] }
+thiserror = "2.0.17"
+
+[dev-dependencies]
+tokio = { version = "1.48", features = ["rt-multi-thread", "macros", "time"] }

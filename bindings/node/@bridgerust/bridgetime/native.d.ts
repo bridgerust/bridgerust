@@ -34,6 +34,18 @@ export declare class BridgeTime {
   static now(timezone?: string | null): BridgeTime
   static parse(input: string, timezone?: string | null): BridgeTime
   static parseFormat(input: string, pattern: string, timezone?: string | null): BridgeTime
+  static parseBatch(inputs: Array<string>, timezone?: string | null): Array<bigint>
+  static parseFormatBatch(
+    inputs: Array<string>,
+    pattern: string,
+    timezone?: string | null
+  ): Array<bigint>
+  static formatBatch(
+    unixMillis: Array<bigint | number>,
+    pattern: string,
+    timezone?: string | null,
+    locale?: string | null
+  ): Array<string>
   static fromArray(components: Array<bigint | number>, timezone?: string | null): BridgeTime
   static fromUnixMs(unixMs: bigint | number, timezone?: string | null): BridgeTime
   static fromUnix(unixSeconds: bigint | number, timezone?: string | null): BridgeTime
@@ -43,6 +55,7 @@ export declare class BridgeTime {
 
   toIso(): string
   format(pattern: string): string
+  formatLocale(pattern: string, locale?: string | null): string
   unixMs(): bigint
   unix(): bigint
   valueOf(): bigint
@@ -102,6 +115,7 @@ export declare class BridgeTime {
   toTime(other: BridgeTime, withoutSuffix?: boolean | null): string
   fromNow(withoutSuffix?: boolean | null): string
   toNow(withoutSuffix?: boolean | null): string
+  calendar(reference?: BridgeTime | null, locale?: string | null): string
   clamp(start: BridgeTime, end: BridgeTime): BridgeTime
   isBefore(other: BridgeTime): boolean
   isAfter(other: BridgeTime): boolean
@@ -123,3 +137,4 @@ export declare class BridgeTime {
 }
 
 export declare function supportedUnits(): Array<string>
+export declare function supportedLocales(): Array<string>

@@ -1,0 +1,22 @@
+[package]
+name = "bridgeq-node"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "Node.js bindings for bridgeq"
+license.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+bridgeq = { path = "../../../../crates/bridgeq" }
+bridgeq-postgres = { path = "../../../../crates/bridgeq-postgres" }
+bridgeq-redis = { path = "../../../../crates/bridgeq-redis" }
+napi = { version = "3.5.0", features = ["napi8"] }
+napi-derive = "3.3.0"
+tokio = { version = "1.48", features = ["rt-multi-thread"] }
+
+[build-dependencies]
+napi-build = "2.3.0"

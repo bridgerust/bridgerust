@@ -1,0 +1,13 @@
+[package]
+name = "bridge-embex-redis"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Redis vector adapter for Embex (priority implementation track)"
+
+[dependencies]
+bridge-embex-core = { path = "../../core", version = "0.1.17" }
+async-trait = "0.1.89"

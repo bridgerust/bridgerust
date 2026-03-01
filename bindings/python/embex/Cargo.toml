@@ -13,7 +13,18 @@ crate-type = ["cdylib"]
 
 [features]
 default = ["all"]
-all = ["qdrant", "pinecone", "chroma", "lancedb", "pgvector", "weaviate", "milvus"]
+all = [
+    "qdrant",
+    "pinecone",
+    "chroma",
+    "lancedb",
+    "pgvector",
+    "weaviate",
+    "milvus",
+    "elasticsearch",
+    "opensearch",
+    "redis",
+]
 qdrant = ["bridge-embex/qdrant"]
 pinecone = ["bridge-embex/pinecone"]
 chroma = ["bridge-embex/chroma"]
@@ -21,6 +32,9 @@ lancedb = ["bridge-embex/lancedb"]
 pgvector = ["bridge-embex/pgvector"]
 weaviate = ["bridge-embex/weaviate"]
 milvus = ["bridge-embex/milvus"]
+elasticsearch = ["bridge-embex/elasticsearch"]
+opensearch = ["bridge-embex/opensearch"]
+redis = ["bridge-embex/redis"]
 
 [dependencies]
 bridge-embex = { path = "../../../crates/embex/client", default-features = false, features = ["all"] }

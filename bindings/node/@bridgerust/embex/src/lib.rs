@@ -328,24 +328,10 @@ impl Collection {
     pub async fn insert(&self, points: Vec<Point>) -> Result<()> {
         let inner = self.inner.clone();
 
-        // Validate points
-        for p in &points {
-            if p.vector.is_empty() {
-                return Err(Error::new(
-                    Status::InvalidArg,
-                    "Vector cannot be empty".to_string(),
-                ));
-            }
-        }
-
-        let rust_points: Vec<RustPoint> = points
+        let rust_points = points
             .into_iter()
-            .map(|p| RustPoint {
-                id: p.id,
-                vector: p.vector.into_iter().map(|v| v as f32).collect(),
-                metadata: p.metadata,
-            })
-            .collect();
+            .map(point_to_rust)
+            .collect::<Result<Vec<_>>>()?;
 
         inner.insert(rust_points).await.map_err(to_napi_err)
     }
@@ -567,24 +553,10 @@ impl Collection {
         let size = batch_size.unwrap_or(1000) as usize;
         let concurrency = parallel.map(|p| p as usize);
 
-        // Validate points
-        for p in &points {
-            if p.vector.is_empty() {
-                return Err(Error::new(
-                    Status::InvalidArg,
-                    "Vector cannot be empty".to_string(),
-                ));
-            }
-        }
-
-        let rust_points: Vec<RustPoint> = points
+        let rust_points = points
             .into_iter()
-            .map(|p| RustPoint {
-                id: p.id,
-                vector: p.vector.into_iter().map(|v| v as f32).collect(),
-                metadata: p.metadata,
-            })
-            .collect();
+            .map(point_to_rust)
+            .collect::<Result<Vec<_>>>()?;
 
         inner
             .insert_batch(rust_points, size, concurrency)
@@ -592,9 +564,35 @@ impl Collection {
             .map_err(to_napi_err)
     }
 
-    // Note: insert_stream is not yet implemented for Node.js.
-    // The Python version uses async iterables which require complex napi-rs interop.
-    // For now, use insert_batch for bulk operations.
+    /// Insert points in streaming batches from the JS wrapper.
+    ///
+    /// The TypeScript layer accepts `AsyncIterable<Point>` and forwards each batch here.
+    #[napi]
+    pub async fn insert_stream(
+        &self,
+        points: Vec<Point>,
+        batch_size: Option<u32>,
+        parallel: Option<u32>,
+    ) -> Result<()> {
+        let inner = self.inner.clone();
+        let size = batch_size.unwrap_or(1000) as usize;
+        let concurrency = parallel.map(|p| p as usize);
+
+        if size == 0 {
+            return Err(Error::new(
+                Status::InvalidArg,
+                "batch_size must be greater than 0".to_string(),
+            ));
+        }
+        let rust_points = points
+            .into_iter()
+            .map(point_to_rust)
+            .collect::<Result<Vec<_>>>()?;
+        inner
+            .insert_batch(rust_points, size, concurrency)
+            .await
+            .map_err(to_napi_err)
+    }
 
     /// Scroll through points in the collection (paginated export).
     #[napi]
@@ -869,4 +867,19 @@ pub async fn cli(args: Vec<String>) -> Result<()> {
     embex_cli::run(args)
         .await
         .map_err(|e| Error::from_reason(e.to_string()))
+}
+
+fn point_to_rust(point: Point) -> Result<RustPoint> {
+    if point.vector.is_empty() {
+        return Err(Error::new(
+            Status::InvalidArg,
+            "Vector cannot be empty".to_string(),
+        ));
+    }
+
+    Ok(RustPoint {
+        id: point.id,
+        vector: point.vector.into_iter().map(|v| v as f32).collect(),
+        metadata: point.metadata,
+    })
 }
