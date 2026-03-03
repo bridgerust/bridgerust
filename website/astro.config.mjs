@@ -8,6 +8,7 @@ export default defineConfig({
   integrations: [
     starlight({
       title: "BridgeRust",
+      customCss: ["./src/styles/modern.css"],
       components: {
         Head: "./src/components/AnalyticsHead.astro",
       },
