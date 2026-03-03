@@ -165,6 +165,40 @@ body::after {
   border-top-color: color-mix(in srgb, var(--sl-color-accent) 16%, var(--sl-color-gray-5));
 }
 
+.sl-markdown-content > :is(h2, h3, h4) {
+  letter-spacing: -0.02em;
+}
+
+.sl-markdown-content > h2 {
+  margin-top: 2.8rem;
+  padding-top: 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--sl-color-accent) 18%, var(--sl-color-gray-5));
+}
+
+.sl-markdown-content > h3 {
+  margin-top: 2.1rem;
+}
+
+.sl-markdown-content p {
+  line-height: 1.72;
+}
+
+.sl-markdown-content ul li::marker,
+.sl-markdown-content ol li::marker {
+  color: var(--sl-color-text-accent);
+}
+
+.sl-markdown-content blockquote {
+  border-inline-start: 3px solid color-mix(in srgb, var(--sl-color-accent) 62%, var(--sl-color-gray-4));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--sl-color-accent-low) 55%, transparent);
+}
+
+.sl-markdown-content :is(pre, .expressive-code) {
+  border-radius: 14px;
+  box-shadow: var(--br-shadow-soft);
+}
+
 .sl-markdown-content table {
   border-radius: 14px;
   overflow: hidden;

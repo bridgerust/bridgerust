@@ -7,11 +7,11 @@ hero:
   image:
     file: ../../assets/houston.webp
   actions:
-    - text: Install & Start
-      link: "#installation"
+    - text: Installation
+      link: "/bridgetime/installation"
       icon: rocket
-    - text: API Overview
-      link: "#api-highlights"
+    - text: Quickstart
+      link: "/bridgetime/quickstart"
       icon: open-book
       variant: secondary
     - text: GitHub
@@ -129,22 +129,22 @@ Use the same concepts in Python and Node.js while keeping execution fast and det
   <LinkCard
     title="Timezone-aware Arithmetic"
     description="Parse, add, subtract, clamp, compare, and convert IANA timezones safely."
-    href="#api-highlights"
+    href="/bridgetime/api-reference#arithmetic-compare-ranges"
   />
   <LinkCard
     title="Locale & Calendar Formatting"
     description="Use locale packs and calendar-style outputs for user-facing datetime strings."
-    href="#api-highlights"
+    href="/bridgetime/locales-and-batch"
   />
   <LinkCard
     title="Batch Parse / Format"
     description="Process arrays of datetime inputs with dedicated batch APIs."
-    href="#api-highlights"
+    href="/bridgetime/locales-and-batch#batch-apis"
   />
   <LinkCard
     title="Duration Semantics"
     description="Create durations, humanize with suffixes, and compose with datetime values."
-    href="#api-highlights"
+    href="/bridgetime/api-reference#duration-api"
   />
 </CardGrid>
 
@@ -201,11 +201,36 @@ Use the same concepts in Python and Node.js while keeping execution fast and det
 - Python binding: [`bindings/python/bridgetime`](https://github.com/bridgerust/bridgerust/tree/main/bindings/python/bridgetime)
 - Node.js binding: [`bindings/node/@bridgerust/bridgetime`](https://github.com/bridgerust/bridgerust/tree/main/bindings/node/@bridgerust/bridgetime)
 
+## BridgeTime Detail Docs
+
+<CardGrid class="modern-link-grid">
+  <LinkCard
+    title="Installation"
+    description="Package installs, runtime requirements, and platform notes."
+    href="/bridgetime/installation"
+  />
+  <LinkCard
+    title="Quickstart"
+    description="Python and Node examples for parse, format, duration, and timezone workflows."
+    href="/bridgetime/quickstart"
+  />
+  <LinkCard
+    title="Locale & Batch"
+    description="Locale packs, calendar formatting, and high-throughput batch parse/format methods."
+    href="/bridgetime/locales-and-batch"
+  />
+  <LinkCard
+    title="API Reference"
+    description="Structured method index across factory, instance, and duration APIs."
+    href="/bridgetime/api-reference"
+  />
+</CardGrid>
+
 <div class="modern-cta-panel">
   <h3>Use BridgeTime in Production Workflows</h3>
   <p>Keep a familiar API for app developers while moving date logic to a fast Rust runtime shared by Python and Node.js.</p>
   <div class="modern-cta-actions">
-    <a class="modern-cta-btn primary" href="#installation">Install BridgeTime</a>
+    <a class="modern-cta-btn primary" href="/bridgetime/installation">Install BridgeTime</a>
     <a class="modern-cta-btn ghost" href="/bridgerust/introduction">Built with BridgeRust</a>
     <a class="modern-cta-btn ghost" href="https://github.com/bridgerust/bridgerust" target="_blank" rel="noopener noreferrer">View Source</a>
   </div>

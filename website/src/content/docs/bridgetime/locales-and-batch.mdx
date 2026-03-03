@@ -1,0 +1,97 @@
+---
+title: Locale & Batch
+description: Use locale packs, calendar formatting, and batch APIs for throughput.
+---
+
+import { Tabs, TabItem, CardGrid, LinkCard } from "@astrojs/starlight/components";
+
+BridgeTime includes locale packs and calendar-style formatting in both Python and Node bindings.
+
+## Supported Locales
+
+- `en`
+- `fr`
+- `es`
+- `de`
+- `pt`
+
+Use `supported_locales()` (Python) or `supportedLocales()` (Node.js) to inspect runtime locale availability.
+
+## Locale Formatting
+
+<Tabs>
+  <TabItem label="Python">
+    ```python
+    from bridgetime import bridge_time
+
+    dt = bridge_time.parse("2026-06-15T11:30:00Z", "Europe/Paris")
+    print(dt.format_locale("dddd, D MMMM YYYY HH:mm", "fr"))
+    print(dt.calendar(locale="fr"))
+    ```
+  </TabItem>
+  <TabItem label="Node.js">
+    ```ts
+    import { bridgeTime } from "@bridgerust/bridgetime";
+
+    const dt = bridgeTime.parse("2026-06-15T11:30:00Z", "Europe/Paris");
+    console.log(dt.formatLocale("dddd, D MMMM YYYY HH:mm", "fr"));
+    console.log(dt.calendar("fr"));
+    ```
+  </TabItem>
+</Tabs>
+
+## Batch APIs
+
+Batch operations reduce call overhead for larger payloads.
+
+- `parse_batch` / `parseBatch`
+- `parse_format_batch` / `parseFormatBatch`
+- `format_batch` / `formatBatch`
+
+<Tabs>
+  <TabItem label="Python">
+    ```python
+    from bridgetime import bridge_time
+
+    payload = [
+        "2026-01-02T10:00:00Z",
+        "2026-01-03T15:30:00Z",
+        "2026-01-04T08:05:00Z",
+    ]
+
+    parsed = bridge_time.parse_batch(payload, "UTC")
+    rendered = bridge_time.format_batch(payload, "YYYY-MM-DD HH:mm", "UTC")
+
+    print(len(parsed), rendered[:2])
+    ```
+  </TabItem>
+  <TabItem label="Node.js">
+    ```ts
+    import { bridgeTime } from "@bridgerust/bridgetime";
+
+    const payload = [
+      "2026-01-02T10:00:00Z",
+      "2026-01-03T15:30:00Z",
+      "2026-01-04T08:05:00Z",
+    ];
+
+    const parsed = bridgeTime.parseBatch(payload, "UTC");
+    const rendered = bridgeTime.formatBatch(payload, "YYYY-MM-DD HH:mm", "UTC");
+
+    console.log(parsed.length, rendered.slice(0, 2));
+    ```
+  </TabItem>
+</Tabs>
+
+<CardGrid class="modern-link-grid">
+  <LinkCard
+    title="API Reference"
+    description="Full method index for date instances, factories, and durations."
+    href="/bridgetime/api-reference"
+  />
+  <LinkCard
+    title="BridgeTime Overview"
+    description="Return to high-level capabilities and package sources."
+    href="/bridgetime"
+  />
+</CardGrid>

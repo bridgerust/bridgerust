@@ -1,0 +1,104 @@
+---
+title: API Reference
+description: BridgeTime static methods, instance methods, and duration API across Python and Node.js.
+---
+
+import { CardGrid, LinkCard } from "@astrojs/starlight/components";
+
+BridgeTime keeps API parity across bindings:
+
+- Python exports: `bridge_time`, `bridge_duration`
+- Node exports: `bridgeTime`, `bridgeDuration`
+
+## Factory & Static Methods
+
+| Python | Node.js | Purpose |
+| --- | --- | --- |
+| `bridge_time.now(timezone?)` | `bridgeTime.now(timezone?)` | Current datetime in timezone |
+| `bridge_time.parse(input, timezone?)` | `bridgeTime.parse(input, timezone?)` | Parse ISO/local datetime |
+| `bridge_time.parse_format(input, pattern, timezone?)` | `bridgeTime.parseFormat(input, pattern, timezone?)` | Parse by tokenized format |
+| `bridge_time.parse_batch(inputs, timezone?)` | `bridgeTime.parseBatch(inputs, timezone?)` | Batch parse inputs |
+| `bridge_time.parse_format_batch(inputs, pattern, timezone?)` | `bridgeTime.parseFormatBatch(inputs, pattern, timezone?)` | Batch parse by format |
+| `bridge_time.format_batch(inputs, pattern, timezone?, locale?)` | `bridgeTime.formatBatch(inputs, pattern, timezone?, locale?)` | Batch formatting |
+| `bridge_time.from_array(components, timezone?)` | `bridgeTime.fromArray(components, timezone?)` | Build datetime from array |
+| `bridge_time.from_unix_ms(unix_ms, timezone?)` | `bridgeTime.fromUnixMs(unix_ms, timezone?)` | Build from epoch ms |
+| `bridge_time.from_unix(unix_seconds, timezone?)` | `bridgeTime.fromUnix(unix_seconds, timezone?)` | Build from epoch seconds |
+| `bridge_time.duration(value, unit?)` | `bridgeTime.duration(value, unit?)` | Create duration |
+| `supported_locales()` | `supportedLocales()` | Return locale pack list |
+| `bridge_time.min(a, b)` / `bridge_time.max(a, b)` | `bridgeTime.min(a, b)` / `bridgeTime.max(a, b)` | Static ordering helpers |
+
+## Instance Methods
+
+### Parsing & formatting
+
+- `to_iso()`
+- `format(pattern)`
+- `format_locale(pattern, locale?)`
+- `calendar(reference?, locale?)`
+- `unix_ms()` / `unix()` / `value_of()`
+- `timezone()`
+- `to_array()`
+
+### Arithmetic, compare, ranges
+
+- `add(amount, unit)` / `subtract(amount, unit)`
+- `add_duration(duration)` / `subtract_duration(duration)`
+- `start_of(unit)` / `end_of(unit)`
+- `diff(other, unit, as_float?)`
+- `is_before(other)` / `is_after(other)` / `is_same(other)`
+- `is_before_unit(other, unit)` / `is_after_unit(other, unit)` / `is_same_unit(other, unit)`
+- `is_same_or_before(other)` / `is_same_or_after(other)`
+- `is_same_or_before_unit(other, unit)` / `is_same_or_after_unit(other, unit)`
+- `is_between(start, end, unit?, inclusivity?)`
+- `clamp(start, end)`
+
+### Timezone and calendar helpers
+
+- `to_timezone(timezone)`
+- `utc_offset()` / `is_utc()` / `is_dst()`
+- `get(field)` / `set(field, value)`
+- `year()` / `month()` / `date()` / `day()` / `hour()` / `minute()` / `second()` / `millisecond()`
+- `set_year(value)` / `set_month(value)` / `set_date(value)` / `set_day(value)`
+- `set_hour(value)` / `set_minute(value)` / `set_second(value)` / `set_millisecond(value)`
+- `days_in_month()` / `is_leap_year()` / `is_valid()`
+- `day_of_year()` / `set_day_of_year(value)`
+- `quarter()` / `set_quarter(value)`
+- `iso_weekday()` / `set_iso_weekday(value)`
+- `week()` / `week_of_year()` / `set_week(value)`
+- `iso_week()` / `set_iso_week(value)`
+- `iso_week_year()` / `days_in_year()` / `weeks_in_year()` / `iso_weeks_in_year()`
+
+### Relative helpers
+
+- `is_today()` / `is_yesterday()` / `is_tomorrow()`
+- `from_time(other, without_suffix?)` / `to_time(other, without_suffix?)`
+- `from_now(without_suffix?)` / `to_now(without_suffix?)`
+
+## Duration API
+
+- `bridge_duration(value, unit?)` / `new bridgeDuration(value, unit?)`
+- `from_milliseconds(...)`, `from_seconds(...)`, `from_minutes(...)`, `from_hours(...)`
+- `from_days(...)`, `from_weeks(...)`, `from_months(...)`, `from_years(...)`
+- `as_milliseconds()`, `as_seconds()`, `as_minutes()`, `as_hours()`
+- `as_days()`, `as_weeks()`, `as_months()`, `as_years()`
+- `humanize(with_suffix?)`
+- `add(other)` / `subtract(other)` / `negate()` / `abs()`
+
+## Source Paths
+
+- Rust core: [`crates/bridgetime/bridge`](https://github.com/bridgerust/bridgerust/tree/main/crates/bridgetime/bridge)
+- Python binding: [`bindings/python/bridgetime`](https://github.com/bridgerust/bridgerust/tree/main/bindings/python/bridgetime)
+- Node binding: [`bindings/node/@bridgerust/bridgetime`](https://github.com/bridgerust/bridgerust/tree/main/bindings/node/@bridgerust/bridgetime)
+
+<CardGrid class="modern-link-grid">
+  <LinkCard
+    title="Quickstart"
+    description="See complete Python and Node examples for common flows."
+    href="/bridgetime/quickstart"
+  />
+  <LinkCard
+    title="Locale & Batch"
+    description="Use locale packs and batch methods for production throughput."
+    href="/bridgetime/locales-and-batch"
+  />
+</CardGrid>

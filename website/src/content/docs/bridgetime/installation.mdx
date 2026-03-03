@@ -1,0 +1,70 @@
+---
+title: Installation
+description: Install BridgeTime in Python or Node.js and validate your runtime quickly.
+---
+
+import { Tabs, TabItem, CardGrid, LinkCard } from "@astrojs/starlight/components";
+
+<div class="modern-badge-strip">
+  <a href="https://pypi.org/project/bridgetime" target="_blank" rel="noopener noreferrer">
+    <img src="https://img.shields.io/pypi/v/bridgetime?label=bridgetime%20(PyPI)&style=for-the-badge" alt="bridgetime on PyPI" />
+  </a>
+  <a href="https://www.npmjs.com/package/@bridgerust/bridgetime" target="_blank" rel="noopener noreferrer">
+    <img src="https://img.shields.io/npm/v/@bridgerust/bridgetime?label=%40bridgerust%2Fbridgetime&style=for-the-badge" alt="bridgetime on npm" />
+  </a>
+</div>
+
+BridgeTime ships as native Python and Node.js packages backed by a shared Rust core.
+
+## Install Packages
+
+<Tabs>
+  <TabItem label="Python">
+    ```bash
+    pip install bridgetime
+    ```
+  </TabItem>
+  <TabItem label="Node.js">
+    ```bash
+    npm install @bridgerust/bridgetime
+    ```
+  </TabItem>
+</Tabs>
+
+## Runtime Requirements
+
+| Target | Minimum | Notes |
+| --- | --- | --- |
+| Python | 3.9+ | Wheels published through PyPI |
+| Node.js | 18+ | Tested on Node 20 LTS |
+| OS | macOS, Linux, Windows | Prebuilt binaries by platform/arch |
+
+## Validate Installation
+
+<Tabs>
+  <TabItem label="Python">
+    ```python
+    from bridgetime import bridge_time
+    print(bridge_time.now("UTC").format("YYYY-MM-DD HH:mm:ss"))
+    ```
+  </TabItem>
+  <TabItem label="Node.js">
+    ```ts
+    import { bridgeTime } from "@bridgerust/bridgetime";
+    console.log(bridgeTime.now("UTC").format("YYYY-MM-DD HH:mm:ss"));
+    ```
+  </TabItem>
+</Tabs>
+
+<CardGrid class="modern-link-grid">
+  <LinkCard
+    title="Quickstart"
+    description="Build your first parse/format + duration workflow."
+    href="/bridgetime/quickstart"
+  />
+  <LinkCard
+    title="Locale & Batch"
+    description="Enable locale formatting and high-throughput batch APIs."
+    href="/bridgetime/locales-and-batch"
+  />
+</CardGrid>

@@ -45,6 +45,10 @@ export default defineConfig({
           label: "BridgeTime",
           items: [
             { label: "Overview", link: "/bridgetime" },
+            { label: "Installation", link: "/bridgetime/installation" },
+            { label: "Quickstart", link: "/bridgetime/quickstart" },
+            { label: "Locale & Batch", link: "/bridgetime/locales-and-batch" },
+            { label: "API Reference", link: "/bridgetime/api-reference" },
           ],
         },
         {

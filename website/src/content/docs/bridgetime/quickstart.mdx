@@ -1,0 +1,98 @@
+---
+title: Quickstart
+description: Parse, format, convert timezones, and use durations in Python and Node.js.
+---
+
+import { Tabs, TabItem, CardGrid, LinkCard } from "@astrojs/starlight/components";
+
+<div class="modern-kpi-grid">
+  <div class="modern-kpi">
+    <span class="modern-kpi-value">1</span>
+    <span class="modern-kpi-label">Shared Rust Core</span>
+    <span class="modern-kpi-note">same behavior in Python + Node</span>
+  </div>
+  <div class="modern-kpi">
+    <span class="modern-kpi-value">IANA</span>
+    <span class="modern-kpi-label">Timezone Support</span>
+    <span class="modern-kpi-note">UTC offsets + DST helpers included</span>
+  </div>
+  <div class="modern-kpi">
+    <span class="modern-kpi-value">Batch</span>
+    <span class="modern-kpi-label">Parse / Format APIs</span>
+    <span class="modern-kpi-note">vectorized-style throughput</span>
+  </div>
+</div>
+
+## Basic Workflow
+
+<Tabs>
+  <TabItem label="Python">
+    ```python
+    from bridgetime import bridge_time, bridge_duration
+
+    now = bridge_time.now("UTC")
+    parsed = bridge_time.parse("2026-02-20T15:45:00Z")
+    local = parsed.to_timezone("America/New_York")
+
+    report_day = local.add(3, "day").start_of("day")
+    print(report_day.format("YYYY-MM-DD HH:mm:ss"))
+
+    # Locale-aware calendar formatting
+    print(report_day.calendar(locale="fr"))
+
+    # Batch formatting
+    rows = bridge_time.format_batch(
+        ["2026-02-20T10:00:00Z", "2026-02-21T16:30:00Z"],
+        "YYYY-MM-DD",
+        "UTC",
+    )
+    print(rows)
+
+    # Duration
+    sla = bridge_duration(90, "minute")
+    print(sla.humanize(True))
+    ```
+  </TabItem>
+  <TabItem label="Node.js">
+    ```ts
+    import { bridgeTime, bridgeDuration } from "@bridgerust/bridgetime";
+
+    const now = bridgeTime.now("UTC");
+    const parsed = bridgeTime.parse("2026-02-20T15:45:00Z");
+    const local = parsed.toTimezone("America/New_York");
+
+    const reportDay = local.add(3, "day").startOf("day");
+    console.log(reportDay.format("YYYY-MM-DD HH:mm:ss"));
+
+    // Locale-aware calendar formatting
+    console.log(reportDay.calendar("fr"));
+
+    // Batch formatting
+    const rows = bridgeTime.formatBatch(
+      ["2026-02-20T10:00:00Z", "2026-02-21T16:30:00Z"],
+      "YYYY-MM-DD",
+      "UTC"
+    );
+    console.log(rows);
+
+    // Duration
+    const sla = bridgeDuration(90, "minute");
+    console.log(sla.humanize(true));
+    ```
+  </TabItem>
+</Tabs>
+
+## Next
+
+<CardGrid class="modern-link-grid">
+  <LinkCard
+    title="Locale & Batch"
+    description="Deep dive into locale packs, calendar output, and batch parse/format APIs."
+    href="/bridgetime/locales-and-batch"
+  />
+  <LinkCard
+    title="API Reference"
+    description="Browse static methods, instance methods, and duration helpers."
+    href="/bridgetime/api-reference"
+  />
+</CardGrid>
