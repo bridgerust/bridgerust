@@ -1,20 +1,59 @@
 ---
 title: BridgeTime — Datetime Toolkit
-description: Rust-powered Day.js/Moment-style datetime toolkit for Python and Node.js. Same familiar API, backed by a fast Rust core.
+description: Rust-powered Day.js/Moment-style datetime toolkit for Python and Node.js with locale formatting, calendar helpers, and batch APIs.
+template: splash
+hero:
+  tagline: Familiar Date APIs, Native Rust Speed
+  image:
+    file: ../../assets/houston.webp
+  actions:
+    - text: Install & Start
+      link: "#installation"
+      icon: rocket
+    - text: API Overview
+      link: "#api-highlights"
+      icon: open-book
+      variant: secondary
+    - text: GitHub
+      link: https://github.com/bridgerust/bridgerust
+      icon: github
+      variant: minimal
 ---
 
-import {
-  Tabs,
-  TabItem,
-  Card,
-  CardGrid,
-  LinkCard,
-} from "@astrojs/starlight/components";
+import { Tabs, TabItem, CardGrid, LinkCard } from "@astrojs/starlight/components";
 
-[![PyPI](https://img.shields.io/pypi/v/bridgetime?label=bridgetime%20(PyPI))](https://pypi.org/project/bridgetime)
-[![npm](https://img.shields.io/npm/v/@bridgerust/bridgetime?label=%40bridgerust%2Fbridgetime)](https://www.npmjs.com/package/@bridgerust/bridgetime)
+<div class="modern-badge-strip">
+  <a href="https://pypi.org/project/bridgetime" target="_blank" rel="noopener noreferrer">
+    <img src="https://img.shields.io/pypi/v/bridgetime?label=bridgetime%20(PyPI)&style=for-the-badge" alt="bridgetime on PyPI" />
+  </a>
+  <a href="https://www.npmjs.com/package/@bridgerust/bridgetime" target="_blank" rel="noopener noreferrer">
+    <img src="https://img.shields.io/npm/v/@bridgerust/bridgetime?label=%40bridgerust%2Fbridgetime&style=for-the-badge" alt="bridgetime on npm" />
+  </a>
+  <a href="https://github.com/bridgerust/bridgerust" target="_blank" rel="noopener noreferrer">
+    <img src="https://img.shields.io/github/stars/bridgerust/bridgerust?style=for-the-badge&logo=github&label=GitHub%20Stars" alt="GitHub stars" />
+  </a>
+</div>
 
-**BridgeTime** is a Rust-powered datetime toolkit with a Day.js/Moment-style API for Python and Node.js. One Rust core, two native libraries, familiar API surface.
+<div class="modern-kpi-grid">
+  <div class="modern-kpi">
+    <span class="modern-kpi-value">5</span>
+    <span class="modern-kpi-label">Locale Packs</span>
+    <span class="modern-kpi-note">`en`, `fr`, `es`, `de`, `pt` included</span>
+  </div>
+  <div class="modern-kpi">
+    <span class="modern-kpi-value">Batch</span>
+    <span class="modern-kpi-label">Parse / Format APIs</span>
+    <span class="modern-kpi-note">fast vectorized-style operations</span>
+  </div>
+  <div class="modern-kpi">
+    <span class="modern-kpi-value">1 core</span>
+    <span class="modern-kpi-label">Python + Node</span>
+    <span class="modern-kpi-note">same behavior across both bindings</span>
+  </div>
+</div>
+
+BridgeTime gives you a Day.js/Moment-style developer experience with a Rust core under the hood.  
+Use the same concepts in Python and Node.js while keeping execution fast and deterministic.
 
 ## Installation
 
@@ -38,109 +77,123 @@ import {
     ```python
     from bridgetime import bridge_time, bridge_duration
 
-    # Current time in a timezone
     now = bridge_time.now("UTC")
-    print(now.to_iso())
-
-    # Parse, format, arithmetic
     future = now.add(2, "week").start_of("day")
     print(future.format("YYYY-MM-DD HH:mm:ss"))
 
-    # Timezone conversion
-    ny = now.to_timezone("America/New_York")
-    print(ny.format("YYYY-MM-DD HH:mm:ss"))
+    # Locale + calendar output
+    print(future.calendar(locale="fr"))
 
-    # Relative time
-    print(now.add(30, "minute").from_now())  # "in 30 minutes"
+    # Batch formatting
+    rows = bridge_time.format_batch(
+        ["2026-01-02T10:00:00Z", "2026-01-03T15:30:00Z"],
+        "YYYY-MM-DD",
+        "UTC",
+    )
+    print(rows)
 
-    # Durations
     duration = bridge_duration(90, "minute")
-    print(duration.humanize(True))  # "in 2 hours"
+    print(duration.humanize(True))
     ```
   </TabItem>
   <TabItem label="Node.js">
-    ```typescript
+    ```ts
     import { bridgeTime, bridgeDuration } from "@bridgerust/bridgetime";
 
-    // Current time in a timezone
     const now = bridgeTime.now("UTC");
-    console.log(now.toIso());
-
-    // Parse, format, arithmetic
     const future = now.add(2, "week").startOf("day");
     console.log(future.format("YYYY-MM-DD HH:mm:ss"));
 
-    // Timezone conversion
-    const ny = now.toTimezone("America/New_York");
-    console.log(ny.format("YYYY-MM-DD HH:mm:ss"));
+    // Locale + calendar output
+    console.log(future.calendar("fr"));
 
-    // Relative time
-    console.log(now.add(30, "minute").fromNow()); // "in 30 minutes"
+    // Batch formatting
+    const rows = bridgeTime.formatBatch(
+      ["2026-01-02T10:00:00Z", "2026-01-03T15:30:00Z"],
+      "YYYY-MM-DD",
+      "UTC"
+    );
+    console.log(rows);
 
-    // Durations
     const duration = bridgeDuration(90, "minute");
-    console.log(duration.humanize(true)); // "in 2 hours"
+    console.log(duration.humanize(true));
     ```
   </TabItem>
 </Tabs>
 
-## Features
+---
+
+## Capability Areas
 
 <CardGrid>
-  <Card title="Familiar API" icon="pencil">
-    Day.js / Moment.js-style methods: `parse`, `format`, `add`, `subtract`, `startOf`, `endOf`, `diff`. Drop-in replacement for most common date operations.
-  </Card>
-  <Card title="Rust Core" icon="rocket">
-    Powered by the same BridgeRust framework as Embex. Native performance with zero overhead between Rust and the host language.
-  </Card>
-  <Card title="Timezone Support" icon="approve-check-circle">
-    Full IANA timezone support (`America/New_York`, `Europe/Paris`, etc.). Timezone-aware arithmetic, DST detection, UTC offset helpers.
-  </Card>
-  <Card title="Rich API Surface" icon="star">
-    Durations, relative time (`fromNow`, `toNow`), ISO week helpers, quarter helpers, day-of-year, range helpers, comparison methods.
-  </Card>
+  <LinkCard
+    title="Timezone-aware Arithmetic"
+    description="Parse, add, subtract, clamp, compare, and convert IANA timezones safely."
+    href="#api-highlights"
+  />
+  <LinkCard
+    title="Locale & Calendar Formatting"
+    description="Use locale packs and calendar-style outputs for user-facing datetime strings."
+    href="#api-highlights"
+  />
+  <LinkCard
+    title="Batch Parse / Format"
+    description="Process arrays of datetime inputs with dedicated batch APIs."
+    href="#api-highlights"
+  />
+  <LinkCard
+    title="Duration Semantics"
+    description="Create durations, humanize with suffixes, and compose with datetime values."
+    href="#api-highlights"
+  />
 </CardGrid>
+
+---
 
 ## API Highlights
 
-**Parsing**
-- `bridge_time.now(tz)` — current time
-- `bridge_time.parse(iso_string, tz?)` — parse ISO string
-- `bridge_time.parse_format(input, pattern, tz?)` — custom format tokens (`DD/MM/YYYY HH:mm`)
-- `bridge_time.from_array([year, month, day, h, m, s, ms], tz?)` / `.to_array()`
+### Parsing & creation
 
-**Formatting**
-- `.format("YYYY-MM-DD HH:mm:ss")` — Day.js-style tokens
-- `.to_iso()` — ISO 8601 string
+- `bridge_time.now(tz)`
+- `bridge_time.parse(iso_string, tz?)`
+- `bridge_time.parse_format(input, pattern, tz?)`
+- `bridge_time.from_array([year, month, day, h, m, s, ms], tz?)`
+- `bridge_time.parse_batch(inputs, tz?)`
 
-**Arithmetic**
+### Formatting
+
+- `.format("YYYY-MM-DD HH:mm:ss")`
+- `.to_iso()`
+- `bridge_time.format_locale(input, format, locale, tz?)`
+- `bridge_time.calendar(input, locale?, tz?)`
+- `bridge_time.format_batch(inputs, format, tz?)`
+
+### Arithmetic, compare, ranges
+
 - `.add(value, unit)` / `.subtract(value, unit)`
 - `.start_of(unit)` / `.end_of(unit)`
-- `.diff(other, unit, float?)` — difference between two datetimes
-
-**Timezones**
-- `.to_timezone(iana_name)` — convert timezone
-- `.utc_offset()` / `.is_utc()` / `.is_dst()`
-
-**Calendar helpers**
-- `.year()`, `.month()`, `.date()`, `.day()`, `.hour()`, `.minute()`, `.second()`, `.millisecond()`
-- `.days_in_month()` / `.is_leap_year()` / `.is_valid()`
-- `.quarter()` / `.iso_weekday()` / `.week()` / `.iso_week()` / `.day_of_year()`
-
-**Relative time**
-- `.from_now()` / `.to_now()` — human-readable relative strings
-- `.is_today()` / `.is_yesterday()` / `.is_tomorrow()`
-
-**Comparison & ranges**
+- `.diff(other, unit, float?)`
 - `.is_before(other)` / `.is_after(other)` / `.is_same(other)`
-- `.is_between(start, end, unit?, inclusivity?)` — e.g. `"[]"`, `"()"`
+- `.is_between(start, end, unit?, inclusivity?)`
 - `.clamp(start, end)`
-- `bridge_time.min(a, b)` / `bridge_time.max(a, b)`
 
-**Durations**
-- `bridge_duration(value, unit)` — create a duration
-- `.humanize(with_suffix?)` — e.g. `"in 2 hours"`, `"3 days ago"`
+### Timezone and calendar helpers
+
+- `.to_timezone(iana_name)`
+- `.utc_offset()` / `.is_utc()` / `.is_dst()`
+- `.year()` `.month()` `.date()` `.day()` `.hour()` `.minute()` `.second()`
+- `.days_in_month()` / `.is_leap_year()` / `.day_of_year()`
+- `.quarter()` / `.week()` / `.iso_week()` / `.iso_weekday()`
+
+### Relative time + durations
+
+- `.from_now()` / `.to_now()`
+- `.is_today()` / `.is_yesterday()` / `.is_tomorrow()`
+- `bridge_duration(value, unit)`
+- `.humanize(with_suffix?)`
 - `.add_duration(duration)` / `.subtract_duration(duration)`
+
+---
 
 ## Package Sources
 
@@ -148,4 +201,12 @@ import {
 - Python binding: [`bindings/python/bridgetime`](https://github.com/bridgerust/bridgerust/tree/main/bindings/python/bridgetime)
 - Node.js binding: [`bindings/node/@bridgerust/bridgetime`](https://github.com/bridgerust/bridgerust/tree/main/bindings/node/@bridgerust/bridgetime)
 
-Built with the [BridgeRust](/bridgerust/introduction) framework.
+<div class="modern-cta-panel">
+  <h3>Use BridgeTime in Production Workflows</h3>
+  <p>Keep a familiar API for app developers while moving date logic to a fast Rust runtime shared by Python and Node.js.</p>
+  <div class="modern-cta-actions">
+    <a class="modern-cta-btn primary" href="#installation">Install BridgeTime</a>
+    <a class="modern-cta-btn ghost" href="/bridgerust/introduction">Built with BridgeRust</a>
+    <a class="modern-cta-btn ghost" href="https://github.com/bridgerust/bridgerust" target="_blank" rel="noopener noreferrer">View Source</a>
+  </div>
+</div>
