@@ -1,7 +1,7 @@
 use bridgeq::{QueueConfig, QueueStats};
 use redis::aio::MultiplexedConnection;
 use redis::{AsyncCommands, RedisError, Script};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
 use thiserror::Error;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -9,6 +9,7 @@ pub struct RedisQueueMessage {
     pub id: u64,
     pub payload: String,
     pub attempts: u32,
+    pub lease_token: Option<u64>,
 }
 
 #[derive(Debug, Error)]
@@ -21,95 +22,168 @@ pub enum RedisQueueError {
 
 pub type Result<T> = std::result::Result<T, RedisQueueError>;
 
+const LUA_ENQUEUE: &str = r#"
+redis.call('INCR', KEYS[1])
+local id = redis.call('GET', KEYS[1])
+redis.call('HSET', KEYS[2], id, ARGV[1])
+redis.call('RPUSH', KEYS[3], id)
+return id
+"#;
+
+const LUA_TIME: &str = r#"
+local time = redis.call('TIME')
+local now_ms = tonumber(time[1]) * 1000 + math.floor(tonumber(time[2]) / 1000)
+"#;
+
 const LUA_DEQUEUE: &str = r#"
 local ready = KEYS[1]
 local inflight = KEYS[2]
 local payloads = KEYS[3]
 local attempts_key = KEYS[4]
-local lease_deadline = tonumber(ARGV[1])
+local generations = KEYS[5]
+local lease_deadline = now_ms + tonumber(ARGV[1])
 
 while true do
-  local id = redis.call('LPOP', ready)
+  local id = redis.call('LINDEX', ready, 0)
   if not id then
     return nil
   end
 
   local payload = redis.call('HGET', payloads, id)
   if payload then
-    local attempts = redis.call('HGET', attempts_key, id)
-    if not attempts then
-      attempts = '0'
-    end
+    local attempts = redis.call('HGET', attempts_key, id) or '0'
+    redis.call('HINCRBY', generations, id, 1)
+    local generation = redis.call('HGET', generations, id)
     redis.call('ZADD', inflight, lease_deadline, id)
-    return { id, payload, attempts }
+    redis.call('LPOP', ready)
+    return { id, payload, attempts, generation }
   end
 
+  redis.call('LPOP', ready)
   redis.call('HDEL', attempts_key, id)
+  redis.call('HDEL', generations, id)
+end
+"#;
+
+const LUA_LEASE_CHECK: &str = r#"
+local inflight = KEYS[1]
+local generations = KEYS[2]
+local id = ARGV[1]
+local token = ARGV[2]
+local deadline = redis.call('ZSCORE', inflight, id)
+if not deadline or tonumber(deadline) <= now_ms or redis.call('HGET', generations, id) ~= token then
+  return 0
 end
 "#;
 
 const LUA_ACK: &str = r#"
-local inflight = KEYS[1]
-local payloads = KEYS[2]
-local attempts_key = KEYS[3]
-local id = ARGV[1]
-
-if redis.call('ZREM', inflight, id) == 0 then
-  return 0
-end
-
-redis.call('HDEL', payloads, id)
-redis.call('HDEL', attempts_key, id)
+redis.call('ZREM', inflight, id)
+redis.call('HDEL', generations, id)
+redis.call('HDEL', KEYS[3], id)
+redis.call('HDEL', KEYS[4], id)
 return 1
 "#;
 
-const LUA_NACK: &str = r#"
-local inflight = KEYS[1]
-local payloads = KEYS[2]
-local attempts_key = KEYS[3]
-local ready = KEYS[4]
-local delayed = KEYS[5]
-local dead_letter = KEYS[6]
+const LUA_RENEW: &str = r#"
+local base = now_ms
+if ARGV[3] == 'extend' then
+  base = tonumber(deadline)
+end
+redis.call('ZADD', inflight, base + tonumber(ARGV[4]), id)
+return 1
+"#;
 
-local id = ARGV[1]
-local max_retries = tonumber(ARGV[2])
-local now_ms = tonumber(ARGV[3])
+const LUA_RETRY: &str = r#"
+local inflight = KEYS[1]
+local generations = KEYS[2]
+local payloads = KEYS[3]
+local attempts_key = KEYS[4]
+local ready = KEYS[5]
+local delayed = KEYS[6]
+local dead_letter = KEYS[7]
+local max_retries = tonumber(ARGV[3])
 local backoff_kind = tonumber(ARGV[4])
 local backoff_base = tonumber(ARGV[5])
 local backoff_max = tonumber(ARGV[6])
 
-if redis.call('ZREM', inflight, id) == 0 then
-  return {0, 0}
-end
+local function retry(id)
+  if redis.call('HEXISTS', payloads, id) == 0 then
+    redis.call('HDEL', attempts_key, id)
+    redis.call('HDEL', generations, id)
+    redis.call('ZREM', inflight, id)
+    return -1
+  end
 
-if redis.call('HEXISTS', payloads, id) == 0 then
-  return {-1, 0}
-end
+  local attempts = redis.call('HINCRBY', attempts_key, id, 1)
+  if attempts > max_retries then
+    redis.call('RPUSH', dead_letter, id)
+  else
+    local delay = 0
+    if backoff_kind == 1 then
+      delay = backoff_base
+    elseif backoff_kind == 2 then
+      delay = math.min(backoff_base * attempts, backoff_max)
+    elseif backoff_kind == 3 then
+      delay = math.min(backoff_base * (2 ^ math.min(attempts - 1, 63)), backoff_max)
+    end
 
-local attempts = redis.call('HINCRBY', attempts_key, id, 1)
-if attempts > max_retries then
-  redis.call('RPUSH', dead_letter, id)
-  return {1, attempts}
-end
+    if delay <= 0 then
+      redis.call('RPUSH', ready, id)
+    else
+      redis.call('ZADD', delayed, now_ms + delay, id)
+    end
+  end
 
-local delay = 0
-if backoff_kind == 1 then
-  delay = backoff_base
-elseif backoff_kind == 2 then
-  delay = backoff_base * attempts
-  if delay > backoff_max then delay = backoff_max end
-elseif backoff_kind == 3 then
-  delay = backoff_base * (2 ^ (attempts - 1))
-  if delay > backoff_max then delay = backoff_max end
+  redis.call('ZREM', inflight, id)
+  return 1
 end
+"#;
 
-if delay <= 0 then
+const LUA_RECONCILE: &str = r#"
+local batch_size = tonumber(ARGV[7])
+local due_ids = redis.call('ZRANGEBYSCORE', delayed, '-inf', now_ms, 'LIMIT', 0, batch_size)
+for _, id in ipairs(due_ids) do
   redis.call('RPUSH', ready, id)
-else
-  redis.call('ZADD', delayed, now_ms + delay, id)
+  redis.call('ZREM', delayed, id)
 end
 
-return {1, attempts}
+local expired_ids = redis.call('ZRANGEBYSCORE', inflight, '-inf', now_ms, 'LIMIT', 0, batch_size)
+for _, id in ipairs(expired_ids) do
+  retry(id)
+end
+
+if #due_ids == batch_size or #expired_ids == batch_size then
+  return 1
+end
+return 0
+"#;
+
+const RECONCILE_BATCH_SIZE: u32 = 256;
+
+const LUA_REQUEUE_DEAD_LETTER: &str = r#"
+local id = ARGV[1]
+if redis.call('LREM', KEYS[1], 1, id) == 0 then
+  return 0
+end
+redis.call('HDEL', KEYS[2], id)
+redis.call('RPUSH', KEYS[3], id)
+return 1
+"#;
+
+const LUA_DRAIN_DEAD_LETTER: &str = r#"
+local messages = {}
+for _, id in ipairs(redis.call('LRANGE', KEYS[1], 0, -1)) do
+  local payload = redis.call('HGET', KEYS[2], id)
+  if payload then
+    local attempts = redis.call('HGET', KEYS[3], id) or '0'
+    messages[#messages + 1] = {id, payload, attempts}
+  end
+  redis.call('HDEL', KEYS[2], id)
+  redis.call('HDEL', KEYS[3], id)
+  redis.call('HDEL', KEYS[4], id)
+end
+redis.call('DEL', KEYS[1])
+return messages
 "#;
 
 #[derive(Debug, Clone)]
@@ -128,6 +202,7 @@ struct RedisQueueKeys {
     dead_letter: String,
     payloads: String,
     attempts: String,
+    generations: String,
 }
 
 impl RedisQueue {
@@ -148,11 +223,13 @@ impl RedisQueue {
         let mut conn = self.connection().await?;
         self.reconcile(&mut conn).await?;
 
-        let id: u64 = conn.incr(&self.keys.seq, 1).await?;
-        let _: usize = conn.hset(&self.keys.payloads, id, payload).await?;
-        let _: usize = conn.hset(&self.keys.attempts, id, 0u32).await?;
-        let _: usize = conn.rpush(&self.keys.ready, id).await?;
-        Ok(id)
+        Ok(Script::new(LUA_ENQUEUE)
+            .key(&self.keys.seq)
+            .key(&self.keys.payloads)
+            .key(&self.keys.ready)
+            .arg(payload)
+            .invoke_async(&mut conn)
+            .await?)
     }
 
     pub async fn enqueue_batch(
@@ -171,112 +248,89 @@ impl RedisQueue {
         self.reconcile(&mut conn).await?;
 
         let size = batch_size.max(1);
-        let lease_deadline =
-            now_millis().saturating_add(duration_to_millis(self.config.visibility_timeout));
+        let lease_ms = duration_to_millis(self.config.visibility_timeout);
+        let script = Script::new(&format!("{LUA_TIME}{LUA_DEQUEUE}"));
 
         let mut out = Vec::with_capacity(size);
         for _ in 0..size {
-            let result: Option<(u64, String, u32)> = Script::new(LUA_DEQUEUE)
+            let result: Option<(u64, String, u32, u64)> = script
                 .key(&self.keys.ready)
                 .key(&self.keys.in_flight)
                 .key(&self.keys.payloads)
                 .key(&self.keys.attempts)
-                .arg(lease_deadline)
+                .key(&self.keys.generations)
+                .arg(lease_ms)
                 .invoke_async(&mut conn)
                 .await?;
 
-            let Some((id, payload, attempts)) = result else {
+            let Some((id, payload, attempts, lease_token)) = result else {
                 break;
             };
             out.push(RedisQueueMessage {
                 id,
                 payload,
                 attempts,
+                lease_token: Some(lease_token),
             });
         }
 
         Ok(out)
     }
 
-    pub async fn ack(&self, id: u64) -> Result<bool> {
+    pub async fn ack(&self, id: u64, lease_token: u64) -> Result<bool> {
         let mut conn = self.connection().await?;
-        self.reconcile(&mut conn).await?;
-
-        let acked: i64 = Script::new(LUA_ACK)
+        let acked: i64 = Script::new(&format!("{LUA_TIME}{LUA_LEASE_CHECK}{LUA_ACK}"))
             .key(&self.keys.in_flight)
+            .key(&self.keys.generations)
             .key(&self.keys.payloads)
             .key(&self.keys.attempts)
             .arg(id)
+            .arg(lease_token)
             .invoke_async(&mut conn)
             .await?;
         Ok(acked == 1)
     }
 
-    pub async fn heartbeat(&self, id: u64) -> Result<bool> {
-        let mut conn = self.connection().await?;
-        self.reconcile(&mut conn).await?;
-
-        let deadline =
-            now_millis().saturating_add(duration_to_millis(self.config.visibility_timeout));
-        let updated: usize = redis::cmd("ZADD")
-            .arg(&self.keys.in_flight)
-            .arg("XX")
-            .arg("CH")
-            .arg(deadline)
-            .arg(id)
-            .query_async(&mut conn)
-            .await?;
-        Ok(updated > 0)
+    pub async fn heartbeat(&self, id: u64, lease_token: u64) -> Result<bool> {
+        self.renew_lease(id, lease_token, "heartbeat", self.config.visibility_timeout)
+            .await
     }
 
-    pub async fn extend_lease(&self, id: u64, extra: Duration) -> Result<bool> {
-        let mut conn = self.connection().await?;
-        self.reconcile(&mut conn).await?;
-
-        let current: Option<i64> = conn.zscore(&self.keys.in_flight, id).await?;
-        let Some(current) = current else {
-            return Ok(false);
-        };
-
-        let base = current.max(now_millis());
-        let next = base.saturating_add(duration_to_millis(extra));
-        let updated: usize = redis::cmd("ZADD")
-            .arg(&self.keys.in_flight)
-            .arg("XX")
-            .arg("CH")
-            .arg(next)
-            .arg(id)
-            .query_async(&mut conn)
-            .await?;
-        Ok(updated > 0)
+    pub async fn extend_lease(&self, id: u64, lease_token: u64, extra: Duration) -> Result<bool> {
+        self.renew_lease(id, lease_token, "extend", extra).await
     }
 
-    pub async fn nack(&self, id: u64) -> Result<bool> {
+    async fn renew_lease(
+        &self,
+        id: u64,
+        lease_token: u64,
+        action: &str,
+        duration: Duration,
+    ) -> Result<bool> {
         let mut conn = self.connection().await?;
-        self.reconcile(&mut conn).await?;
-
-        let (kind, base_ms, max_ms) = lua_backoff(self.config.retry_backoff);
-        let result: (i64, i64) = Script::new(LUA_NACK)
+        let updated: i64 = Script::new(&format!("{LUA_TIME}{LUA_LEASE_CHECK}{LUA_RENEW}"))
             .key(&self.keys.in_flight)
-            .key(&self.keys.payloads)
-            .key(&self.keys.attempts)
-            .key(&self.keys.ready)
-            .key(&self.keys.delayed)
-            .key(&self.keys.dead_letter)
+            .key(&self.keys.generations)
             .arg(id)
-            .arg(self.config.max_retries)
-            .arg(now_millis())
-            .arg(kind)
-            .arg(base_ms)
-            .arg(max_ms)
+            .arg(lease_token)
+            .arg(action)
+            .arg(duration_to_millis(duration))
             .invoke_async(&mut conn)
             .await?;
+        Ok(updated == 1)
+    }
 
-        match result.0 {
-            0 => Ok(false),
+    pub async fn nack(&self, id: u64, lease_token: u64) -> Result<bool> {
+        let mut conn = self.connection().await?;
+        let script = Script::new(&format!(
+            "{LUA_TIME}{LUA_LEASE_CHECK}{LUA_RETRY}return retry(id)"
+        ));
+        match self
+            .run_retry_script(&mut conn, &script, id, lease_token)
+            .await?
+        {
             -1 => Err(RedisQueueError::MissingPayload(id)),
-            1 => Ok(true),
-            _ => Ok(false),
+            result => Ok(result == 1),
         }
     }
 
@@ -284,47 +338,37 @@ impl RedisQueue {
         let mut conn = self.connection().await?;
         self.reconcile(&mut conn).await?;
 
-        let removed: usize = redis::cmd("LREM")
-            .arg(&self.keys.dead_letter)
-            .arg(1)
+        let requeued: i64 = Script::new(LUA_REQUEUE_DEAD_LETTER)
+            .key(&self.keys.dead_letter)
+            .key(&self.keys.attempts)
+            .key(&self.keys.ready)
             .arg(id)
-            .query_async(&mut conn)
+            .invoke_async(&mut conn)
             .await?;
-        if removed == 0 {
-            return Ok(false);
-        }
-
-        let _: usize = conn.hset(&self.keys.attempts, id, 0u32).await?;
-        let _: usize = conn.rpush(&self.keys.ready, id).await?;
-        Ok(true)
+        Ok(requeued == 1)
     }
 
     pub async fn drain_dead_letter(&self) -> Result<Vec<RedisQueueMessage>> {
         let mut conn = self.connection().await?;
         self.reconcile(&mut conn).await?;
 
-        let ids: Vec<u64> = conn.lrange(&self.keys.dead_letter, 0, -1).await?;
-        if ids.is_empty() {
-            return Ok(Vec::new());
-        }
+        let messages: Vec<(u64, String, u32)> = Script::new(LUA_DRAIN_DEAD_LETTER)
+            .key(&self.keys.dead_letter)
+            .key(&self.keys.payloads)
+            .key(&self.keys.attempts)
+            .key(&self.keys.generations)
+            .invoke_async(&mut conn)
+            .await?;
 
-        let _: usize = conn.del(&self.keys.dead_letter).await?;
-        let mut out = Vec::with_capacity(ids.len());
-
-        for id in ids {
-            let payload: Option<String> = conn.hget(&self.keys.payloads, id).await?;
-            let Some(payload) = payload else {
-                continue;
-            };
-            let attempts: Option<u32> = conn.hget(&self.keys.attempts, id).await?;
-            out.push(RedisQueueMessage {
+        Ok(messages
+            .into_iter()
+            .map(|(id, payload, attempts)| RedisQueueMessage {
                 id,
                 payload,
-                attempts: attempts.unwrap_or(0),
-            });
-        }
-
-        Ok(out)
+                attempts,
+                lease_token: None,
+            })
+            .collect())
     }
 
     pub async fn stats(&self) -> Result<QueueStats> {
@@ -345,70 +389,36 @@ impl RedisQueue {
     }
 
     async fn reconcile(&self, conn: &mut MultiplexedConnection) -> Result<()> {
-        self.promote_due_delayed(conn).await?;
-        self.reclaim_expired_in_flight(conn).await?;
-        self.promote_due_delayed(conn).await?;
+        let script = Script::new(&format!("{LUA_TIME}{LUA_RETRY}{LUA_RECONCILE}"));
+        while self.run_retry_script(conn, &script, 0, 0).await? == 1 {}
         Ok(())
     }
 
-    async fn promote_due_delayed(&self, conn: &mut MultiplexedConnection) -> Result<()> {
-        let now = now_millis();
-        let ids: Vec<u64> = redis::cmd("ZRANGEBYSCORE")
-            .arg(&self.keys.delayed)
-            .arg("-inf")
-            .arg(now)
-            .query_async(conn)
-            .await?;
-
-        for id in ids {
-            let removed: usize = conn.zrem(&self.keys.delayed, id).await?;
-            if removed == 1 {
-                let _: usize = conn.rpush(&self.keys.ready, id).await?;
-            }
-        }
-        Ok(())
-    }
-
-    async fn reclaim_expired_in_flight(&self, conn: &mut MultiplexedConnection) -> Result<()> {
-        let now = now_millis();
-        let ids: Vec<u64> = redis::cmd("ZRANGEBYSCORE")
-            .arg(&self.keys.in_flight)
-            .arg("-inf")
-            .arg(now)
-            .query_async(conn)
-            .await?;
-
-        for id in ids {
-            let removed: usize = conn.zrem(&self.keys.in_flight, id).await?;
-            if removed == 1 {
-                self.retry_or_dead_letter(conn, id).await?;
-            }
-        }
-        Ok(())
-    }
-
-    async fn retry_or_dead_letter(&self, conn: &mut MultiplexedConnection, id: u64) -> Result<()> {
-        let payload_exists: bool = conn.hexists(&self.keys.payloads, id).await?;
-        if !payload_exists {
-            return Err(RedisQueueError::MissingPayload(id));
-        }
-
-        let attempts: i64 = conn.hincr(&self.keys.attempts, id, 1).await?;
-        if attempts > i64::from(self.config.max_retries) {
-            let _: usize = conn.rpush(&self.keys.dead_letter, id).await?;
-            return Ok(());
-        }
-
-        let delay = self.config.retry_backoff.delay_for_attempt(attempts as u32);
-
-        if delay.is_zero() {
-            let _: usize = conn.rpush(&self.keys.ready, id).await?;
-            return Ok(());
-        }
-
-        let available_at = now_millis().saturating_add(duration_to_millis(delay));
-        let _: usize = conn.zadd(&self.keys.delayed, id, available_at).await?;
-        Ok(())
+    async fn run_retry_script(
+        &self,
+        conn: &mut MultiplexedConnection,
+        script: &Script,
+        id: u64,
+        lease_token: u64,
+    ) -> Result<i64> {
+        let (kind, base_ms, max_ms) = lua_backoff(self.config.retry_backoff);
+        Ok(script
+            .key(&self.keys.in_flight)
+            .key(&self.keys.generations)
+            .key(&self.keys.payloads)
+            .key(&self.keys.attempts)
+            .key(&self.keys.ready)
+            .key(&self.keys.delayed)
+            .key(&self.keys.dead_letter)
+            .arg(id)
+            .arg(lease_token)
+            .arg(self.config.max_retries)
+            .arg(kind)
+            .arg(base_ms)
+            .arg(max_ms)
+            .arg(RECONCILE_BATCH_SIZE)
+            .invoke_async(conn)
+            .await?)
     }
 
     async fn connection(&self) -> Result<MultiplexedConnection> {
@@ -427,16 +437,9 @@ impl RedisQueueKeys {
             dead_letter: format!("{prefix}:dead_letter"),
             payloads: format!("{prefix}:payloads"),
             attempts: format!("{prefix}:attempts"),
+            generations: format!("{prefix}:delivery_generations"),
         }
     }
-}
-
-fn now_millis() -> i64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or(Duration::ZERO)
-        .as_millis()
-        .min(i64::MAX as u128) as i64
 }
 
 fn duration_to_millis(duration: Duration) -> i64 {
@@ -473,6 +476,7 @@ mod tests {
         assert_eq!(keys.dead_letter, "bridgeq:alpha:dead_letter");
         assert_eq!(keys.payloads, "bridgeq:alpha:payloads");
         assert_eq!(keys.attempts, "bridgeq:alpha:attempts");
+        assert_eq!(keys.generations, "bridgeq:alpha:delivery_generations");
     }
 
     #[test]

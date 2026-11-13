@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **BridgeRust 0.1.4** adds `bridge parity` to compare installed Python and Node.js packages against recorded behavior. The date migration example includes 33 compatibility cases and JSON reports for CI.
+- **Embex 0.1.22** adds an Elasticsearch adapter with vector search, metadata filters and updates, and point-in-time pagination.
+
+### Changed
+
+- **BridgeQ 0.2.0** requires the delivery token returned by `dequeue` for acknowledgements, rejections, and lease renewals. Stop older workers before starting workers that use the new API. Redis now performs queue transitions atomically.
+
 ## [0.1.20] - 2026-02-23
 
 ### Fixed

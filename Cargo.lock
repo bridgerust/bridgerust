@@ -1139,7 +1139,7 @@ dependencies = [
 
 [[package]]
 name = "bridge"
-version = "0.1.2"
+version = "0.1.4"
 dependencies = [
  "anyhow",
  "clap",
@@ -1164,6 +1164,19 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.17",
+]
+
+[[package]]
+name = "bridge-date-parity"
+version = "0.1.0"
+dependencies = [
+ "bridgerust",
+ "chrono",
+ "napi",
+ "napi-build",
+ "napi-derive",
+ "pyo3",
+ "serde_json",
 ]
 
 [[package]]
@@ -1228,6 +1241,11 @@ version = "0.1.17"
 dependencies = [
  "async-trait",
  "bridge-embex-core",
+ "mockito",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
 ]
 
 [[package]]
@@ -1424,7 +1442,7 @@ dependencies = [
 
 [[package]]
 name = "bridgerust"
-version = "0.1.2"
+version = "0.1.4"
 dependencies = [
  "anyhow",
  "bridgerust-macros",
@@ -1460,7 +1478,7 @@ dependencies = [
 
 [[package]]
 name = "bridgerust-macros"
-version = "0.1.2"
+version = "0.1.4"
 dependencies = [
  "bridgerust",
  "proc-macro2",
@@ -3311,9 +3329,9 @@ dependencies = [
 
 [[package]]
 name = "ethnum"
-version = "1.5.2"
+version = "1.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ca81e6b4777c89fd810c25a4be2b1bd93ea034fbe58e6a75216a34c6b82c539b"
+checksum = "40404c3f5f511ec4da6fe866ddf6a717c309fdbb69fbbad7b0f3edab8f2e835f"
 
 [[package]]
 name = "event-listener"

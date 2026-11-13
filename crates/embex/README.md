@@ -100,6 +100,7 @@ Switch providers instantly without rewriting a single line of application code. 
 - [x] **PgVector** — PostgreSQL
 - [x] **Milvus** — Scalable
 - [x] **Weaviate** — Modular
+- [x] **Elasticsearch** — Indexed vector search with metadata filters (in source for the next release)
 
 ### Zero-Overhead Performance
 
@@ -396,9 +397,9 @@ A: Yes. Embex includes connection pooling, automatic retries, and observability 
 A: LanceDB for local dev (zero setup), then Qdrant/Pinecone for production (managed, scalable).
 
 **Q: Do you support [X database]?**
-A: Current: LanceDB, Qdrant, Pinecone, Chroma, PgVector, Milvus, Weaviate.
+A: LanceDB, Qdrant, Pinecone, Chroma, PgVector, Milvus, and Weaviate. Elasticsearch is available in the source tree for the next release.
 
-Priority track (wired for integration, implementation in progress): Elasticsearch, OpenSearch, Redis.
+OpenSearch and Redis are experimental placeholders. Their vector operations currently return `NotImplemented`.
 
 [Request here](https://github.com/bridgerust/bridgerust/issues).
 

@@ -1,0 +1,13 @@
+{
+  "name": "bridge-date-parity",
+  "version": "0.1.0",
+  "description": "Node.js binding for the BridgeRust date compatibility pilot",
+  "private": true,
+  "type": "module",
+  "main": "index.node",
+  "types": "index.d.ts",
+  "files": ["index.node", "index.d.ts"],
+  "scripts": {
+    "build": "node build.mjs"
+  }
+}

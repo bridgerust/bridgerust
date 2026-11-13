@@ -20,17 +20,21 @@ struct PyMessage {
     payload: String,
     #[pyo3(get)]
     attempts: u32,
+    #[pyo3(get)]
+    lease_token: Option<u64>,
 }
 
 impl From<MemoryMessage<String>> for PyMessage {
     fn from(message: MemoryMessage<String>) -> Self {
         let id = message.id();
         let attempts = message.attempts();
+        let lease_token = message.lease_token();
         let payload = message.into_payload();
         Self {
             id,
             payload,
             attempts,
+            lease_token,
         }
     }
 }
@@ -41,6 +45,7 @@ impl From<RedisQueueMessage> for PyMessage {
             id: message.id,
             payload: message.payload,
             attempts: message.attempts,
+            lease_token: message.lease_token,
         }
     }
 }
@@ -51,6 +56,7 @@ impl From<PostgresQueueMessage> for PyMessage {
             id: message.id,
             payload: message.payload,
             attempts: message.attempts,
+            lease_token: message.lease_token,
         }
     }
 }
@@ -229,48 +235,52 @@ impl PyBridgeQueue {
         }
     }
 
-    fn ack(&self, id: u64) -> PyResult<bool> {
+    fn ack(&self, id: u64, lease_token: u64) -> PyResult<bool> {
         match &self.inner {
-            QueueBackend::Memory(queue) => Ok(queue.ack(id)),
-            QueueBackend::Redis(queue) => runtime().block_on(queue.ack(id)).map_err(redis_error),
-            QueueBackend::Postgres(queue) => {
-                runtime().block_on(queue.ack(id)).map_err(postgres_error)
-            }
-        }
-    }
-
-    fn heartbeat(&self, id: u64) -> PyResult<bool> {
-        match &self.inner {
-            QueueBackend::Memory(queue) => Ok(queue.heartbeat(id)),
-            QueueBackend::Redis(queue) => {
-                runtime().block_on(queue.heartbeat(id)).map_err(redis_error)
-            }
-            QueueBackend::Postgres(queue) => runtime()
-                .block_on(queue.heartbeat(id))
-                .map_err(postgres_error),
-        }
-    }
-
-    fn extend_lease(&self, id: u64, extra_ms: u64) -> PyResult<bool> {
-        let extra = Duration::from_millis(extra_ms);
-        match &self.inner {
-            QueueBackend::Memory(queue) => Ok(queue.extend_lease(id, extra)),
+            QueueBackend::Memory(queue) => Ok(queue.ack(id, lease_token)),
             QueueBackend::Redis(queue) => runtime()
-                .block_on(queue.extend_lease(id, extra))
+                .block_on(queue.ack(id, lease_token))
                 .map_err(redis_error),
             QueueBackend::Postgres(queue) => runtime()
-                .block_on(queue.extend_lease(id, extra))
+                .block_on(queue.ack(id, lease_token))
                 .map_err(postgres_error),
         }
     }
 
-    fn nack(&self, id: u64) -> PyResult<bool> {
+    fn heartbeat(&self, id: u64, lease_token: u64) -> PyResult<bool> {
         match &self.inner {
-            QueueBackend::Memory(queue) => Ok(queue.nack(id)),
-            QueueBackend::Redis(queue) => runtime().block_on(queue.nack(id)).map_err(redis_error),
-            QueueBackend::Postgres(queue) => {
-                runtime().block_on(queue.nack(id)).map_err(postgres_error)
-            }
+            QueueBackend::Memory(queue) => Ok(queue.heartbeat(id, lease_token)),
+            QueueBackend::Redis(queue) => runtime()
+                .block_on(queue.heartbeat(id, lease_token))
+                .map_err(redis_error),
+            QueueBackend::Postgres(queue) => runtime()
+                .block_on(queue.heartbeat(id, lease_token))
+                .map_err(postgres_error),
+        }
+    }
+
+    fn extend_lease(&self, id: u64, lease_token: u64, extra_ms: u64) -> PyResult<bool> {
+        let extra = Duration::from_millis(extra_ms);
+        match &self.inner {
+            QueueBackend::Memory(queue) => Ok(queue.extend_lease(id, lease_token, extra)),
+            QueueBackend::Redis(queue) => runtime()
+                .block_on(queue.extend_lease(id, lease_token, extra))
+                .map_err(redis_error),
+            QueueBackend::Postgres(queue) => runtime()
+                .block_on(queue.extend_lease(id, lease_token, extra))
+                .map_err(postgres_error),
+        }
+    }
+
+    fn nack(&self, id: u64, lease_token: u64) -> PyResult<bool> {
+        match &self.inner {
+            QueueBackend::Memory(queue) => Ok(queue.nack(id, lease_token)),
+            QueueBackend::Redis(queue) => runtime()
+                .block_on(queue.nack(id, lease_token))
+                .map_err(redis_error),
+            QueueBackend::Postgres(queue) => runtime()
+                .block_on(queue.nack(id, lease_token))
+                .map_err(postgres_error),
         }
     }
 

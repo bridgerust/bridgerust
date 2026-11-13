@@ -1,0 +1,15 @@
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "bridge-date-parity"
+version = "0.1.0"
+description = "Python binding for the BridgeRust date compatibility pilot"
+requires-python = ">=3.8"
+
+[tool.maturin]
+manifest-path = "../Cargo.toml"
+features = ["python"]
+module-name = "bridge_date_parity"
+locked = true

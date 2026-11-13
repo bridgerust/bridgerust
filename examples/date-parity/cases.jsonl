@@ -1,0 +1,33 @@
+{"id":"utc","input":"2025-04-02T11:22:33Z","expected":{"python":{"ok":"2025-04-02T11:22:33Z"},"nodejs":{"ok":"2025-04-02T11:22:33Z"}}}
+{"id":"missing-offset","input":"2025-04-02T11:22:33","expected":{"python":{"ok":"2025-04-02T11:22:33Z"},"nodejs":{"error":{"code":"MISSING_OFFSET"}}}}
+{"id":"leap-day","input":"2024-02-29T23:59:59Z","expected":{"python":{"ok":"2024-02-29T23:59:59Z"},"nodejs":{"ok":"2024-02-29T23:59:59Z"}}}
+{"id":"non-leap-day","input":"2023-02-29T12:00:00Z","expected":{"python":{"error":{"code":"INVALID_DATE"}},"nodejs":{"error":{"code":"INVALID_DATE"}}}}
+{"id":"century-not-leap","input":"1900-02-29T12:00:00Z","expected":{"python":{"error":{"code":"INVALID_DATE"}},"nodejs":{"error":{"code":"INVALID_DATE"}}}}
+{"id":"century-leap","input":"2000-02-29T12:00:00Z","expected":{"python":{"ok":"2000-02-29T12:00:00Z"},"nodejs":{"ok":"2000-02-29T12:00:00Z"}}}
+{"id":"plus-offset-year-rollover","input":"2025-01-01T00:15:30+05:45","expected":{"python":{"ok":"2024-12-31T18:30:30Z"},"nodejs":{"ok":"2024-12-31T18:30:30Z"}}}
+{"id":"minus-offset-year-rollover","input":"2025-12-31T22:00:00-03:30","expected":{"python":{"ok":"2026-01-01T01:30:00Z"},"nodejs":{"ok":"2026-01-01T01:30:00Z"}}}
+{"id":"zero-offset-minus","input":"2025-04-02T11:22:33-00:00","expected":{"python":{"ok":"2025-04-02T11:22:33Z"},"nodejs":{"ok":"2025-04-02T11:22:33Z"}}}
+{"id":"maximum-offset","input":"2025-04-02T11:22:33+23:59","expected":{"python":{"ok":"2025-04-01T11:23:33Z"},"nodejs":{"ok":"2025-04-01T11:23:33Z"}}}
+{"id":"offset-hours-out-of-range","input":"2025-04-02T11:22:33+24:00","expected":{"python":{"error":{"code":"INVALID_DATE"}},"nodejs":{"error":{"code":"INVALID_DATE"}}}}
+{"id":"offset-minutes-out-of-range","input":"2025-04-02T11:22:33-03:60","expected":{"python":{"error":{"code":"INVALID_DATE"}},"nodejs":{"error":{"code":"INVALID_DATE"}}}}
+{"id":"month-out-of-range","input":"2025-13-02T11:22:33Z","expected":{"python":{"error":{"code":"INVALID_DATE"}},"nodejs":{"error":{"code":"INVALID_DATE"}}}}
+{"id":"day-zero","input":"2025-04-00T11:22:33Z","expected":{"python":{"error":{"code":"INVALID_DATE"}},"nodejs":{"error":{"code":"INVALID_DATE"}}}}
+{"id":"midnight-24h","input":"2025-04-02T24:00:00Z","expected":{"python":{"error":{"code":"INVALID_DATE"}},"nodejs":{"error":{"code":"INVALID_DATE"}}}}
+{"id":"minute-out-of-range","input":"2025-04-02T11:60:33Z","expected":{"python":{"error":{"code":"INVALID_DATE"}},"nodejs":{"error":{"code":"INVALID_DATE"}}}}
+{"id":"leap-second","input":"2025-04-02T11:22:60Z","expected":{"python":{"error":{"code":"INVALID_DATE"}},"nodejs":{"error":{"code":"INVALID_DATE"}}}}
+{"id":"invalid-date-before-offset-check","input":"2025-02-29T11:22:33","expected":{"python":{"error":{"code":"INVALID_DATE"}},"nodejs":{"error":{"code":"INVALID_DATE"}}}}
+{"id":"year-zero","input":"0000-01-01T00:00:00Z","expected":{"python":{"error":{"code":"INVALID_DATE"}},"nodejs":{"error":{"code":"INVALID_DATE"}}}}
+{"id":"minimum-year","input":"0001-01-01T00:00:00Z","expected":{"python":{"ok":"0001-01-01T00:00:00Z"},"nodejs":{"ok":"0001-01-01T00:00:00Z"}}}
+{"id":"year-below-range-after-conversion","input":"0001-01-01T00:00:00+00:01","expected":{"python":{"error":{"code":"INVALID_DATE"}},"nodejs":{"error":{"code":"INVALID_DATE"}}}}
+{"id":"maximum-year","input":"9999-12-31T23:59:59Z","expected":{"python":{"ok":"9999-12-31T23:59:59Z"},"nodejs":{"ok":"9999-12-31T23:59:59Z"}}}
+{"id":"year-above-range-after-conversion","input":"9999-12-31T23:59:59-00:01","expected":{"python":{"error":{"code":"INVALID_DATE"}},"nodejs":{"error":{"code":"INVALID_DATE"}}}}
+{"id":"expanded-year","input":"10000-01-01T00:00:00Z","expected":{"python":{"error":{"code":"INVALID_FORMAT"}},"nodejs":{"error":{"code":"INVALID_FORMAT"}}}}
+{"id":"unfilled-month","input":"2025-4-02T11:22:33Z","expected":{"python":{"error":{"code":"INVALID_FORMAT"}},"nodejs":{"error":{"code":"INVALID_FORMAT"}}}}
+{"id":"wrong-separator","input":"2025-04-02 11:22:33Z","expected":{"python":{"error":{"code":"INVALID_FORMAT"}},"nodejs":{"error":{"code":"INVALID_FORMAT"}}}}
+{"id":"lowercase-utc","input":"2025-04-02T11:22:33z","expected":{"python":{"error":{"code":"INVALID_FORMAT"}},"nodejs":{"error":{"code":"INVALID_FORMAT"}}}}
+{"id":"fractional-seconds","input":"2025-04-02T11:22:33.001Z","expected":{"python":{"error":{"code":"INVALID_FORMAT"}},"nodejs":{"error":{"code":"INVALID_FORMAT"}}}}
+{"id":"offset-without-colon","input":"2025-04-02T11:22:33+0130","expected":{"python":{"error":{"code":"INVALID_FORMAT"}},"nodejs":{"error":{"code":"INVALID_FORMAT"}}}}
+{"id":"trailing-newline","input":"2025-04-02T11:22:33Z\n","expected":{"python":{"error":{"code":"INVALID_FORMAT"}},"nodejs":{"error":{"code":"INVALID_FORMAT"}}}}
+{"id":"trailing-space","input":"2025-04-02T11:22:33Z ","expected":{"python":{"error":{"code":"INVALID_FORMAT"}},"nodejs":{"error":{"code":"INVALID_FORMAT"}}}}
+{"id":"non-ascii-digits","input":"\uff12\uff10\uff12\uff15-04-02T11:22:33Z","expected":{"python":{"error":{"code":"INVALID_FORMAT"}},"nodejs":{"error":{"code":"INVALID_FORMAT"}}}}
+{"id":"empty","input":"","expected":{"python":{"error":{"code":"INVALID_FORMAT"}},"nodejs":{"error":{"code":"INVALID_FORMAT"}}}}

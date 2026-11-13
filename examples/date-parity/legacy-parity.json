@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "cases": "cases.jsonl",
+  "targets": [
+    { "name": "python", "command": ["python", "python/run.py", "--legacy"] },
+    { "name": "nodejs", "command": ["node", "nodejs/run.mjs", "--legacy"] }
+  ]
+}

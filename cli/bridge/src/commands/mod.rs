@@ -7,6 +7,7 @@ pub mod docs;
 pub mod init;
 pub mod integrate;
 pub mod new;
+pub mod parity;
 pub mod publish;
 pub mod template;
 pub mod test;

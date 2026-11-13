@@ -3,6 +3,7 @@
 This project uses tag-driven GitHub Actions releases with separate lanes:
 
 - Embex packages: `embex-vX.Y.Z`
+- BridgeQ packages: `bridgeq-vX.Y.Z`
 - BridgeRust framework crates: `bridgerust-vX.Y.Z`
 - BridgeTime packages: `bridgetime-vX.Y.Z`
 
@@ -12,6 +13,14 @@ For Embex package releases, update at least:
 
 - `bindings/python/embex/pyproject.toml`
 - `bindings/node/@bridgerust/embex/package.json`
+- `bindings/node/@bridgerust/embex/native.js` and the platform package manifests
+
+For BridgeQ package releases, update the Python `pyproject.toml`, the Node
+`package.json`, and the version checked by the Node `native.js` loader.
+
+For framework releases, align the Cargo versions of `bridgerust-macros`,
+`bridgerust`, and `bridge`. Update the macro dependency in `bridgerust` and
+regenerate `Cargo.lock`.
 
 For BridgeTime package releases, update at least:
 
@@ -36,20 +45,28 @@ cargo check -p bridgetime-bridge --features nodejs
 cargo check -p bridgetime-bridge --features python
 ```
 
+Run a build-only preflight on the release branch with `dry_run=true`. Use
+`publish-crates-io.yml` with the planned `version` for the framework. For Embex
+and BridgeQ, dispatch their Node and Python workflows without a tag. These jobs
+do not request a deployment review or registry credentials.
+
 ## 3. Create and push the release tag
 
-Embex release tag format:
+Embex and BridgeQ release tag formats:
 
 ```bash
-git tag embex-v0.1.18
-git push origin embex-v0.1.18
+git tag embex-v0.1.22
+git push origin embex-v0.1.22
+
+git tag bridgeq-v0.2.0
+git push origin bridgeq-v0.2.0
 ```
 
 BridgeRust crates release tag format:
 
 ```bash
-git tag bridgerust-v0.1.18
-git push origin bridgerust-v0.1.18
+git tag bridgerust-v0.1.4
+git push origin bridgerust-v0.1.4
 ```
 
 BridgeTime release tag format:
@@ -64,12 +81,16 @@ git push origin bridgetime-v0.1.0
 - `.github/workflows/release-python.yml`
 - `.github/workflows/release-node.yml`
 - `.github/workflows/release.yml`
+- `.github/workflows/release-python-bridgeq.yml`
+- `.github/workflows/release-node-bridgeq.yml`
+- `.github/workflows/release-bridgeq.yml`
 - `.github/workflows/release-python-bridgetime.yml`
 - `.github/workflows/release-node-bridgetime.yml`
 - `.github/workflows/release-bridgetime.yml`
 - `.github/workflows/publish-crates-io.yml`
 
 - `embex-v*` triggers Python/Node publish plus GitHub release creation.
+- `bridgeq-v*` triggers BridgeQ Python/Node publish plus GitHub release creation.
 - `bridgerust-v*` triggers crates.io publication for framework crates.
 - `bridgetime-v*` triggers BridgeTime Python/Node publish plus GitHub release creation.
 - Node publish lanes now verify `tag -> package.json version` before publish.
@@ -90,19 +111,14 @@ If Trusted Publisher mode fails with `invalid-publisher`, configure the `bridget
 - tag pattern: `refs/tags/bridgetime-v*`
 - environment (if used): `pypi`
 
-### PyPI authentication note (Embex)
+### Registry credentials for BridgeRust, Embex, and BridgeQ
 
-Embex Python publish also supports two auth modes:
-
-- `PYPI_API_TOKEN` secret set: token-based publish.
-- No token secret: Trusted Publisher (OIDC) mode.
-
-If Trusted Publisher mode fails with `invalid-publisher`, configure the `embex` project on PyPI with matching GitHub claims for:
-
-- repository: `bridgerust/bridgerust`
-- workflow: `.github/workflows/release-python.yml`
-- tag pattern: `refs/tags/embex-v*`
-- environment (if used): `pypi`
+Registry publication uses the protected `BRIDGE_RUST` GitHub environment.
+Approve its deployment review after the builds pass. The publication jobs use
+`CRATES_IO_TOKEN` for the framework crates, `NPM_TOKEN` for Embex and BridgeQ npm
+packages, and `PYPI_API_TOKEN` for Embex and BridgeQ wheels and source archives.
+The npm token must be a granular token with publish access to the main package
+and its platform packages.
 
 ## 5. Post-release verification
 

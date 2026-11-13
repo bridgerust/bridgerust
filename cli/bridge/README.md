@@ -108,6 +108,58 @@ bridge test --target rust
 - Rust tests use `cargo test`
 - The command automatically finds test files in common locations
 
+### `bridge parity --manifest <path> [--report <path>]`
+
+Compare local package behavior with a recorded baseline. The same cases can
+describe different expected outcomes for Python and Node.js so a migration can
+preserve each runtime's contract.
+
+```sh
+bridge parity --manifest parity.json --report parity-report.json
+```
+
+The version 1 manifest declares a JSON Lines cases file and runner commands.
+Use manifests from trusted repositories because the command launches the listed
+programs with the supplied arguments. The CLI does not invoke a shell. Case and
+working-directory paths are relative to the manifest unless absolute. Each
+runner defaults to the manifest's directory and a 30-second timeout.
+
+```json
+{
+  "version": 1,
+  "cases": "cases.jsonl",
+  "targets": [
+    { "name": "python", "command": ["python", "run.py"], "cwd": "python" },
+    { "name": "nodejs", "command": ["node", "run.mjs"], "cwd": "nodejs", "timeout_ms": 5000 }
+  ]
+}
+```
+
+Each line records one unique `id`, a JSON `input`, and an `expected` outcome for
+every configured target. Extra target entries may be present, which lets a
+manifest test one target from a shared cases file.
+
+```jsonl
+{"id":"epoch","input":{"timestamp":"1970-01-01T00:00:00Z"},"expected":{"python":{"ok":"0"},"nodejs":{"ok":"0"}}}
+{"id":"missing-offset","input":{"timestamp":"1970-01-01T00:00:00"},"expected":{"python":{"ok":"0"},"nodejs":{"error":{"code":"MISSING_OFFSET"}}}}
+```
+
+The runner receives one `{ "id": ..., "input": ... }` object per line on stdin.
+It must write one `{ "id": ..., "outcome": ... }` per case to stdout. Outcomes
+are either `{ "ok": <JSON value> }` or `{ "error": { "code": "..." } }`. Extra
+error fields are compared too. Put diagnostics on stderr. Response order and
+object key order do not matter. Array order, value types, and number
+representations such as `1` and `1.0` can affect equality. Use strings when
+exact decimal values or large integers matter.
+
+A mismatch prints the target, case ID, input, expected result, and actual
+result. Missing, duplicate, or unknown response IDs, malformed output,
+timeouts, and runner failures also fail the check. The runner's stdout and
+stderr are capped at 32 MiB and 1 MiB respectively. If requested, the JSON report
+records `version`, `case_count`, `passed`, and `targets`. Each target records
+`target`, `passed`, `checked`, `mismatches`, and `errors`. The report is written
+after runner checks even when they fail. A failed check exits with status 1.
+
 ### `bridge publish [--target <target>] [--dry-run]`
 
 Publish packages to PyPI and/or npm.

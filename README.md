@@ -71,6 +71,8 @@ npm install @bridgerust/embex  # Node.js
 
 Supported providers: **LanceDB** • **Qdrant** • **Pinecone** • **Chroma** • **PgVector** • **Milvus** • **Weaviate**
 
+**Elasticsearch** is available in the source tree for the next release.
+
 → [Full documentation](crates/embex/README.md) • [Docs site](https://bridgerust.dev/embex) • [Quick Start](https://bridgerust.dev/embex/quickstart)
 
 ---
@@ -98,6 +100,8 @@ Sources: [`crates/bridgetime/bridge`](crates/bridgetime/bridge) • [`bindings/p
 The **BridgeRust** framework is the foundation both products are built on. It eliminates the complexity of managing separate PyO3 (Python) and napi-rs (Node.js) bindings by providing a single `#[export]` macro.
 
 → [Framework README](crates/bridgerust/README.md) • [Getting Started](docs/getting-started-bridgerust.md)
+
+The [date migration pilot](examples/date-parity/README.md) replaces a module's Python and TypeScript internals with one Rust core and verifies the installed packages against recorded behavior with `bridge parity`.
 
 ### Packages & Status
 

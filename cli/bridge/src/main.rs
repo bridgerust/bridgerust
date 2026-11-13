@@ -1,5 +1,6 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+use std::path::PathBuf;
 
 mod commands;
 pub mod config;
@@ -95,6 +96,16 @@ enum Commands {
         #[arg(short, long, default_value = "all")]
         target: String,
     },
+    /// Compare runner results with a recorded compatibility baseline
+    Parity {
+        /// JSON manifest defining the cases and local runner commands
+        #[arg(long)]
+        manifest: PathBuf,
+
+        /// Write a machine-readable report to this path
+        #[arg(long)]
+        report: Option<PathBuf>,
+    },
     /// Publish packages to PyPI and/or npm
     Publish {
         /// Publish target: python, nodejs, or all
@@ -154,6 +165,7 @@ async fn main() -> Result<()> {
         Commands::Integrate { yes, example } => integrate::handle(yes, example).await,
         Commands::Build { target, release } => build::handle(target, release).await,
         Commands::Test { target } => test::handle(target).await,
+        Commands::Parity { manifest, report } => parity::handle(&manifest, report.as_deref()).await,
         Commands::Publish { target, dry_run } => publish::handle(target, dry_run).await,
         Commands::Workflows { output } => workflows::handle(output).await,
         Commands::Check { verbose } => check::handle(verbose).await,

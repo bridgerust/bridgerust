@@ -19,7 +19,8 @@ Notes:
 
 - Uses Redis lists + sorted sets + hashes for durable queue state.
 - Retry behavior follows `bridgeq::QueueConfig` (`max_retries`, visibility timeout, backoff).
-- Uses Lua-atomic dequeue/ack/nack paths for safer behavior under contention.
+- Lua scripts atomically enqueue, claim, settle, renew and reconcile messages.
+- Pass the token from `dequeue` along with the message ID to settle or renew a lease. Each redelivery gets a new token.
 
 ## Integration Tests
 

@@ -8,10 +8,10 @@ export declare class BridgeQueue {
   enqueue(payload: string): number
   enqueueBatch(payloads: Array<string>): Array<number>
   dequeue(batchSize?: number | undefined | null): Array<QueueMessage>
-  ack(id: number): boolean
-  heartbeat(id: number): boolean
-  extendLease(id: number, extraMs: number): boolean
-  nack(id: number): boolean
+  ack(id: number, leaseToken: string): boolean
+  heartbeat(id: number, leaseToken: string): boolean
+  extendLease(id: number, leaseToken: string, extraMs: number): boolean
+  nack(id: number, leaseToken: string): boolean
   requeueDeadLetter(id: number): boolean
   stats(): QueueStats
   drainDeadLetter(): Array<QueueMessage>
@@ -21,6 +21,7 @@ export interface QueueMessage {
   id: number
   payload: string
   attempts: number
+  leaseToken?: string
 }
 
 export interface QueueStats {

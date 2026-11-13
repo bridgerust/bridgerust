@@ -121,7 +121,10 @@ impl AdapterFactory {
 
         #[cfg(feature = "elasticsearch")]
         if config.provider == "elasticsearch" {
-            return Ok(Arc::new(ElasticsearchAdapter::new(&config.url)?));
+            return Ok(Arc::new(ElasticsearchAdapter::with_api_key(
+                &config.url,
+                config.api_key.as_deref(),
+            )?));
         }
 
         #[cfg(feature = "opensearch")]

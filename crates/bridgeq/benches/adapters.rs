@@ -28,7 +28,10 @@ fn bench_memory(c: &mut Criterion) {
             let mut batch = queue.dequeue(1);
             let msg = batch.pop().expect("memory dequeue should return one item");
             assert_eq!(msg.id(), id);
-            assert!(queue.ack(id), "memory ack should succeed");
+            assert!(
+                queue.ack(id, msg.lease_token().unwrap()),
+                "memory ack should succeed"
+            );
         });
     });
 }
@@ -60,7 +63,12 @@ fn bench_redis(c: &mut Criterion) {
                     .expect("redis dequeue should succeed");
                 let msg = batch.pop().expect("redis dequeue should return one item");
                 assert_eq!(msg.id, id);
-                assert!(queue.ack(id).await.expect("redis ack should succeed"));
+                assert!(
+                    queue
+                        .ack(id, msg.lease_token.unwrap())
+                        .await
+                        .expect("redis ack should succeed")
+                );
             }
         });
     });
@@ -100,7 +108,12 @@ fn bench_postgres(c: &mut Criterion) {
                     .pop()
                     .expect("postgres dequeue should return one item");
                 assert_eq!(msg.id, id);
-                assert!(queue.ack(id).await.expect("postgres ack should succeed"));
+                assert!(
+                    queue
+                        .ack(id, msg.lease_token.unwrap())
+                        .await
+                        .expect("postgres ack should succeed")
+                );
             }
         });
     });

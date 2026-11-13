@@ -8,8 +8,12 @@ on:
     inputs:
       tag:
         description: "Embex tag to publish (e.g., embex-v0.1.18)"
-        required: true
+        required: false
         type: string
+      dry_run:
+        description: "Build artifacts without publishing"
+        type: boolean
+        default: true
 
 env:
   CARGO_TERM_COLOR: always
@@ -29,7 +33,7 @@ jobs:
             os: macos
 
           # macOS ARM64
-          - runner: macos-14
+          - runner: macos-15
             target: aarch64-apple-darwin
             os: macos
 
@@ -45,6 +49,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && !inputs.dry_run && format('refs/tags/{0}', inputs.tag) || github.ref }}
 
       - name: Free Disk Space (Linux only)
         if: matrix.platform.os == 'linux'
@@ -59,7 +65,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.9"
+          python-version: "3.12"
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -75,10 +81,12 @@ jobs:
         run: choco install protoc -y
 
       - name: Build wheels
+        env:
+          CARGO_PROFILE_RELEASE_STRIP: none
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.platform.target }}
-          args: --release --out dist --strip
+          args: --locked --release --out dist
           sccache: "true"
           manylinux: auto
           working-directory: bindings/python/embex
@@ -89,18 +97,40 @@ jobs:
             unzip -o protoc-25.1-linux-x86_64.zip -d /usr/local
             protoc --version
 
+      - name: Smoke-test the built wheel
+        shell: python
+        run: |
+          import pathlib
+          import subprocess
+          import sys
+          import tempfile
+
+          wheel, = pathlib.Path("bindings/python/embex/dist").glob("*.whl")
+          with tempfile.TemporaryDirectory() as directory:
+              subprocess.run(
+                  [sys.executable, "-m", "pip", "install", "--no-deps", "--target", directory, str(wheel)],
+                  check=True,
+              )
+              subprocess.run(
+                  [sys.executable, "-I", "-c", "import sys; sys.path.insert(0, sys.argv[1]); import embex", directory],
+                  check=True,
+              )
+
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
           name: wheels-${{ matrix.platform.target }}
           path: bindings/python/embex/dist/*.whl
-          retention-days: 1
+          retention-days: 7
+          if-no-files-found: error
 
   build-sdist:
     name: Build source distribution
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && !inputs.dry_run && format('refs/tags/{0}', inputs.tag) || github.ref }}
 
       - name: Build sdist
         uses: PyO3/maturin-action@v1
@@ -114,21 +144,24 @@ jobs:
         with:
           name: sdist
           path: bindings/python/embex/dist/*.tar.gz
-          retention-days: 1
+          retention-days: 7
+          if-no-files-found: error
 
   publish:
     name: Publish to PyPI
     runs-on: ubuntu-latest
     needs: [build-wheels, build-sdist]
-    if: startsWith(github.ref, 'refs/tags/embex-v') || (github.event_name == 'workflow_dispatch' && startsWith(github.event.inputs.tag, 'embex-v'))
+    if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/embex-v')) || (github.event_name == 'workflow_dispatch' && !inputs.dry_run && startsWith(inputs.tag, 'embex-v'))
     environment:
-      name: pypi
+      name: BRIDGE_RUST
       url: https://pypi.org/project/embex
     permissions:
-      id-token: write
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && !inputs.dry_run && format('refs/tags/{0}', inputs.tag) || github.ref }}
 
       - uses: actions/download-artifact@v4
         with:
@@ -143,8 +176,10 @@ jobs:
 
       - name: Verify tag/version alignment
         shell: bash
+        env:
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
         run: |
-          TAG_NAME="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}"
+          TAG_NAME="$RELEASE_TAG"
           TAG_VERSION="${TAG_NAME#embex-v}"
           PYPROJECT_PATH="bindings/python/embex/pyproject.toml"
 
@@ -161,27 +196,8 @@ jobs:
           fi
           echo "Version check passed: $TAG_VERSION"
 
-      - name: Resolve publish auth mode
-        id: auth
-        shell: bash
-        env:
-          PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
-        run: |
-          if [ -n "$PYPI_API_TOKEN" ]; then
-            echo "mode=token" >> "$GITHUB_OUTPUT"
-          else
-            echo "mode=trusted" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Publish to PyPI
-        if: steps.auth.outputs.mode == 'token'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
-          skip-existing: true
-
-      - name: Publish to PyPI (Trusted Publisher)
-        if: steps.auth.outputs.mode == 'trusted'
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
           skip-existing: true

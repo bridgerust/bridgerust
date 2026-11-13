@@ -9,6 +9,7 @@ pub struct PostgresQueueMessage {
     pub id: u64,
     pub payload: String,
     pub attempts: u32,
+    pub lease_token: Option<u64>,
 }
 
 #[derive(Debug, Error)]
@@ -17,6 +18,8 @@ pub enum PostgresQueueError {
     Sqlx(#[from] sqlx::Error),
     #[error("Invalid queue id value in database: {0}")]
     InvalidId(i64),
+    #[error("Invalid delivery generation in database: {0}")]
+    InvalidDeliveryGeneration(i64),
 }
 
 pub type Result<T> = std::result::Result<T, PostgresQueueError>;
@@ -86,7 +89,7 @@ impl PostgresQueue {
     pub async fn dequeue(&self, batch_size: usize) -> Result<Vec<PostgresQueueMessage>> {
         self.reconcile().await?;
 
-        let size = batch_size.max(1) as i64;
+        let size = i64::try_from(batch_size.max(1)).unwrap_or(i64::MAX);
         let lease_ms = duration_to_millis(self.config.visibility_timeout);
 
         let rows = sqlx::query(
@@ -103,11 +106,12 @@ impl PostgresQueue {
             )
             UPDATE bridgeq_messages AS q
             SET status = 'in_flight',
-                lease_deadline = NOW() + ($3::bigint * INTERVAL '1 millisecond'),
+                delivery_generation = q.delivery_generation + 1,
+                lease_deadline = clock_timestamp() + ($3::bigint * INTERVAL '1 millisecond'),
                 updated_at = NOW()
             FROM picked
             WHERE q.id = picked.id
-            RETURNING q.id, picked.payload, picked.attempts
+            RETURNING q.id, picked.payload, picked.attempts, q.delivery_generation
             "#,
         )
         .bind(&self.namespace)
@@ -119,7 +123,13 @@ impl PostgresQueue {
         rows.into_iter().map(row_to_message).collect()
     }
 
-    pub async fn ack(&self, id: u64) -> Result<bool> {
+    pub async fn ack(&self, id: u64, lease_token: u64) -> Result<bool> {
+        let (Ok(id), Ok(lease_token)) = (i64::try_from(id), i64::try_from(lease_token)) else {
+            return Ok(false);
+        };
+        if lease_token == 0 {
+            return Ok(false);
+        }
         self.reconcile().await?;
         let result = sqlx::query(
             r#"
@@ -127,60 +137,87 @@ impl PostgresQueue {
             WHERE namespace = $1
               AND id = $2
               AND status = 'in_flight'
+              AND delivery_generation = $3
+              AND lease_deadline > clock_timestamp()
             "#,
         )
         .bind(&self.namespace)
-        .bind(id as i64)
+        .bind(id)
+        .bind(lease_token)
         .execute(&self.pool)
         .await?;
         Ok(result.rows_affected() > 0)
     }
 
-    pub async fn heartbeat(&self, id: u64) -> Result<bool> {
+    pub async fn heartbeat(&self, id: u64, lease_token: u64) -> Result<bool> {
+        let (Ok(id), Ok(lease_token)) = (i64::try_from(id), i64::try_from(lease_token)) else {
+            return Ok(false);
+        };
+        if lease_token == 0 {
+            return Ok(false);
+        }
         self.reconcile().await?;
         let lease_ms = duration_to_millis(self.config.visibility_timeout);
 
         let result = sqlx::query(
             r#"
             UPDATE bridgeq_messages
-            SET lease_deadline = NOW() + ($3::bigint * INTERVAL '1 millisecond'),
+            SET lease_deadline = clock_timestamp() + ($3::bigint * INTERVAL '1 millisecond'),
                 updated_at = NOW()
             WHERE namespace = $1
               AND id = $2
               AND status = 'in_flight'
+              AND delivery_generation = $4
+              AND lease_deadline > clock_timestamp()
             "#,
         )
         .bind(&self.namespace)
-        .bind(id as i64)
+        .bind(id)
         .bind(lease_ms)
+        .bind(lease_token)
         .execute(&self.pool)
         .await?;
         Ok(result.rows_affected() > 0)
     }
 
-    pub async fn extend_lease(&self, id: u64, extra: Duration) -> Result<bool> {
+    pub async fn extend_lease(&self, id: u64, lease_token: u64, extra: Duration) -> Result<bool> {
+        let (Ok(id), Ok(lease_token)) = (i64::try_from(id), i64::try_from(lease_token)) else {
+            return Ok(false);
+        };
+        if lease_token == 0 {
+            return Ok(false);
+        }
         self.reconcile().await?;
         let extra_ms = duration_to_millis(extra);
 
         let result = sqlx::query(
             r#"
             UPDATE bridgeq_messages
-            SET lease_deadline = GREATEST(COALESCE(lease_deadline, NOW()), NOW()) + ($3::bigint * INTERVAL '1 millisecond'),
+            SET lease_deadline = lease_deadline + ($3::bigint * INTERVAL '1 millisecond'),
                 updated_at = NOW()
             WHERE namespace = $1
               AND id = $2
               AND status = 'in_flight'
+              AND delivery_generation = $4
+              AND lease_deadline > clock_timestamp()
             "#,
         )
         .bind(&self.namespace)
-        .bind(id as i64)
+        .bind(id)
         .bind(extra_ms)
+        .bind(lease_token)
         .execute(&self.pool)
         .await?;
         Ok(result.rows_affected() > 0)
     }
 
-    pub async fn nack(&self, id: u64) -> Result<bool> {
+    pub async fn nack(&self, id: u64, lease_token: u64) -> Result<bool> {
+        let (Ok(id), Ok(lease_token)) = (i64::try_from(id), i64::try_from(lease_token)) else {
+            return Ok(false);
+        };
+        if lease_token == 0 {
+            return Ok(false);
+        }
         self.reconcile().await?;
 
         let mut tx = self.pool.begin().await?;
@@ -191,11 +228,14 @@ impl PostgresQueue {
             WHERE namespace = $1
               AND id = $2
               AND status = 'in_flight'
+              AND delivery_generation = $3
+              AND lease_deadline > clock_timestamp()
             FOR UPDATE
             "#,
         )
         .bind(&self.namespace)
-        .bind(id as i64)
+        .bind(id)
+        .bind(lease_token)
         .fetch_optional(&mut *tx)
         .await?;
 
@@ -207,7 +247,7 @@ impl PostgresQueue {
         let attempts: i32 = row.try_get("attempts")?;
         let next_attempts = attempts.saturating_add(1);
 
-        self.apply_retry_transition(&mut tx, id as i64, next_attempts)
+        self.apply_retry_transition(&mut tx, id, next_attempts)
             .await?;
         tx.commit().await?;
         Ok(true)
@@ -238,33 +278,23 @@ impl PostgresQueue {
     pub async fn drain_dead_letter(&self) -> Result<Vec<PostgresQueueMessage>> {
         self.reconcile().await?;
 
-        let mut tx = self.pool.begin().await?;
         let rows = sqlx::query(
             r#"
-            SELECT id, payload, attempts
-            FROM bridgeq_messages
-            WHERE namespace = $1
-              AND status = 'dead_letter'
+            WITH drained AS (
+                DELETE FROM bridgeq_messages
+                WHERE namespace = $1
+                  AND status = 'dead_letter'
+                RETURNING id, payload, attempts
+            )
+            SELECT id, payload, attempts, NULL::BIGINT AS delivery_generation
+            FROM drained
             ORDER BY id
-            FOR UPDATE
             "#,
         )
         .bind(&self.namespace)
-        .fetch_all(&mut *tx)
+        .fetch_all(&self.pool)
         .await?;
 
-        sqlx::query(
-            r#"
-            DELETE FROM bridgeq_messages
-            WHERE namespace = $1
-              AND status = 'dead_letter'
-            "#,
-        )
-        .bind(&self.namespace)
-        .execute(&mut *tx)
-        .await?;
-
-        tx.commit().await?;
         rows.into_iter().map(row_to_message).collect()
     }
 
@@ -351,7 +381,7 @@ impl PostgresQueue {
         id: i64,
         next_attempts: i32,
     ) -> Result<()> {
-        if next_attempts > self.config.max_retries as i32 {
+        if i64::from(next_attempts) > i64::from(self.config.max_retries) {
             sqlx::query(
                 r#"
                 UPDATE bridgeq_messages
@@ -420,7 +450,11 @@ impl PostgresQueue {
     }
 
     async fn ensure_schema(&self) -> Result<()> {
-        sqlx::query(
+        let mut tx = self.pool.begin().await?;
+        sqlx::query("SELECT pg_advisory_xact_lock(hashtext('bridgerust.bridgeq_messages'))")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::raw_sql(
             r#"
             CREATE TABLE IF NOT EXISTS bridgeq_messages (
                 id BIGSERIAL PRIMARY KEY,
@@ -434,6 +468,9 @@ impl PostgresQueue {
                 updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             );
 
+            ALTER TABLE bridgeq_messages
+              ADD COLUMN IF NOT EXISTS delivery_generation BIGINT NOT NULL DEFAULT 0;
+
             CREATE INDEX IF NOT EXISTS idx_bridgeq_messages_ns_status_available
               ON bridgeq_messages(namespace, status, available_at, id);
 
@@ -441,8 +478,9 @@ impl PostgresQueue {
               ON bridgeq_messages(namespace, status, lease_deadline, id);
             "#,
         )
-        .execute(&self.pool)
+        .execute(&mut *tx)
         .await?;
+        tx.commit().await?;
         Ok(())
     }
 }
@@ -454,11 +492,19 @@ fn row_to_message(row: PgRow) -> Result<PostgresQueueMessage> {
         .map_err(|_| PostgresQueueError::InvalidId(raw_id))?;
     let attempts_i32: i32 = row.try_get("attempts")?;
     let attempts: u32 = attempts_i32.max(0) as u32;
+    let generation: Option<i64> = row.try_get("delivery_generation")?;
+    let lease_token = generation
+        .map(|generation| {
+            u64::try_from(generation)
+                .map_err(|_| PostgresQueueError::InvalidDeliveryGeneration(generation))
+        })
+        .transpose()?;
 
     Ok(PostgresQueueMessage {
         id,
         payload: row.try_get("payload")?,
         attempts,
+        lease_token,
     })
 }
 
