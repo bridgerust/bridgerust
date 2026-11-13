@@ -10,6 +10,10 @@ elif len(sys.argv) == 1:
 else:
     raise SystemExit("usage: python run.py [--legacy]")
 
+# Bridge sends and receives UTF-8 JSONL regardless of the system locale.
+sys.stdin.reconfigure(encoding="utf-8")
+sys.stdout.reconfigure(encoding="utf-8")
+
 for line in sys.stdin:
     case = json.loads(line)
     try:
