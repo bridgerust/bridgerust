@@ -67,6 +67,7 @@ pub struct QueueMessage<T> {
     id: u64,
     payload: T,
     attempts: u32,
+    delivery_generation: u64,
 }
 
 impl<T> QueueMessage<T> {
@@ -80,6 +81,11 @@ impl<T> QueueMessage<T> {
 
     pub fn into_payload(self) -> T {
         self.payload
+    }
+
+    /// Identifies this delivery. Dead-letter messages have no active lease.
+    pub fn lease_token(&self) -> Option<u64> {
+        (self.delivery_generation != 0).then_some(self.delivery_generation)
     }
 
     pub fn attempts(&self) -> u32 {
@@ -163,6 +169,7 @@ impl<T: Clone> BridgeQueue<T> {
             id,
             payload,
             attempts: 0,
+            delivery_generation: 0,
         };
         let mut state = self.state.lock().expect("bridgeq mutex poisoned");
         let now = Instant::now();
@@ -184,6 +191,7 @@ impl<T: Clone> BridgeQueue<T> {
                 id,
                 payload,
                 attempts: 0,
+                delivery_generation: 0,
             });
         }
         ids
@@ -202,9 +210,13 @@ impl<T: Clone> BridgeQueue<T> {
             .unwrap_or(now);
 
         for _ in 0..size {
-            let Some(msg) = state.ready.pop_front() else {
+            let Some(mut msg) = state.ready.pop_front() else {
                 break;
             };
+            msg.delivery_generation = msg
+                .delivery_generation
+                .checked_add(1)
+                .expect("delivery generation exhausted");
             state.in_flight.insert(
                 msg.id,
                 InFlightMessage {
@@ -219,20 +231,24 @@ impl<T: Clone> BridgeQueue<T> {
     }
 
     /// Acknowledges successful processing of a message.
-    pub fn ack(&self, id: u64) -> bool {
+    pub fn ack(&self, id: u64, lease_token: u64) -> bool {
         let mut state = self.state.lock().expect("bridgeq mutex poisoned");
         let now = Instant::now();
         self.sweep_locked(&mut state, now);
-        state.in_flight.remove(&id).is_some()
+        self.take_delivery(&mut state, id, lease_token).is_some()
     }
 
     /// Renews message lease from now using configured `visibility_timeout`.
-    pub fn heartbeat(&self, id: u64) -> bool {
+    pub fn heartbeat(&self, id: u64, lease_token: u64) -> bool {
         let mut state = self.state.lock().expect("bridgeq mutex poisoned");
         let now = Instant::now();
         self.sweep_locked(&mut state, now);
 
-        let Some(in_flight) = state.in_flight.get_mut(&id) else {
+        let Some(in_flight) = state
+            .in_flight
+            .get_mut(&id)
+            .filter(|entry| entry.message.delivery_generation == lease_token)
+        else {
             return false;
         };
 
@@ -243,12 +259,16 @@ impl<T: Clone> BridgeQueue<T> {
     }
 
     /// Extends current lease by `extra` duration.
-    pub fn extend_lease(&self, id: u64, extra: Duration) -> bool {
+    pub fn extend_lease(&self, id: u64, lease_token: u64, extra: Duration) -> bool {
         let mut state = self.state.lock().expect("bridgeq mutex poisoned");
         let now = Instant::now();
         self.sweep_locked(&mut state, now);
 
-        let Some(in_flight) = state.in_flight.get_mut(&id) else {
+        let Some(in_flight) = state
+            .in_flight
+            .get_mut(&id)
+            .filter(|entry| entry.message.delivery_generation == lease_token)
+        else {
             return false;
         };
 
@@ -258,12 +278,12 @@ impl<T: Clone> BridgeQueue<T> {
     }
 
     /// Marks processing as failed and schedules retry using configured backoff.
-    pub fn nack(&self, id: u64) -> bool {
+    pub fn nack(&self, id: u64, lease_token: u64) -> bool {
         let mut state = self.state.lock().expect("bridgeq mutex poisoned");
         let now = Instant::now();
         self.sweep_locked(&mut state, now);
 
-        let Some(in_flight) = state.in_flight.remove(&id) else {
+        let Some(in_flight) = self.take_delivery(&mut state, id, lease_token) else {
             return false;
         };
 
@@ -302,7 +322,24 @@ impl<T: Clone> BridgeQueue<T> {
         let mut state = self.state.lock().expect("bridgeq mutex poisoned");
         let now = Instant::now();
         self.sweep_locked(&mut state, now);
-        std::mem::take(&mut state.dead_letter)
+        let mut messages = std::mem::take(&mut state.dead_letter);
+        for message in &mut messages {
+            message.delivery_generation = 0;
+        }
+        messages
+    }
+
+    fn take_delivery(
+        &self,
+        state: &mut QueueState<T>,
+        id: u64,
+        lease_token: u64,
+    ) -> Option<InFlightMessage<T>> {
+        let entry = state.in_flight.get(&id)?;
+        if entry.message.delivery_generation != lease_token {
+            return None;
+        }
+        state.in_flight.remove(&id)
     }
 
     fn sweep_locked(&self, state: &mut QueueState<T>, now: Instant) {
@@ -420,8 +457,8 @@ mod tests {
         assert_eq!(messages[0].id(), id);
         assert_eq!(messages[0].payload(), "job-1");
 
-        assert!(queue.ack(id));
-        assert!(!queue.ack(id));
+        assert!(queue.ack(id, messages[0].lease_token().unwrap()));
+        assert!(!queue.ack(id, messages[0].lease_token().unwrap()));
         assert_eq!(
             queue.stats(),
             QueueStats {
@@ -440,12 +477,12 @@ mod tests {
 
         let msg = queue.dequeue(1);
         assert_eq!(msg.len(), 1);
-        assert!(queue.nack(id));
+        assert!(queue.nack(id, msg[0].lease_token().unwrap()));
 
         // Second failure exceeds max_retries=1 and moves to dead letter.
         let msg = queue.dequeue(1);
         assert_eq!(msg.len(), 1);
-        assert!(queue.nack(id));
+        assert!(queue.nack(id, msg[0].lease_token().unwrap()));
 
         let stats = queue.stats();
         assert_eq!(stats.ready, 0);
@@ -461,7 +498,7 @@ mod tests {
 
         let msg = queue.dequeue(1);
         assert_eq!(msg.len(), 1);
-        assert!(queue.nack(id));
+        assert!(queue.nack(id, msg[0].lease_token().unwrap()));
         assert_eq!(queue.stats().dead_letter, 1);
 
         assert!(queue.requeue_dead_letter(id));
@@ -498,6 +535,37 @@ mod tests {
     }
 
     #[test]
+    fn stale_lease_cannot_modify_redelivery_or_requeued_dead_letter() {
+        let queue = BridgeQueue::new(1);
+        let id = queue.enqueue("job");
+        let first = queue.dequeue(1)[0].lease_token().unwrap();
+        queue
+            .state
+            .lock()
+            .unwrap()
+            .in_flight
+            .get_mut(&id)
+            .unwrap()
+            .lease_deadline = Instant::now();
+
+        let second = queue.dequeue(1)[0].lease_token().unwrap();
+        assert_ne!(first, second);
+        assert!(!queue.ack(id, first));
+        assert!(!queue.nack(id, first));
+        assert!(!queue.heartbeat(id, first));
+        assert!(!queue.extend_lease(id, first, Duration::from_secs(1)));
+        assert!(queue.heartbeat(id, second));
+        assert!(queue.nack(id, second));
+        assert!(queue.requeue_dead_letter(id));
+
+        let third = queue.dequeue(1)[0].lease_token().unwrap();
+        assert_ne!(first, third);
+        assert_ne!(second, third);
+        assert!(!queue.ack(id, second));
+        assert!(queue.ack(id, third));
+    }
+
+    #[test]
     fn heartbeat_renews_lease_before_timeout() {
         let queue = BridgeQueue::with_config(
             QueueConfig::new(2)
@@ -511,7 +579,7 @@ mod tests {
         assert_eq!(first[0].attempts(), 0);
 
         std::thread::sleep(Duration::from_millis(35));
-        assert!(queue.heartbeat(id));
+        assert!(queue.heartbeat(id, first[0].lease_token().unwrap()));
 
         std::thread::sleep(Duration::from_millis(35));
         let mid_stats = queue.stats();
@@ -538,7 +606,11 @@ mod tests {
         assert_eq!(first.len(), 1);
         assert_eq!(first[0].attempts(), 0);
 
-        assert!(queue.extend_lease(id, Duration::from_millis(80)));
+        assert!(queue.extend_lease(
+            id,
+            first[0].lease_token().unwrap(),
+            Duration::from_millis(80)
+        ));
         std::thread::sleep(Duration::from_millis(45));
 
         let mid_stats = queue.stats();

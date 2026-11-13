@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "bridgeq"
-version = "0.1.18"
+version = "0.2.0"
 description = "BridgeQ: Rust-powered queue toolkit for Python"
 readme = "README.md"
 authors = [{ name = "BridgeRust", email = "hello@kologojosias.com" }]
@@ -28,7 +28,6 @@ dev = ["pytest>=8.0"]
 manifest-path = "Cargo.toml"
 module-name = "bridgeq"
 profile = "release"
-strip = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

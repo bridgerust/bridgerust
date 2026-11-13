@@ -1,6 +1,6 @@
 {
   "name": "@bridgerust/bridgeq",
-  "version": "0.1.18",
+  "version": "0.2.0",
   "description": "BridgeQ: Rust-powered queue toolkit for Node.js",
   "homepage": "https://github.com/bridgerust/bridgerust",
   "repository": {
@@ -33,7 +33,7 @@
     "build": "napi build --platform --release --js native.js --dts native.d.ts && tsc",
     "build:debug": "napi build --platform --js native.js --dts native.d.ts && tsc",
     "prepublishOnly": "tsc && cp native.js dist/native.js && cp native.d.ts dist/native.d.ts || true",
-    "test": "node -e \"const { BridgeQueue } = require('./dist'); const q = new BridgeQueue(1); const id = q.enqueue('job'); const m = q.dequeue(1); q.ack(id); console.log(m.length);\""
+    "test": "node -e \"const { BridgeQueue } = require('./dist'); const q = new BridgeQueue(1); q.enqueue('job'); const [m] = q.dequeue(1); if (!q.ack(m.id, m.leaseToken)) process.exit(1);\""
   },
   "devDependencies": {
     "@napi-rs/cli": "^3.5.0",

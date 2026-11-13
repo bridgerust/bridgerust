@@ -15,6 +15,7 @@ pub struct QueueMessage {
     pub id: u32,
     pub payload: String,
     pub attempts: u32,
+    pub lease_token: Option<String>,
 }
 
 #[napi(object)]
@@ -176,54 +177,60 @@ impl BridgeQueue {
     }
 
     #[napi]
-    pub fn ack(&self, id: u32) -> napi::Result<bool> {
+    pub fn ack(&self, id: u32, lease_token: String) -> napi::Result<bool> {
+        let lease_token = parse_lease_token(&lease_token)?;
         match &self.inner {
-            QueueBackend::Memory(queue) => Ok(queue.ack(u64::from(id))),
+            QueueBackend::Memory(queue) => Ok(queue.ack(u64::from(id), lease_token)),
             QueueBackend::Redis(queue) => runtime()
-                .block_on(queue.ack(u64::from(id)))
+                .block_on(queue.ack(u64::from(id), lease_token))
                 .map_err(redis_error),
             QueueBackend::Postgres(queue) => runtime()
-                .block_on(queue.ack(u64::from(id)))
+                .block_on(queue.ack(u64::from(id), lease_token))
                 .map_err(postgres_error),
         }
     }
 
     #[napi]
-    pub fn heartbeat(&self, id: u32) -> napi::Result<bool> {
+    pub fn heartbeat(&self, id: u32, lease_token: String) -> napi::Result<bool> {
+        let lease_token = parse_lease_token(&lease_token)?;
         match &self.inner {
-            QueueBackend::Memory(queue) => Ok(queue.heartbeat(u64::from(id))),
+            QueueBackend::Memory(queue) => Ok(queue.heartbeat(u64::from(id), lease_token)),
             QueueBackend::Redis(queue) => runtime()
-                .block_on(queue.heartbeat(u64::from(id)))
+                .block_on(queue.heartbeat(u64::from(id), lease_token))
                 .map_err(redis_error),
             QueueBackend::Postgres(queue) => runtime()
-                .block_on(queue.heartbeat(u64::from(id)))
+                .block_on(queue.heartbeat(u64::from(id), lease_token))
                 .map_err(postgres_error),
         }
     }
 
     #[napi]
-    pub fn extend_lease(&self, id: u32, extra_ms: u32) -> napi::Result<bool> {
+    pub fn extend_lease(&self, id: u32, lease_token: String, extra_ms: u32) -> napi::Result<bool> {
         let extra = Duration::from_millis(u64::from(extra_ms));
+        let lease_token = parse_lease_token(&lease_token)?;
         match &self.inner {
-            QueueBackend::Memory(queue) => Ok(queue.extend_lease(u64::from(id), extra)),
+            QueueBackend::Memory(queue) => {
+                Ok(queue.extend_lease(u64::from(id), lease_token, extra))
+            }
             QueueBackend::Redis(queue) => runtime()
-                .block_on(queue.extend_lease(u64::from(id), extra))
+                .block_on(queue.extend_lease(u64::from(id), lease_token, extra))
                 .map_err(redis_error),
             QueueBackend::Postgres(queue) => runtime()
-                .block_on(queue.extend_lease(u64::from(id), extra))
+                .block_on(queue.extend_lease(u64::from(id), lease_token, extra))
                 .map_err(postgres_error),
         }
     }
 
     #[napi]
-    pub fn nack(&self, id: u32) -> napi::Result<bool> {
+    pub fn nack(&self, id: u32, lease_token: String) -> napi::Result<bool> {
+        let lease_token = parse_lease_token(&lease_token)?;
         match &self.inner {
-            QueueBackend::Memory(queue) => Ok(queue.nack(u64::from(id))),
+            QueueBackend::Memory(queue) => Ok(queue.nack(u64::from(id), lease_token)),
             QueueBackend::Redis(queue) => runtime()
-                .block_on(queue.nack(u64::from(id)))
+                .block_on(queue.nack(u64::from(id), lease_token))
                 .map_err(redis_error),
             QueueBackend::Postgres(queue) => runtime()
-                .block_on(queue.nack(u64::from(id)))
+                .block_on(queue.nack(u64::from(id), lease_token))
                 .map_err(postgres_error),
         }
     }
@@ -341,23 +348,40 @@ fn runtime() -> &'static Runtime {
 fn memory_message_to_node(message: MemoryMessage<String>) -> napi::Result<QueueMessage> {
     let id = message.id();
     let attempts = message.attempts();
+    let lease_token = message.lease_token();
     let payload = message.into_payload();
-    queue_message(id, payload, attempts)
+    queue_message(id, payload, attempts, lease_token)
 }
 
 fn redis_message_to_node(message: RedisQueueMessage) -> napi::Result<QueueMessage> {
-    queue_message(message.id, message.payload, message.attempts)
+    queue_message(
+        message.id,
+        message.payload,
+        message.attempts,
+        message.lease_token,
+    )
 }
 
 fn postgres_message_to_node(message: PostgresQueueMessage) -> napi::Result<QueueMessage> {
-    queue_message(message.id, message.payload, message.attempts)
+    queue_message(
+        message.id,
+        message.payload,
+        message.attempts,
+        message.lease_token,
+    )
 }
 
-fn queue_message(id: u64, payload: String, attempts: u32) -> napi::Result<QueueMessage> {
+fn queue_message(
+    id: u64,
+    payload: String,
+    attempts: u32,
+    lease_token: Option<u64>,
+) -> napi::Result<QueueMessage> {
     Ok(QueueMessage {
         id: node_id(id)?,
         payload,
         attempts,
+        lease_token: lease_token.map(|token| token.to_string()),
     })
 }
 
@@ -368,6 +392,12 @@ fn stats_to_node(stats: RustQueueStats) -> QueueStats {
         in_flight: stats.in_flight as u32,
         dead_letter: stats.dead_letter as u32,
     }
+}
+
+fn parse_lease_token(value: &str) -> napi::Result<u64> {
+    value
+        .parse()
+        .map_err(|_| napi::Error::from_reason("invalid BridgeQ lease token"))
 }
 
 fn node_id(id: u64) -> napi::Result<u32> {

@@ -20,6 +20,7 @@ Notes:
 - Uses a `bridgeq_messages` table with lease and availability timestamps.
 - Retry behavior follows `bridgeq::QueueConfig` (`max_retries`, visibility timeout, backoff).
 - Uses `FOR UPDATE SKIP LOCKED` for concurrent dequeue/reclaim safety.
+- Pass the token from `dequeue` along with the message ID to settle or renew a lease. On connection, BridgeQ adds the delivery generation column to existing tables.
 
 ## Integration Tests
 

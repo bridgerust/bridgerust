@@ -1,11 +1,11 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 PACKAGE_SCOPE="${NPM_PACKAGE_SCOPE:-@bridgerust}"
 PACKAGE_BASE="${NPM_PACKAGE_BASE:-embex}"
 TAG_PREFIX="${NPM_TAG_PREFIX:-embex-v}"
 
-TAG_NAME="${NPM_TAG_NAME:-$GITHUB_REF_NAME}"
+TAG_NAME="${NPM_TAG_NAME:-${GITHUB_REF_NAME:-}}"
 
 if [ -z "$TAG_NAME" ]; then
   echo "❌ NPM_TAG_NAME or GITHUB_REF_NAME is required"
@@ -26,7 +26,8 @@ fi
 echo "🚀 Publishing $PACKAGE_SCOPE/$PACKAGE_BASE platform packages @ $VERSION"
 
 for dir in npm/*/; do
-  NODE_FILE=$(find "$dir" -maxdepth 1 -type f -name "*.node" | head -1)
+  [ -d "$dir" ] || continue
+  NODE_FILE=$(find "$dir" -maxdepth 1 -type f -name "*.node" -print -quit)
   if [ -d "$dir" ] && [ -n "$NODE_FILE" ]; then
     platform=$(basename "$dir")
     node_basename=$(basename "$NODE_FILE")
@@ -50,6 +51,7 @@ for dir in npm/*/; do
   "files": ["$node_basename"],
   "os": ["$platform_os"],
   "cpu": ["$platform_cpu"],
+  "repository": { "type": "git", "url": "https://github.com/bridgerust/bridgerust" },
   "license": "MIT",
   "engines": { "node": ">= 10" }
 }
@@ -62,7 +64,11 @@ EOF
     fi
 
     cd "$dir"
-    npm publish --access public || echo "⚠️ Already published: $platform"
+    if [ "$(npm view "$package_name@$VERSION" version 2>/dev/null || true)" = "$VERSION" ]; then
+      echo "Already published: $package_name@$VERSION"
+    else
+      npm publish --access public
+    fi
     cd ../..
   fi
 done

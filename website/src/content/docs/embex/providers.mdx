@@ -1,6 +1,6 @@
 ---
 title: Providers
-description: Configure Embex for Qdrant, Pinecone, LanceDB, Milvus, Weaviate, and Chroma.
+description: Configure Embex for Qdrant, Pinecone, LanceDB, Milvus, Weaviate, Chroma, PgVector, and Elasticsearch.
 ---
 
 import { Tabs, TabItem } from "@astrojs/starlight/components";
@@ -114,6 +114,45 @@ High-performance Rust vector database (Cloud or Self-Hosted).
 
 ## Other Providers
 
+### Elasticsearch
+
+The Elasticsearch adapter is available in the source tree for the next release. Use the `elasticsearch` provider with the cluster's HTTP(S) endpoint. Pass the encoded Elasticsearch API key through `api_key` in Python or as the third argument to `newAsync` in Node.js. Omit it for a local cluster with security disabled.
+
+<Tabs>
+  <TabItem label="Python">
+
+    ```python
+    import os
+
+    client = await EmbexClient.new_async(
+        provider="elasticsearch",
+        url=os.environ["ELASTICSEARCH_URL"],
+        api_key=os.environ.get("ELASTICSEARCH_API_KEY"),
+    )
+    ```
+
+  </TabItem>
+  <TabItem label="Node.js">
+
+    ```typescript
+    const client = await EmbexClient.newAsync(
+      "elasticsearch",
+      process.env.ELASTICSEARCH_URL ?? "http://localhost:9200",
+      process.env.ELASTICSEARCH_API_KEY,
+    );
+    ```
+
+  </TabItem>
+</Tabs>
+
+Create collections through Embex so the index has the vector and metadata mappings. Collection names use lowercase ASCII letters, digits, hyphens, underscores and periods, starting with a letter or digit. Elasticsearch 8.19 and 9.x provide the kNN and point-in-time APIs used by the adapter. The adapter uses Elasticsearch relevance scores, exact string filters, and numeric range filters. Give each metadata key a consistent type across points. Numeric metadata is indexed as double precision for filtering. Bulk writes wait for a refresh, which requires the `maintenance` or `manage` index privilege on secured clusters. A migration cursor stays valid for one minute between pages.
+
+Run the optional lifecycle integration test against a dedicated Elasticsearch instance with `ELASTICSEARCH_URL` and, when needed, `ELASTICSEARCH_API_KEY` set.
+
+```sh
+cargo test -p bridge-embex-elasticsearch --test elasticsearch real_elasticsearch_lifecycle -- --ignored
+```
+
 ### Milvus
 
 <Tabs>
@@ -207,3 +246,6 @@ High-performance Rust vector database (Cloud or Self-Hosted).
 | **Chroma**   | `"chroma"`      | `"http://localhost:8000"`                    |
 | **PgVector** | `"pgvector"`    | `"postgresql://user:pass@localhost:5432/db"` |
 | **LanceDB**  | `"lancedb"`     | `"./data"`                                   |
+| **Elasticsearch** | `"elasticsearch"` | `"http://localhost:9200"`                |
+
+The `opensearch` and `redis` adapters are experimental placeholders. Their vector operations currently return `NotImplemented`.

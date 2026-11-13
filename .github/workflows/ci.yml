@@ -56,6 +56,27 @@ jobs:
     name: Test Suite
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    services:
+      redis:
+        image: redis:7
+        ports:
+          - 6379/tcp
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432/tcp
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
 
     steps:
       - uses: actions/checkout@v4
@@ -84,6 +105,9 @@ jobs:
 
       - name: Build and test workspace
         run: cargo test --workspace --no-fail-fast
+        env:
+          BRIDGEQ_REDIS_URL: redis://127.0.0.1:${{ job.services.redis.ports[6379] }}/
+          BRIDGEQ_POSTGRES_URL: postgres://postgres:postgres@127.0.0.1:${{ job.services.postgres.ports[5432] }}/postgres
 
       - name: Check embex-bridge (Python)
         run: cargo check -p embex-bridge --features python
